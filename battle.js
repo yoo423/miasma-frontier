@@ -1,19 +1,17 @@
 let btl = null;
 let battleAutoMode = false;
-let battleSpeed = 1; // 1: じっくり(1150ms) / 2: 倍速(650ms)
+let battleSpeed = 1;
 let prevThemeBeforeBattle = "camp";
 let btlUidSeq = 1;
 
-function getStepDelay(baseMs) {
-  return battleSpeed === 2 ? Math.round(baseMs * 0.56) : baseMs;
-}
+function getStepDelay(baseMs) { return battleSpeed === 2 ? Math.round(baseMs * 0.56) : baseMs; }
 
 function toggleBattleSpeed() {
   battleSpeed = battleSpeed === 1 ? 2 : 1;
   playSfx("tap");
   const btn = document.getElementById("btn-btl-speed");
   if (btn) btn.textContent = battleSpeed === 1 ? "🐢 じっくり" : "⚡ 倍速";
-  showToast(battleSpeed === 1 ? "🐢 演出をじっくり楽しむ速度にしました" : "⚡ 倍速モードにしました");
+  showToast(battleSpeed === 1 ? "🐢 演出をじっくり見る速度にしました" : "⚡ 倍速モードにしました");
 }
 
 function getCraftAtkMultiplier(extraPct = 0) {
@@ -32,12 +30,8 @@ function toggleBattleAuto() {
   if (btl) {
     if (battleAutoMode) btl.usedAuto = true;
     updateAutoButtonUI();
-    showToast(battleAutoMode
-      ? "🤖 自動討伐ON（※この戦闘の活躍報酬・部位ボーナスは無効）"
-      : "🎮 手動読み合いモードに切り替えました");
-    if (battleAutoMode && !btl.resolving && !btl.finished) {
-      setTimeout(() => runAutoTurn(), getStepDelay(600));
-    }
+    showToast(battleAutoMode ? "🤖 AUTO ON（※活躍報酬・部位ボーナス無効）" : "🎮 手動読み合いモード");
+    if (battleAutoMode && !btl.resolving && !btl.finished) setTimeout(() => runAutoTurn(), getStepDelay(600));
   }
 }
 
@@ -62,13 +56,9 @@ function renderBattleView() {
     const radiantStyle = en.isRadiant ? "border-color:#ffd000;" : "";
     return `
       <div class="card" style="padding:10px; margin-bottom:8px; ${radiantStyle}">
-        <div class="top-row">
-          <strong>${en.emoji} ${escapeHtml(en.name)}</strong>
-          <span class="rank-pill">${en.rank}</span>
-        </div>
+        <div class="top-row"><strong>${en.emoji} ${escapeHtml(en.name)}</strong><span class="rank-pill">${en.rank}</span></div>
         <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin:4px 0;">
-          ${firstBadge}
-          <span style="font-size:10px; font-weight:900;">推奨戦力 ${en.recPower}（${warn}）</span>
+          ${firstBadge}<span style="font-size:10px; font-weight:900;">推奨戦力 ${en.recPower}（${warn}）</span>
         </div>
         <div style="font-size:11px; color:var(--muted);">${partsLabel}</div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
@@ -82,17 +72,12 @@ function renderBattleView() {
 
 function shuffleCards(arr) {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
 
 function pickNextEnemyIntent(turn, prevType, enemy) {
-  if (prevType === "charge") {
-    return { type: "heavy", icon: "☄️", name: "ミアズマ大崩壊", dmg: Math.round(enemy.atk * 2.1), hint: "大技直前！防御・カウンターか凍結で防げ！" };
-  }
+  if (prevType === "charge") return { type: "heavy", icon: "☄️", name: "ミアズマ大崩壊", dmg: Math.round(enemy.atk * 2.1), hint: "大技直前！防御・カウンターか凍結で防げ！" };
   const r = Math.random();
   if (turn >= 2 && r < 0.25) return { type: "charge", icon: "⚡", name: "必殺チャージ中", dmg: 0, hint: "次ターン超大技！【崩し】カードで強制中断！" };
   if (r < 0.5) return { type: "guard", icon: "🛡️", name: "装甲硬化・反撃構え", dmg: Math.round(enemy.atk * 0.7), hint: "通常攻撃半減！【崩し】カードで装甲粉砕！" };
@@ -122,8 +107,7 @@ function startBattle(enemyId, opts = null) {
 
   const totalMaxHp = members.reduce((s, m) => s + m.maxHp, 0);
   const parts = template.parts.map(p => ({
-    ...p, hp: Math.round(template.maxHp * p.hpRatio), maxHp: Math.round(template.maxHp * p.hpRatio),
-    broken: false, spotted: hasSpotter
+    ...p, hp: Math.round(template.maxHp * p.hpRatio), maxHp: Math.round(template.maxHp * p.hpRatio), broken: false, spotted: hasSpotter
   }));
 
   const rawDeck = window.MF_CARDS.buildActiveDeck().map(c => ({ ...c, uid: btlUidSeq++ }));
@@ -144,8 +128,8 @@ function startBattle(enemyId, opts = null) {
   };
 
   drawCards(5);
+  document.getElementById("modal-battle-result").classList.remove("active");
   document.getElementById("btl-select-panel").style.display = "none";
-  document.getElementById("btl-result-box").style.display = "none";
   document.getElementById("btl-arena-panel").style.display = "block";
   updateAutoButtonUI();
   renderBattleHUD();
@@ -155,6 +139,7 @@ function exitBattleArena(didWin = false) {
   const ctx = btl?.ctx || null;
   battleAutoMode = false;
   btl = null;
+  document.getElementById("modal-battle-result").classList.remove("active");
   document.body.classList.toggle("theme-tactical", prevThemeBeforeBattle === "tactical");
   document.getElementById("btl-arena-panel").style.display = "none";
   document.getElementById("btl-select-panel").style.display = "block";
@@ -168,12 +153,17 @@ function exitBattleArena(didWin = false) {
   }
 }
 
-// ---------- カットイン・画面揺れ・ダメージフロート演出 ----------
+function openBattleCardDetail(uid) {
+  if (!btl) return;
+  const card = btl.hand.find(c => c.uid === uid) || btl.queue.find(c => c.uid === uid);
+  if (card) openCardDetailModal(card);
+}
+
 function showBattleCutin(charId, titleText, subText, accentColor) {
   const box = document.getElementById("btl-cutin");
   if (!box) return;
   const ch = getCharProfile(charId || state.party[0]);
-  document.getElementById("cutin-portrait").innerHTML = window.MF_SPRITES.portraitHTML(ch, "full");
+  document.getElementById("cutin-portrait").innerHTML = window.MF_SPRITES.portraitHTML(ch, "cutin");
   document.getElementById("cutin-title").textContent = titleText;
   document.getElementById("cutin-sub").textContent = subText || ch.voiceLines?.[0] || "";
   box.style.borderColor = accentColor || "#ffd000";
@@ -223,7 +213,6 @@ function selectHandCard(uid) {
   if (idx < 0) return;
   const card = btl.hand[idx];
   if (btl.ap < card.cost) { showToast(`AP不足（必要 AP${card.cost}）`); return; }
-
   btl.ap -= card.cost;
   btl.hand.splice(idx, 1);
   btl.queue.push(card);
@@ -247,7 +236,7 @@ function clearQueueCards() {
 }
 
 function buildQueuePreviewText() {
-  if (!btl || btl.queue.length === 0) return "手札をタップして最大3枚のチェインを組んでください";
+  if (!btl || btl.queue.length === 0) return "手札をタップして最大3枚のチェインを組もう（右下の？で詳細）";
   const notes = [];
   let simEl = btl.attachedElement;
   btl.queue.forEach(c => {
@@ -259,7 +248,7 @@ function buildQueuePreviewText() {
     }
   });
   if (btl.queue.length === 3) notes.push("🔥 3連チェイン(+30%)");
-  return [...new Set(notes)].join(" / ") || "発動準備OK！「決定して発動」をタップ";
+  return [...new Set(notes)].join(" / ") || "準備OK！「決定してチェイン発動」をタップ";
 }
 
 function getReactionName(elA, elB) {
@@ -275,19 +264,13 @@ function getReactionName(elA, elB) {
   return "元素共鳴";
 }
 
-function pushBattleLog(msg) {
-  btl.log.unshift(msg);
-  if (btl.log.length > 4) btl.log.pop();
-}
+function pushBattleLog(msg) { btl.log.unshift(msg); if (btl.log.length > 4) btl.log.pop(); }
 
 function executeTurnQueue() {
   if (!btl || btl.resolving || btl.finished) return;
   if (btl.queue.length === 0 && !confirm("カードを1枚も出さずにターン終了しますか？")) return;
 
-  btl.resolving = true;
-  btl.counterMult = 0;
-  btl.nextAtkMult = 1.0;
-
+  btl.resolving = true; btl.counterMult = 0; btl.nextAtkMult = 1.0;
   const cardsToRun = [...btl.queue];
   btl.queue = [];
   const hasFullChain = cardsToRun.length === 3;
@@ -296,20 +279,14 @@ function executeTurnQueue() {
   let step = 0;
   const runNext = () => {
     if (!btl || btl.finished) return;
-    if (step >= cardsToRun.length) {
-      setTimeout(() => resolveEnemyTurn(), getStepDelay(1100));
-      return;
-    }
+    if (step >= cardsToRun.length) { setTimeout(() => resolveEnemyTurn(), getStepDelay(1100)); return; }
     const card = cardsToRun[step];
-    const isHeavyShow = card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult;
+    const isHeavy = card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR";
     resolveSingleCard(card, hasFullChain && step === 2);
     if (!card.isUlt) btl.discardPile.push(card);
     renderBattleHUD();
-
     step += 1;
-    if (!btl.finished) {
-      setTimeout(runNext, getStepDelay(isHeavyShow ? 1350 : 1050));
-    }
+    if (!btl.finished) setTimeout(runNext, getStepDelay(isHeavy ? 1350 : 1050));
   };
   setTimeout(runNext, getStepDelay(320));
 }
@@ -318,25 +295,20 @@ function resolveSingleCard(card, isThirdChain) {
   const member = btl.members.find(m => m.id === card.charId) || btl.members[0];
   const elInfo = window.MF_DATA.ELEMENTS[card.element];
 
-  // カットイン演出（EX必殺・コスト2戦技・崩し・カウンター時）
-  if (card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult) {
-    showBattleCutin(member.id, `${card.icon} ${card.name}`, `${member.name}「${elInfo.name}の力を解き放つ！」`, elInfo.color);
+  if (card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR") {
+    showBattleCutin(member.id, `${card.icon} ${card.name}`, `${member.name}「いくぞ！」`, elInfo.color);
   }
-
   if (card.draw) drawCards(card.draw);
-  if (card.apGain) btl.ap = Math.min(6, btl.ap + card.apGain);
-  if (card.shredTurns) { btl.shredTurns = Math.max(btl.shredTurns, card.shredTurns); spawnBattleFloat("🎯 防御DOWN!", "#00e5ff"); pushBattleLog(`🎯 ${card.name}！敵防御DOWN！`); }
+  if (card.apGain) btl.ap = Math.min(7, btl.ap + card.apGain);
+  if (card.shredTurns) { btl.shredTurns = Math.max(btl.shredTurns, card.shredTurns); spawnBattleFloat("🎯 防御DOWN!", "#00e5ff"); pushBattleLog(`🎯 ${card.name}！防御DOWN！`); }
   if (card.healRatio) {
     const heal = Math.round(btl.teamMaxHp * card.healRatio);
     btl.teamHp = Math.min(btl.teamMaxHp, btl.teamHp + heal);
-    playSfx("guard"); spawnBattleFloat(`💚 +${heal}`, "#18b88a");
-    pushBattleLog(`💚 ${card.name}！小隊HP +${heal} 回復！`);
+    playSfx("guard"); spawnBattleFloat(`💚 +${heal}`, "#18b88a"); pushBattleLog(`💚 ${card.name}！HP +${heal}`);
   }
   if (card.shield) {
     const sh = Math.round(btl.teamMaxHp * card.shield * 0.28);
-    btl.shield += sh;
-    playSfx("guard"); spawnBattleFloat(`🛡️ +${sh}`, "#00e5ff");
-    pushBattleLog(`🛡️ ${card.name}！結晶バリア +${sh}！`);
+    btl.shield += sh; playSfx("guard"); spawnBattleFloat(`🛡️ +${sh}`, "#00e5ff"); pushBattleLog(`🛡️ ${card.name}！バリア +${sh}`);
   }
   if (card.counterMult) { btl.counterMult = Math.max(btl.counterMult, card.counterMult); playSfx("guard"); pushBattleLog(`🪞 ${card.name}構え！`); }
   if (card.nextAtkMult) { btl.nextAtkMult *= card.nextAtkMult; pushBattleLog(`🔥 ${card.name}！次撃威力UP！`); }
@@ -344,35 +316,25 @@ function resolveSingleCard(card, isThirdChain) {
   if (card.power) {
     let dmg = Math.round(member.atk * card.power * btl.nextAtkMult * (isThirdChain ? 1.3 : 1.0));
     btl.nextAtkMult = 1.0;
-
     let stag = card.stagger || 12;
+
     if (btl.intent.type === "guard") {
       if (card.type === "break" || card.type === "ult") {
-        dmg = Math.round(dmg * (card.guardBreakMult || 2.2));
-        stag += 35; btl.stunned = true;
-        playSfx("break"); spawnBattleFloat("💥 装甲粉砕!", "#ffd000");
-        pushBattleLog(`💥 【装甲粉砕】${card.name}が防御を叩き割った！`);
-      } else {
-        dmg = Math.round(dmg * 0.55);
-      }
+        dmg = Math.round(dmg * (card.guardBreakMult || 2.2)); stag += 35; btl.stunned = true;
+        playSfx("break"); spawnBattleFloat("💥 装甲粉砕!", "#ffd000"); pushBattleLog(`💥 【装甲粉砕】${card.name}！`);
+      } else { dmg = Math.round(dmg * 0.55); }
     } else if (btl.intent.type === "charge" && (card.type === "break" || card.type === "ult")) {
       dmg = Math.round(dmg * 1.8); stag += 40; btl.stunned = true;
-      playSfx("break"); spawnBattleFloat("⚡ チャージ中断!", "#ffd000");
-      pushBattleLog(`⚡ 【チャージ中断】${card.name}で大技を阻止！`);
+      playSfx("break"); spawnBattleFloat("⚡ チャージ中断!", "#ffd000"); pushBattleLog(`⚡ 【チャージ中断】大技阻止！`);
     }
 
     if (btl.shredTurns > 0) dmg = Math.round(dmg * 1.35);
-
     if (btl.attachedElement && btl.attachedElement !== card.element) {
-      dmg = applyElementReaction(btl.attachedElement, card.element, dmg);
-      btl.attachedElement = null;
-    } else {
-      btl.attachedElement = card.element;
-    }
+      dmg = applyElementReaction(btl.attachedElement, card.element, dmg); btl.attachedElement = null;
+    } else { btl.attachedElement = card.element; }
 
     btl.hp = Math.max(0, btl.hp - dmg);
-    playSfx(card.isUlt ? "ult" : "slash");
-    shakeBattleStage();
+    playSfx(card.isUlt ? "ult" : "slash"); shakeBattleStage();
     spawnBattleFloat(`-${dmg.toLocaleString()}`, elInfo.color);
     pushBattleLog(`${elInfo.icon} ${card.name}！${dmg.toLocaleString()} DMG！`);
 
@@ -382,8 +344,7 @@ function resolveSingleCard(card, isThirdChain) {
       part.hp = Math.max(0, part.hp - Math.round(dmg * pMult));
       if (part.hp === 0) {
         part.broken = true; btl.stunned = true; playSfx("break");
-        spawnBattleFloat(`💥 ${part.name}破壊!`, "#ffd000");
-        pushBattleLog(`💥 部位破壊！【${part.name}】を粉砕！`);
+        spawnBattleFloat(`💥 ${part.name}破壊!`, "#ffd000"); pushBattleLog(`💥 部位破壊！【${part.name}】粉砕！`);
         btl.targetPartIdx = btl.parts.findIndex(p => !p.broken);
       }
     }
@@ -391,8 +352,7 @@ function resolveSingleCard(card, isThirdChain) {
     btl.stagger = Math.min(btl.maxStagger, btl.stagger + stag);
     if (btl.stagger >= btl.maxStagger) {
       btl.stagger = 0; btl.stunned = true; playSfx("break");
-      spawnBattleFloat("💫 BREAK!", "#ffd000");
-      pushBattleLog("💫 体勢ブレイク！敵はダウンして動けない！");
+      spawnBattleFloat("💫 BREAK!", "#ffd000"); pushBattleLog("💫 体勢ブレイク！敵は行動不能！");
     }
   }
 
@@ -402,15 +362,14 @@ function resolveSingleCard(card, isThirdChain) {
       btl.exGauge = 0;
       const ultCard = { ...window.MF_CARDS.getUltCard(state.party[0] || "protagonist"), uid: btlUidSeq++ };
       btl.hand.push(ultCard); playSfx("gift");
-      pushBattleLog(`🌟 EX必殺札『${ultCard.name}』が手札に降臨！`);
+      pushBattleLog(`🌟 EX必殺札『${ultCard.name}』降臨！`);
     }
   }
   if (btl.hp <= 0) setTimeout(() => finishBattle(true), getStepDelay(550));
 }
 
 function applyElementReaction(elA, elB, dmg) {
-  const p = [elA, elB];
-  let out = dmg, txt = "";
+  const p = [elA, elB]; let out = dmg, txt = "";
   if (p.includes("arc")) { const sh = Math.round(btl.teamMaxHp * 0.2); btl.shield += sh; out = Math.round(dmg * 1.3); txt = "✨結晶化"; }
   else if (p.includes("fire") && p.includes("water")) { out = Math.round(dmg * 2.0); txt = "💧🔥蒸発 2.0倍!"; }
   else if (p.includes("fire") && p.includes("ice")) { out = Math.round(dmg * 2.2); txt = "❄️🔥融解 2.2倍!"; }
@@ -430,80 +389,65 @@ function resolveEnemyTurn() {
     const dot = Math.round(btl.members[0].atk * 0.8);
     btl.hp = Math.max(0, btl.hp - dot);
     spawnBattleFloat(`⚡ -${dot}`, "#ffca3a");
-    pushBattleLog(`⚡ 感電ダメージ ${dot}！`);
     if (btl.hp <= 0) { finishBattle(true); return; }
   }
 
   const intent = btl.intent;
   if (btl.stunned) {
-    spawnBattleFloat("💫 行動不能", "#ffd000");
-    pushBattleLog(`💫 ${btl.enemy.name}はダウン・凍結中で動けない！`);
-    btl.stunned = false;
+    spawnBattleFloat("💫 行動不能", "#ffd000"); pushBattleLog(`💫 ${btl.enemy.name}は動けない！`); btl.stunned = false;
   } else if (intent.dmg > 0) {
     const brokenCnt = btl.parts.filter(p => p.broken).length;
     let dmg = Math.round(intent.dmg * Math.max(0.5, 1 - brokenCnt * 0.18));
-
     if (btl.counterMult > 0) {
-      const counterDmg = Math.round(btl.members[0].atk * btl.counterMult);
-      btl.hp = Math.max(0, btl.hp - counterDmg);
-      dmg = Math.round(dmg * 0.3);
-      playSfx("break");
-      showBattleCutin(state.party[0], "🪞 見切りカウンター炸裂！", `敵の攻撃を受け流し ${counterDmg.toLocaleString()} の大反撃！`, "#00e5ff");
-      spawnBattleFloat(`COUNTER -${counterDmg}`, "#00e5ff");
-      pushBattleLog(`🪞 【カウンター】${counterDmg.toLocaleString()} の大反撃！`);
+      const cDmg = Math.round(btl.members[0].atk * btl.counterMult);
+      btl.hp = Math.max(0, btl.hp - cDmg); dmg = Math.round(dmg * 0.3); playSfx("break");
+      showBattleCutin(state.party[0], "🪞 カウンター炸裂！", `${cDmg.toLocaleString()} の大反撃！`, "#00e5ff");
+      spawnBattleFloat(`COUNTER -${cDmg}`, "#00e5ff"); pushBattleLog(`🪞 【カウンター】${cDmg.toLocaleString()} 反撃！`);
       if (btl.hp <= 0) { setTimeout(() => finishBattle(true), getStepDelay(600)); return; }
     }
     if (btl.shield > 0) { const ab = Math.min(btl.shield, dmg); btl.shield -= ab; dmg -= ab; }
-    if (dmg > 0) {
-      btl.teamHp = Math.max(0, btl.teamHp - dmg);
-      playSfx("hit"); shakeBattleStage();
-      pushBattleLog(`💥 敵の『${intent.name}』！小隊に -${dmg} HP！`);
-    } else {
-      playSfx("guard");
-      pushBattleLog(`🛡️ 敵の『${intent.name}』をバリアで完全防御！`);
-    }
-  } else {
-    pushBattleLog(`⚡ ${btl.enemy.name}は恐ろしい瘴気を溜め込んでいる……！`);
-  }
+    if (dmg > 0) { btl.teamHp = Math.max(0, btl.teamHp - dmg); playSfx("hit"); shakeBattleStage(); pushBattleLog(`💥 敵の『${intent.name}』！-${dmg} HP`); }
+    else { playSfx("guard"); pushBattleLog(`🛡️ 敵の攻撃を完全防御！`); }
+  } else { pushBattleLog(`⚡ ${btl.enemy.name}は瘴気を溜めている……！`); }
 
   renderBattleHUD();
   if (btl.teamHp <= 0) { setTimeout(() => finishBattle(false), getStepDelay(500)); return; }
 
   setTimeout(() => {
     if (!btl || btl.finished) return;
-    btl.turn += 1;
-    if (btl.shredTurns > 0) btl.shredTurns -= 1;
-    btl.ap = btl.maxAp;
-    btl.shield = Math.floor(btl.shield * 0.5);
+    btl.turn += 1; if (btl.shredTurns > 0) btl.shredTurns -= 1;
+    btl.ap = btl.maxAp; btl.shield = Math.floor(btl.shield * 0.5);
     btl.intent = pickNextEnemyIntent(btl.turn, intent.type, btl.enemy);
     drawCards(Math.max(2, 5 - btl.hand.length));
-    btl.resolving = false;
-    renderBattleHUD();
+    btl.resolving = false; renderBattleHUD();
     if (battleAutoMode && !btl.finished) setTimeout(() => runAutoTurn(), getStepDelay(650));
   }, getStepDelay(900));
 }
 
 function runAutoTurn() {
   if (!btl || btl.resolving || btl.finished || !battleAutoMode) return;
-  btl.usedAuto = true;
-  clearQueueCards();
+  btl.usedAuto = true; clearQueueCards();
   const sorted = [...btl.hand].sort((a, b) => (b.isUlt ? 99 : 0) - (a.isUlt ? 99 : 0) || b.cost - a.cost);
-  for (const card of sorted) {
-    if (btl.queue.length >= 3) break;
-    if (btl.ap >= card.cost) selectHandCard(card.uid);
-  }
+  for (const card of sorted) { if (btl.queue.length >= 3) break; if (btl.ap >= card.cost) selectHandCard(card.uid); }
   executeTurnQueue();
 }
 
+// 画面ど真ん中にポップアップする戦闘リザルトモーダル
 function finishBattle(isWin) {
   if (!btl || btl.finished) return;
-  btl.finished = true;
-  btl.resolving = false;
-  const resBox = document.getElementById("btl-result-box");
-  resBox.style.display = "block";
+  btl.finished = true; btl.resolving = false;
+
+  const modal = document.getElementById("modal-battle-result");
+  const body = document.getElementById("btl-result-modal-body");
 
   if (!isWin) {
-    resBox.innerHTML = `<h3 style="margin:0 0 6px; color:#ff595e;">💀 作戦撤退……</h3><button class="btn-primary" style="width:100%;" onclick="exitBattleArena(false)">戻る</button>`;
+    body.innerHTML = `
+      <div style="font-size:48px; margin-bottom:4px;">💀</div>
+      <h3 style="margin:0 0 6px; color:#ff595e; font-size:20px;">作戦撤退……</h3>
+     <p style="font-size:12px; color:var(--muted); margin:0 0 14px;">デッキの防御札や攻略Wikiの元素コンボを見直して再挑戦しよう！</p>
+      <button class="btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="exitBattleArena(false)">拠点・マップへ戻る</button>
+    `;
+    modal.classList.add("active");
     return;
   }
 
@@ -523,34 +467,37 @@ function finishBattle(isWin) {
   let bonusHtml = "";
   if (isManual) {
     const actPt = rw.activityPt || 10;
-    state.gems += rw.gems;
-    state.activityPt = (state.activityPt || 0) + actPt;
+    state.gems += rw.gems; state.activityPt = (state.activityPt || 0) + actPt;
     state.materials = state.materials || {};
     brokenParts.forEach(p => { state.materials[p.drop] = (state.materials[p.drop] || 0) + 1; });
-    bonusHtml = `<div style="font-size:11px; color:#18b88a; font-weight:900; margin-top:4px;">🎮 手動ボーナス：💎+${rw.gems} / 🏅活躍+${actPt}${brokenParts.length ? ` / 💥部位：${brokenParts.map(p => p.drop).join("・")}` : ""}</div>`;
+    bonusHtml = `<div style="background:rgba(24,184,138,0.16); border:1.5px solid #18b88a; border-radius:10px; padding:7px; font-size:11px; color:#18b88a; font-weight:900; margin-top:8px;">🎮 手動ボーナス：💎+${rw.gems} / 🏅活躍+${actPt}${brokenParts.length ? `<br>💥部位破壊：${brokenParts.map(p => p.drop).join("・")}` : ""}</div>`;
   } else {
-    bonusHtml = `<div style="font-size:11px; color:#ff9f1c; font-weight:800; margin-top:4px;">🤖 AUTOクリア（※活躍Pt・結晶石・部位報酬は手動限定）</div>`;
+    bonusHtml = `<div style="font-size:11px; color:#ff9f1c; font-weight:800; margin-top:8px;">🤖 AUTOクリア（活躍Pt・結晶石・部位報酬は手動限定）</div>`;
   }
 
   const firstHtml = huntRes.isFirstClear
-    ? `<div style="font-size:11px; color:#ffd000; font-weight:900; margin-top:4px;">📓 初討伐達成！「調査ノート」で初討伐ボーナスを受け取れます！</div>`
-    : "";
+    ? `<div style="font-size:11px; color:#ffd000; font-weight:900; margin-top:6px;">📓 初討伐達成！タブレットの『調査ノート』で報酬受取OK！</div>` : "";
 
   saveGame();
   renderTopBar();
-  const nextLabel = btl.ctx?.returnView === "story" ? "冒険・物語の続きへ進む ▶" : "戦利品を受け取って戻る";
-  resBox.innerHTML = `
-    <h3 style="margin:0 0 6px; color:#18b88a;">🏆 討伐完了！（${btl.turn}ターン）</h3>
-    <div style="font-size:12px; font-weight:800;">基本報酬：🪙 +${rw.credits.toLocaleString()} ｜ 📘 記録+${rw.books} ｜ 💠 コア+${rw.cores}</div>
+  const nextLabel = btl.ctx?.returnView === "story" ? "▶ 次の物語・探索へ進む" : "✅ 戦利品を受け取って次へ";
+  body.innerHTML = `
+    <div style="font-size:48px; margin-bottom:2px;">🏆</div>
+    <h3 style="margin:0 0 4px; color:#18b88a; font-size:20px;">討伐完了！</h3>
+    <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">${escapeHtml(btl.enemy.name)}（${btl.turn}ターン撃破）</div>
+    <div style="background:var(--surface-sub); border-radius:10px; padding:8px; font-size:12px; font-weight:900;">
+      🪙 +${rw.credits.toLocaleString()} ｜ 📘 記録+${rw.books} ｜ 💠 コア+${rw.cores}
+    </div>
     ${bonusHtml}${firstHtml}
-    <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="exitBattleArena(true)">${nextLabel}</button>
+    <button class="btn-primary" style="width:100%; padding:13px; font-size:15px; margin-top:14px;" onclick="exitBattleArena(true)">${nextLabel}</button>
   `;
+  modal.classList.add("active");
 }
 
 function renderBattleHUD() {
   if (!btl) return;
   document.getElementById("btl-turn-badge").textContent = `TURN ${btl.turn}`;
-  document.getElementById("btl-enemy-name").textContent = `${btl.enemy.name}`;
+  document.getElementById("btl-enemy-name").textContent = btl.enemy.name;
 
   const stage = document.getElementById("btl-stage");
   if (stage) {
@@ -606,18 +553,18 @@ function renderBattleHUD() {
   const execBtn = document.getElementById("btn-btl-exec");
   if (execBtn) execBtn.disabled = btl.resolving || btl.finished;
 
-  // 模様＆属性フレーム＆キャラ顔付きのTCG風カード描画
+  // スッキリ要点表示＋右下に「？」詳細ボタン付きのTCGカード
   document.getElementById("btl-hand-grid").innerHTML = btl.hand.map(c => {
     const el = window.MF_DATA.ELEMENTS[c.element];
     const canPlay = !btl.resolving && btl.ap >= c.cost && btl.queue.length < 3;
     const typeLabel = { attack: "攻撃", break: "崩し", guard: "防御", buff: "戦術", heal: "回復", ult: "EX必殺" }[c.type] || "";
-    const ch = c.ownerName !== "戦術札" ? getCharProfile(c.charId) : null;
+    const ch = !String(c.ownerName || "").startsWith("戦術札") ? getCharProfile(c.charId) : null;
     const artBadge = ch
       ? `<div class="hc-mini-face">${window.MF_SPRITES.portraitHTML(ch, "icon")}</div>`
       : `<div class="hc-mini-emblem">${c.icon}</div>`;
 
     return `
-      <button class="hand-card el-pat-${c.element} type-${c.type} ${canPlay ? "" : "disabled-card"}" onclick="selectHandCard(${c.uid})">
+      <div class="hand-card el-pat-${c.element} type-${c.type} ${canPlay ? "" : "disabled-card"}" onclick="selectHandCard(${c.uid})">
         <div class="hc-corner-deco"></div>
         <div class="hc-top">
           <span class="hc-cost">${c.cost}</span>
@@ -630,8 +577,11 @@ function renderBattleHUD() {
             <div class="hc-owner">${escapeHtml(c.ownerName || "")}</div>
           </div>
         </div>
-        <div class="hc-desc">${escapeHtml(c.desc)}</div>
-      </button>
+        <div class="hc-foot">
+          <span class="hc-summary">${escapeHtml(c.summary || "")}</span>
+          <button class="hc-info-btn" onclick="event.stopPropagation(); openBattleCardDetail(${c.uid});">？</button>
+        </div>
+      </div>
     `;
   }).join("");
 }
