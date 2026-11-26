@@ -210,7 +210,7 @@ function renderHome() {
     <span class="tag">${ch.rarity}</span>
     <span class="tag">${elInfo.icon}${elInfo.name}</span>
     <span class="tag">${wpInfo.icon}${wpInfo.name}</span>
-    <span class="tag">🐾${ch.kemonomimi}</span>
+    <span class="tag">🏷️${ch.trait || "開拓隊員"}</span>
   `;
 
   document.getElementById("home-party-strip").innerHTML = state.party.map(id => {
