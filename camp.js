@@ -17,21 +17,22 @@ function getCampSave() {
 
 const BEAST_LINKS = [
   { id: "none", name: "未リンク（標準稼働）", emoji: "⚙️", bonusText: "生産効率 1.0倍", mult: 1.0 },
-  { id: "wolf", name: "ミアズマ・ウルフ（生体リンク）", emoji: "🐺", bonusText: "採掘＆搬送スピード 1.4倍", mult: 1.4 },
-  { id: "beetle", name: "結晶甲虫（生体リンク）", emoji: "🪲", bonusText: "鉱石＆クレジット産出 1.8倍", mult: 1.8 },
-  { id: "wyvern", name: "サンダー・ワイバーン（生体リンク）", emoji: "🐉", bonusText: "全工場オーバークロック 2.4倍", mult: 2.4 }
+  { id: "wolf", name: "ミアズマ・ウルフ", emoji: "🐺", bonusText: "採掘＆搬送効率 1.4倍", mult: 1.4 },
+  { id: "beetle", name: "結晶甲虫", emoji: "🪲", bonusText: "鉱石＆資金産出 1.8倍", mult: 1.8 },
+  { id: "wyvern", name: "サンダー・ワイバーン", emoji: "🐉", bonusText: "全工場オーバークロック 2.4倍", mult: 2.4 }
 ];
 
 function calcPendingCampOutput() {
   const camp = getCampSave();
-  const now = Date.now();
-  const mins = Math.min(720, Math.max(0, (now - camp.lastCollectTime) / 60000)); // 最大12時間分貯蓄
+  const mins = Math.min(720, Math.max(0, (Date.now() - camp.lastCollectTime) / 60000));
   const link = BEAST_LINKS.find(b => b.id === camp.linkedBeast) || BEAST_LINKS[0];
-
-  const ore = Math.floor(mins * (0.4 + camp.minerLv * 0.25) * link.mult);
-  const credits = Math.floor(mins * (45 + camp.smelterLv * 35) * link.mult);
-  const books = Math.floor(mins * (0.12 + camp.labLv * 0.08) * link.mult);
-  return { mins: Math.floor(mins), ore, credits, books, mult: link.mult };
+  return {
+    mins: Math.floor(mins),
+    ore: Math.floor(mins * (0.4 + camp.minerLv * 0.25) * link.mult),
+    credits: Math.floor(mins * (45 + camp.smelterLv * 35) * link.mult),
+    books: Math.floor(mins * (0.12 + camp.labLv * 0.08) * link.mult),
+    mult: link.mult
+  };
 }
 
 function renderCampView() {
@@ -52,11 +53,10 @@ function renderCampView() {
     </button>
   `;
 
-  // 工場施設レベルアップ一覧
   const facilities = [
     { key: "minerLv", icon: "⛏️", name: "自動採掘リグ", desc: "アーク結晶鉱の自動採掘量を増加" },
     { key: "smelterLv", icon: "🔥", name: "アーク精錬炉", desc: "精錬クレジットの自動生産量を増加" },
-    { key: "labLv", icon: "🔬", name: "戦術データ解析機", desc: "作戦記録（経験値本）の自動生成量を増加" }
+    { key: "labLv", icon: "🔬", name: "戦術データ解析機", desc: "作戦記録の自動生成量を増加" }
   ];
 
   document.getElementById("camp-facility-list").innerHTML = facilities.map(f => {
@@ -66,21 +66,16 @@ function renderCampView() {
       <div class="card" style="padding:9px; margin-bottom:6px;">
         <div class="top-row">
           <strong>${f.icon} ${f.name}（Lv.${lv}）</strong>
-          <button class="btn-xs btn-accent2" onclick="upgradeCampFacility('${f.key}')">
-            強化（🪙${cost.toLocaleString()}）
-          </button>
+          <button class="btn-xs btn-accent2" onclick="upgradeCampFacility('${f.key}')">強化（🪙${cost.toLocaleString()}）</button>
         </div>
         <div style="font-size:11px; color:var(--muted); margin-top:3px;">${f.desc}</div>
       </div>
     `;
   }).join("");
 
-  // モンスター生態リンク選択
   document.getElementById("camp-beast-grid").innerHTML = BEAST_LINKS.map(b => `
-    <button class="select-chip ${camp.linkedBeast === b.id ? "selected" : ""}"
-            onclick="setCampBeastLink('${b.id}')">
-      ${b.emoji} <strong>${escapeHtml(b.name)}</strong><br>
-      <span style="font-size:10px;">${b.bonusText}</span>
+    <button class="select-chip ${camp.linkedBeast === b.id ? "selected" : ""}" onclick="setCampBeastLink('${b.id}')">
+      ${b.emoji} <strong>${escapeHtml(b.name)}</strong><br><span style="font-size:10px;">${b.bonusText}</span>
     </button>
   `).join("");
 }
@@ -94,10 +89,8 @@ function collectCampOutput() {
   }
   camp.lastCollectTime = Date.now();
   state.materials = state.materials || {};
-  if (pending.ore > 0) {
-    state.materials["アーク結晶鉱"] = (state.materials["アーク結晶鉱"] || 0) + pending.ore;
-  }
-  // 低確率で突然変異の希少パーツ「純度100%アーク・プリズム」が生成
+  if (pending.ore > 0) state.materials["アーク結晶鉱"] = (state.materials["アーク結晶鉱"] || 0) + pending.ore;
+
   let prismBonus = "";
   if (pending.mins >= 5 && Math.random() < 0.35) {
     state.materials["純度100%アーク・プリズム"] = (state.materials["純度100%アーク・プリズム"] || 0) + 1;
@@ -117,41 +110,34 @@ function upgradeCampFacility(key) {
   const camp = getCampSave();
   const lv = camp[key] || 1;
   const cost = lv * 1800;
-  if (state.credits < cost) {
-    showToast(`🪙 クレジットが足りません（必要：${cost.toLocaleString()}）`);
-    return;
-  }
+  if (state.credits < cost) { showToast(`🪙 クレジット不足（必要：${cost.toLocaleString()}）`); return; }
   state.credits -= cost;
   camp[key] = lv + 1;
   saveGame();
   playSfx("switch");
   renderTopBar();
   renderCampView();
-  showToast(`🏭 施設レベルが Lv.${lv + 1} にアップしました！`);
+  showToast(`🏭 施設レベルが Lv.${lv + 1} にアップ！`);
 }
 
 function setCampBeastLink(beastId) {
-  const camp = getCampSave();
-  camp.linkedBeast = beastId;
+  getCampSave().linkedBeast = beastId;
   saveGame();
   playSfx("switch");
   renderCampView();
   showToast("🐾 霧獣の生体リンクを切り替えました！");
 }
 
-// ---------- 武器鍛造＆タイミング調理クラフト画面 ----------
 function renderCraftView() {
   renderTopBar();
   const camp = getCampSave();
   const mats = state.materials || {};
   state.craftedWeapons = state.craftedWeapons || [];
 
-  // 現在の食事バフ表示
   document.getElementById("craft-buff-status").textContent = camp.activeBuff
     ? `🍖 現在のキャンプ飯バフ：${camp.activeBuff.name}（次回バトル攻撃力 +${camp.activeBuff.atkBonus}%）`
     : "🍖 キャンプ飯バフ：なし（下の調理ミニゲームでバフを獲得！）";
 
-  // レシピ一覧
   document.getElementById("craft-recipe-list").innerHTML = (window.MF_DATA.CRAFT_RECIPES || []).map(rec => {
     const ownedWeapon = rec.cat === "weapon" && state.craftedWeapons.includes(rec.id);
     const reqText = Object.entries(rec.req).map(([k, v]) => `${k}×${v}(所持${mats[k] || 0})`).join(" / ");
@@ -176,27 +162,16 @@ function craftItem(recipeId) {
   state.materials = state.materials || {};
   state.craftedWeapons = state.craftedWeapons || [];
 
-  if (state.credits < rec.credits) {
-    showToast(`🪙 クレジット不足（必要：${rec.credits.toLocaleString()}）`);
-    return;
-  }
+  if (state.credits < rec.credits) { showToast(`🪙 クレジット不足（必要：${rec.credits.toLocaleString()}）`); return; }
   for (const [matName, need] of Object.entries(rec.req)) {
-    if ((state.materials[matName] || 0) < need) {
-      showToast(`素材不足：『${matName}』が ${need}個 必要です`);
-      return;
-    }
+    if ((state.materials[matName] || 0) < need) { showToast(`素材不足：『${matName}』が ${need}個 必要です`); return; }
   }
 
   state.credits -= rec.credits;
-  for (const [matName, need] of Object.entries(rec.req)) {
-    state.materials[matName] -= need;
-  }
+  for (const [matName, need] of Object.entries(rec.req)) state.materials[matName] -= need;
+  if (rec.cat === "weapon") state.craftedWeapons.push(rec.id);
+  else state.materials[rec.name] = (state.materials[rec.name] || 0) + 1;
 
-  if (rec.cat === "weapon") {
-    state.craftedWeapons.push(rec.id);
-  } else {
-    state.materials[rec.name] = (state.materials[rec.name] || 0) + 1;
-  }
   saveGame();
   playSfx("gift");
   renderCraftView();
@@ -204,10 +179,7 @@ function craftItem(recipeId) {
 }
 
 function startCookingGame() {
-  if (cookingActive) {
-    stopCookingGame();
-    return;
-  }
+  if (cookingActive) { stopCookingGame(); return; }
   cookingActive = true;
   cookCursor = 0;
   cookDir = 1;
@@ -231,12 +203,12 @@ function stopCookingGame() {
   document.getElementById("btn-cook-action").textContent = "🍳 キャンプ飯を作る（無料）";
 
   const camp = getCampSave();
-  const distFromCenter = Math.abs(50 - cookCursor);
-  if (distFromCenter <= 12) {
+  const dist = Math.abs(50 - cookCursor);
+  if (dist <= 12) {
     camp.activeBuff = { name: "特上・主霧獣ステーキ", atkBonus: 30 };
     playSfx("gift");
     showToast("🌟 大成功！『特上・主霧獣ステーキ』完成（攻撃力+30%）！");
-  } else if (distFromCenter <= 28) {
+  } else if (dist <= 28) {
     camp.activeBuff = { name: "こんがりアーク串焼き", atkBonus: 15 };
     playSfx("switch");
     showToast("🍖 成功！『こんがりアーク串焼き』完成（攻撃力+15%）！");
