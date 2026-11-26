@@ -157,11 +157,11 @@
       </div>
     </section>
 
-    <!-- 3. 隊員編成・主人公切替・重厚育成画面 -->
+       <!-- 3. 隊員編成＆名簿一覧画面 -->
     <section id="view-squad" class="view">
       <div class="card">
         <div class="section-title">
-          <span>🛡️ 4人パーティ編成（タップで入れ替え）</span>
+          <span>🛡️ 4人パーティ編成（枠タップで入替）</span>
           <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
         </div>
         <div id="sq-party-editor" class="party-strip"></div>
@@ -169,16 +169,38 @@
       </div>
 
       <div class="card">
-        <div class="section-title"><span>⚔️ 主人公の武器・属性自由切替</span></div>
-        <div id="sq-protag-summary" style="font-size:12px; font-weight:800; margin-bottom:6px;"></div>
-        <div id="sq-element-grid" class="chip-grid cols-3" style="margin-bottom:8px;"></div>
-        <div id="sq-weapon-grid" class="chip-grid"></div>
+        <div class="section-title">
+          <span>📋 所属隊員（タップで1人詳細・強化）</span>
+          <button class="btn-xs btn-primary" onclick="openCharDetail('protagonist')">隊長カスタム</button>
+        </div>
+        <div id="sq-materials-bar" style="font-size:11px; margin-bottom:8px; background:var(--surface-sub); padding:6px 8px; border-radius:8px;"></div>
+        <div id="sq-roster-list" class="roster-grid"></div>
+      </div>
+    </section>
+
+    <!-- 3-B. 1キャラ専用・詳細＆レベルアップ画面 -->
+    <section id="view-char_detail" class="view">
+      <div class="card">
+        <div class="top-row">
+          <button class="btn-xs" onclick="cycleDetailChar(-1)">◀ 前</button>
+          <strong id="cd-header-title" style="font-size:13px;">隊員詳細</strong>
+          <div style="display:flex; gap:5px;">
+            <button class="btn-xs" onclick="cycleDetailChar(1)">次 ▶</button>
+            <button class="btn-xs btn-primary" onclick="switchView('squad')">一覧へ</button>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="section-title"><span>📈 隊員育成（Lv.1〜100・昇格試練）</span></div>
-        <div id="sq-materials-bar" style="font-size:11px; margin-bottom:8px; background:var(--surface-sub); padding:6px 8px; border-radius:8px;"></div>
-        <div id="sq-roster-list"></div>
+      <div id="cd-hero-box" class="card"></div>
+      <div id="cd-stats-box" class="card"></div>
+      <div id="cd-growth-box" class="card"></div>
+
+      <div id="cd-protag-box" class="card" style="display:none;">
+        <div class="section-title"><span>⚔️ 隊長専用：武器・共鳴属性の自由切替</span></div>
+        <div style="font-size:11px; font-weight:900; margin-bottom:4px;">共鳴属性（6種）</div>
+        <div id="cd-element-grid" class="chip-grid cols-3" style="margin-bottom:8px;"></div>
+        <div style="font-size:11px; font-weight:900; margin-bottom:4px;">武器種（8種）</div>
+        <div id="cd-weapon-grid" class="chip-grid"></div>
       </div>
     </section>
 
