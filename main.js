@@ -156,7 +156,8 @@ function getCharProfile(charId) {
     const dynRarity = rank >= 2 ? "SSR" : (rank === 1 ? "SR" : "R");
     return {
       ...base, rarity: dynRarity, name: state.playerName, emoji: style.emoji,
-      styleName: style.name, element: state.protagonistElement, weapon: state.protagonistWeapon
+      styleId: state.styleId, styleName: style.name,
+      element: state.protagonistElement, weapon: state.protagonistWeapon
     };
   }
   return base;
@@ -196,14 +197,9 @@ function renderHome() {
   const lv = state.charLevels[ch.id] || 1;
   const dupe = state.charDupes[ch.id] || 0;
 
-  document.getElementById("home-portrait").innerHTML = `
-    <img src="${ch.image}" alt="${escapeHtml(ch.name)}"
-         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-    <div class="portrait-fallback" style="display:none;">
-      <span style="font-size:46px;">${ch.emoji}</span>
-      <span style="font-size:11px; font-weight:900;">${escapeHtml(ch.name)}</span>
-    </div>
-  `;
+  const pBox = document.getElementById("home-portrait");
+  pBox.innerHTML = window.MF_SPRITES.portraitHTML(ch, "full");
+  pBox.onclick = () => openPortraitZoom(ch.id);
 
   document.getElementById("home-char-name").textContent = `${ch.name}（Lv.${lv} / 凸${dupe}）`;
   const lines = ch.voiceLines;
@@ -220,7 +216,7 @@ function renderHome() {
     const mEl = window.MF_DATA.ELEMENTS[m.element];
     return `
       <div class="party-slot" onclick="cycleShowcase('${id}')">
-        <span class="slot-icon">${m.emoji}</span>
+        ${window.MF_SPRITES.portraitHTML(m, "icon")}
         <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(m.name)}</div>
         <div style="font-size:10px; color:var(--muted);">${mEl.icon} Lv.${state.charLevels[id] || 1}</div>
       </div>
@@ -258,7 +254,7 @@ function renderSquadView() {
           <span class="rank-pill">${ch.rarity}</span>
           <span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span>
         </div>
-        <div style="font-size:32px; margin:4px 0;">${ch.emoji}</div>
+        ${window.MF_SPRITES.portraitHTML(ch, "icon-lg")}
         <div style="font-size:12px; font-weight:900;">${escapeHtml(ch.name)}</div>
         <div style="font-size:10px; color:var(--muted);">${el.icon}${el.name}・${wp.name}</div>
         <div style="font-size:11px; font-weight:900; color:var(--accent);">Lv.${lv}/${cap} ▶</div>
@@ -291,11 +287,16 @@ function renderCreatorView() {
 }
 
 function refreshCreatorSelections() {
-  document.getElementById("cr-style-grid").innerHTML = window.MF_DATA.PROTAGONIST_STYLES.map(s => `
-    <button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">
-      <span style="font-size:18px;">${s.emoji}</span> <strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span>
-    </button>
-  `).join("");
+  document.getElementById("cr-style-grid").innerHTML = window.MF_DATA.PROTAGONIST_STYLES.map(s => {
+    const thumb = window.MF_SPRITES.portraitHTML({ id: "protagonist", isProtagonist: true, styleId: s.id, name: s.name, emoji: s.emoji }, "icon");
+    return `
+      <button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" style="text-align:center;"
+              onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">
+        ${thumb}
+        <strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span>
+      </button>
+    `;
+  }).join("");
   document.getElementById("cr-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `
     <button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">
       ${el.icon} <strong>${el.name}</strong>
@@ -320,7 +321,7 @@ function renderTerminalView() {
   document.getElementById("term-version").textContent = `現在のバージョン：Ver ${window.MF_DATA.APP_VERSION}`;
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver ${window.MF_DATA.APP_VERSION}：固有スキル＆スキルツリー・キャンプ＆クラフト実装</strong><div style="font-size:11px; color:var(--muted);">全キャラの固有スキル明記・6段階スキルツリー覚醒・前線キャンプ自動化工場・タイミング調理を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 1.7.0：全キャラ立ち絵・自動反映システム実装</strong><div style="font-size:11px; color:var(--muted);">assetsフォルダにキャラ画像を置くだけで全画面に自動表示＆タップ全身拡大に対応。</div></div>`;
   }
 }
 
