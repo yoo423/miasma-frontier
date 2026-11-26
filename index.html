@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ミアズマ・フロンティア</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/lunaria.jpg" />
+  <link rel="apple-touch-icon" href="assets/lunaria.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 上部ステータスバー -->
+    <header class="top-bar">
+      <div class="top-row">
+        <div class="player-badge">
+          <span id="tb-name">ユウ</span>
+          <span id="tb-rank" class="rank-pill">開拓Lv.1</span>
+        </div>
+        <div style="display:flex; gap:5px;">
+          <button id="btn-theme" class="btn-xs" onclick="toggleUiTheme()">🏕️ 拠点UI</button>
+          <button id="btn-sound" class="btn-xs" onclick="toggleSound()">🔊</button>
+        </div>
+      </div>
+      <div class="resource-strip">
+        <div class="res-chip">
+          <span>⚡ EN <strong id="tb-en">160/160</strong><span id="tb-reserve" class="res-sub">予備 +0</span></span>
+        </div>
+        <div class="res-chip">
+          <span>🪙 <strong id="tb-credits">5,000</strong></span>
+        </div>
+        <div class="res-chip">
+          <span>💎 <strong id="tb-gems">1,600</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 1. ホーム画面（前線キャンプ拠点） -->
+    <main id="view-home" class="view">
+      <div class="card showcase-card">
+        <div id="home-portrait" class="portrait-frame" onclick="cycleShowcase()"></div>
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong id="home-char-name" style="font-size:14px;">隊長（Lv.1）</strong>
+            <button class="btn-xs" onclick="cycleShowcase()">🔄 交代</button>
+          </div>
+          <div id="home-speech" class="speech-bubble" onclick="cycleShowcase()">
+            第7クリアラー小隊、調査を開始する！
+          </div>
+          <div id="home-tags" class="char-meta-tags"></div>
+        </div>
+      </div>
+
+      <!-- 第7クリアラー小隊 4人編成 -->
+      <div class="card">
+        <div class="section-title">
+          <span>🛡️ 第7クリアラー小隊（初期メンバー）</span>
+          <button class="btn-xs btn-primary" onclick="switchView('squad')">武器・属性切替</button>
+        </div>
+        <div id="home-party-strip" class="party-strip"></div>
+        <div id="home-reactions" class="reaction-banner"></div>
+      </div>
+
+      <!-- 8大メニュー -->
+      <div class="card">
+        <div class="section-title">
+          <span>🧭 作戦メニュー</span>
+          <span style="font-size:11px; color:var(--muted);">Ver 1.0 Step 1</span>
+        </div>
+        <div class="menu-grid">
+          <button class="menu-btn btn-accent2" onclick="notifyUpcoming('ワールド出撃・ボス狩猟', 'Step 3〜4')">
+            <span class="m-ico">🗺️</span><span>出撃</span>
+          </button>
+          <button class="menu-btn" onclick="switchView('squad')">
+            <span class="menu-badge">切替OK</span>
+            <span class="m-ico">🧑‍✈️</span><span>隊員</span>
+          </button>
+          <button class="menu-btn" onclick="switchView('creator')">
+            <span class="m-ico">🪪</span><span>隊長設定</span>
+          </button>
+          <button class="menu-btn" onclick="notifyUpcoming('前線キャンプ自動化工場', 'Step 5')">
+            <span class="m-ico">🏭</span><span>キャンプ</span>
+          </button>
+          <button class="menu-btn" onclick="notifyUpcoming('武器鍛造・罠・調理', 'Step 5')">
+            <span class="m-ico">🔨</span><span>クラフト</span>
+          </button>
+          <button class="menu-btn" onclick="notifyUpcoming('スカウト（ガチャ）', 'Step 2')">
+            <span class="m-ico">🌠</span><span>スカウト</span>
+          </button>
+          <button class="menu-btn" onclick="notifyUpcoming('デイリー・ウィークリー任務', 'Step 6')">
+            <span class="m-ico">📋</span><span>任務</span>
+          </button>
+          <button class="menu-btn btn-primary" onclick="switchView('terminal')">
+            <span class="m-ico">📱</span><span>端末</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 2. 隊員・主人公の武器＆属性自由切替画面 -->
+    <section id="view-squad" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>⚔️ 主人公の武器・属性カスタム</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="sq-protag-summary" style="font-size:12px; font-weight:800; margin-bottom:8px;"></div>
+
+        <div style="font-size:12px; font-weight:900; margin:6px 0 4px;">共鳴属性を選択（6属性）</div>
+        <div id="sq-element-grid" class="chip-grid cols-3"></div>
+
+        <div style="font-size:12px; font-weight:900; margin:10px 0 4px;">武器種を選択（全8種）</div>
+        <div id="sq-weapon-grid" class="chip-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>🐾 現在の所属隊員（Rランク初期メンバー）</span></div>
+        <div id="sq-roster-list"></div>
+      </div>
+    </section>
+
+    <!-- 3. 主人公クリエイト画面 -->
+    <section id="view-creator" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🪪 第7クリアラー小隊・隊長登録</span>
+          <button class="btn-xs" onclick="switchView('home')">閉じる</button>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin:0 0 10px;">
+          主人公の名前・見た目・初期武器・共鳴属性を設定します（拠点からいつでも変更できます）。
+        </p>
+
+        <label style="font-size:12px; font-weight:900;">1. 隊長の名前</label>
+        <input type="text" id="cr-name-input" maxlength="12" placeholder="名前を入力（例：ユウ）" style="margin:4px 0 10px;" />
+
+        <label style="font-size:12px; font-weight:900;">2. スタイル（見た目）</label>
+        <div id="cr-style-grid" class="chip-grid" style="margin:4px 0 10px;"></div>
+
+        <label style="font-size:12px; font-weight:900;">3. 初期共鳴属性</label>
+        <div id="cr-element-grid" class="chip-grid cols-3" style="margin:4px 0 10px;"></div>
+
+        <label style="font-size:12px; font-weight:900;">4. 初期武器種</label>
+        <div id="cr-weapon-grid" class="chip-grid" style="margin:4px 0 14px;"></div>
+
+        <button class="btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="confirmProtagonist()">
+          🚀 この設定で前線キャンプへ降下する！
+        </button>
+      </div>
+    </section>
+
+    <!-- 4. ハンター端末（シリアルコード・アプデ確認・セーブ管理） -->
+    <section id="view-terminal" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>📱 ハンター端末・システム</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="term-version" style="font-size:12px; font-weight:900; margin-bottom:6px;"></div>
+        <button class="btn-primary" style="width:100%;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
+        <div id="term-update-status" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>🎁 シリアルコード入力</span></div>
+        <p style="font-size:11px; color:var(--muted); margin:0 0 6px;">
+          テスト用コード：<code>FRONTIER2026</code> / <code>MIASMA777</code>
+        </p>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="term-code-input" placeholder="コードを入力" />
+          <button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>⚠️ データ管理</span></div>
+        <button style="width:100%;" onclick="resetAllSaveData()">セーブデータを初期化する</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
