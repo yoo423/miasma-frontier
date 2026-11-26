@@ -241,3 +241,124 @@ window.MF_DATA = {
     }
   }
 };
+window.MF_DATA = {
+  APP_VERSION: "1.5.0",
+
+  ELEMENTS: {
+    fire:  { id: "fire",  name: "炎", icon: "🔥", color: "#ff595e", desc: "高火力・燃焼スリップ" },
+    water: { id: "water", name: "水", icon: "💧", color: "#1982c4", desc: "湿潤付与・速度低下" },
+    volt:  { id: "volt",  name: "雷", icon: "⚡", color: "#ffca3a", desc: "SP回収UP・感電連鎖" },
+    ice:   { id: "ice",   name: "氷", icon: "❄️", color: "#4cc9f0", desc: "行動鈍化・会心率UP" },
+    wind:  { id: "wind",  name: "風", icon: "🌪️", color: "#2ec4b6", desc: "速度UP・元素拡散" },
+    arc:   { id: "arc",   name: "煌", icon: "✨", color: "#b565ff", desc: "ブレイク＆結晶バリア" }
+  },
+
+  ELEMENT_REACTIONS: [
+    { pair: ["fire", "water"], name: "蒸発", effect: "単発ダメージ 2.0倍" },
+    { pair: ["fire", "ice"],   name: "融解", effect: "防御無視の超ダメージ" },
+    { pair: ["fire", "volt"],  name: "過負荷", effect: "爆発＋体勢ゲージ大削り" },
+    { pair: ["water", "volt"], name: "感電", effect: "周囲の敵へ雷ダメージ連鎖" },
+    { pair: ["water", "ice"],  name: "凍結", effect: "敵を数秒間完全拘束" },
+    { pair: ["volt", "ice"],   name: "超電導", effect: "部位・物理防御 50%DOWN" },
+    { pair: ["wind", "fire"],  name: "炎拡散", effect: "燃焼を広範囲に拡散" },
+    { pair: ["wind", "water"], name: "水拡散", effect: "湿潤を広範囲に拡散" },
+    { pair: ["wind", "volt"],  name: "雷拡散", effect: "感電を広範囲に拡散" },
+    { pair: ["wind", "ice"],   name: "氷嵐拡散", effect: "周囲の敵ごと氷結" },
+    { pair: ["arc", "any"],    name: "結晶化", effect: "味方全員に属性バリア生成" }
+  ],
+
+  WEAPONS: {
+    greatsword: { id: "greatsword", name: "大剣", icon: "🗡️", role: "部位破壊特化・一撃重火力" },
+    sword:      { id: "sword",      name: "片手剣", icon: "⚔️", role: "隙が少なく扱いやすい万能型" },
+    dual:       { id: "dual",       name: "双剣", icon: "🔪", role: "超高速連撃・SP＆元素回収" },
+    spear:      { id: "spear",      name: "戦術槍", icon: "🔱", role: "中距離突き・ブレイク削り" },
+    hammer:     { id: "hammer",     name: "重槌", icon: "🔨", role: "装甲粉砕・ダウン延長" },
+    assault:    { id: "assault",    name: "アサルト銃", icon: "🔫", role: "移動射撃・安定中距離火力" },
+    sniper:     { id: "sniper",     name: "狙撃銃", icon: "🎯", role: "弱点部位ピンポイント狙撃" },
+    staff:      { id: "staff",      name: "戦術杖", icon: "🪄", role: "広範囲元素攻撃・回復支援" }
+  },
+
+  PROTAGONIST_STYLES: [
+    { id: "m_cool", name: "クール系男子", emoji: "🧑‍✈️", tag: "冷静沈着な若き指揮官" },
+    { id: "m_genki", name: "元気系男子", emoji: "👦", tag: "行動力抜群の熱血ハンター" },
+    { id: "f_cool", name: "クール系女子", emoji: "👩‍✈️", tag: "的確な指示を出す凛々しい隊長" },
+    { id: "f_genki", name: "元気系女子", emoji: "👧", tag: "笑顔で小隊を引っ張るムードメーカー" }
+  ],
+
+  BANNERS: [
+    {
+      id: "pickup_mikoto", shortName: "❄️ 白狐PU", tag: "限定ピックアップ",
+      title: "白狐の絶対零度・特別招集", featuredSsr: "mikoto", featuredSr: ["leila", "belle"],
+      desc: "限定SSR『ミコト（白狐ケモミミ）』出現率UP！固有ゲージでボスを完全凍結。"
+    },
+    {
+      id: "pickup_celestia", shortName: "⚡ 紫電PU", tag: "限定ピックアップ",
+      title: "紫電の精密狙撃・特別招集", featuredSsr: "celestia", featuredSr: ["melissa", "noah"],
+      desc: "限定SSR『セレスティア』出現率UP！スロー狙撃で破壊可能部位を一撃粉砕。"
+    },
+    {
+      id: "standard_all", shortName: "🌠 恒常招集", tag: "スタンダード",
+      title: "方舟都市・開拓隊員スカウト", featuredSsr: "lunaria", featuredSr: ["koharu", "fiona"],
+      desc: "看板娘『ルナリア』をはじめとする恒常SSR・SR隊員がラインナップ。"
+    }
+  ],
+
+  CHARACTERS: {
+    protagonist: { id: "protagonist", name: "隊長（主人公）", rarity: "R", isProtagonist: true, kemonomimi: "人間", element: "arc", weapon: "sword", image: "assets/protagonist.jpg", emoji: "🧑‍✈️", campSkill: "全ライン効率 +10%（武器・属性自由切替）", voiceLines: ["第7クリアラー小隊、調査を開始する！", "みんなの元素連携があれば、どんな主霧獣でも倒せる！"] },
+    lunaria: { id: "lunaria", name: "ルナリア", rarity: "SSR", limited: false, kemonomimi: "人間", element: "fire", weapon: "greatsword", image: "assets/lunaria.jpg", emoji: "🎀", campSkill: "精錬炉の加工速度 +30%（部位破壊特化）", voiceLines: ["燃やし尽くせば霧なんて残らないでしょ！", "大きいリボンは気合の証！さあ突撃だよ隊長！"] },
+    mikoto: { id: "mikoto", name: "ミコト", rarity: "SSR", limited: true, kemonomimi: "白狐ケモミミ", element: "ice", weapon: "staff", image: "assets/mikoto.jpg", emoji: "🦊", campSkill: "レア素材ドロップ率 +20%（絶対零度・凍結）", voiceLines: ["白狐の氷華が、すべての瘴霧を封じ込めます。", "……しっぽに触りたいのですか？ 今だけ特別ですよ。"] },
+    celestia: { id: "celestia", name: "セレスティア", rarity: "SSR", limited: true, kemonomimi: "人間", element: "volt", weapon: "sniper", image: "assets/celestia.jpg", emoji: "⚡", campSkill: "拠点の発電効率 +30%（精密部位狙撃）", voiceLines: ["ターゲット捕捉。風速計算完了……撃ち抜きます。"] },
+    valeria: { id: "valeria", name: "ヴァレリア", rarity: "SSR", limited: false, kemonomimi: "人間", element: "water", weapon: "spear", image: "assets/valeria.jpg", emoji: "👑", campSkill: "レア鉱石の産出率 +25%", voiceLines: ["方舟都市の名門に懸けて、作戦を成功させますわ！"] },
+    chloe: { id: "chloe", name: "クロエ", rarity: "SSR", limited: false, kemonomimi: "人間", element: "arc", weapon: "sword", image: "assets/chloe.jpg", emoji: "👓", campSkill: "設計図の研究コスト -25%", voiceLines: ["ふぁ〜……この古代遺跡のデータ、すっごく面白いです！"] },
+    sylphy: { id: "sylphy", name: "シルフィ", rarity: "SSR", limited: true, kemonomimi: "オオカミ耳ケモミミ", element: "wind", weapon: "dual", image: "assets/sylphy.jpg", emoji: "🐺", campSkill: "採掘スピード +35%（超高速連撃）", voiceLines: ["風の匂いが変わった！デカい獲物が近くに潜んでるぞ！"] },
+    koharu: { id: "koharu", name: "コハル", rarity: "SR", kemonomimi: "キツネ耳ケモミミ", element: "arc", weapon: "hammer", image: "assets/koharu.jpg", emoji: "🔧", campSkill: "建築・タレット作成コスト -20%", voiceLines: ["どんな頑丈な装甲も、特製ハンマーで一撃だよ！"] },
+    fiona: { id: "fiona", name: "フィオナ", rarity: "SR", kemonomimi: "人間", element: "water", weapon: "assault", image: "assets/fiona.jpg", emoji: "💉", campSkill: "回復ポーション生産数 +40%", voiceLines: ["無理は禁物ですよ隊長。回復弾はたっぷりありますから♪"] },
+    noah: { id: "noah", name: "ノア", rarity: "SR", kemonomimi: "黒猫耳ケモミミ", element: "wind", weapon: "sword", image: "assets/noah.jpg", emoji: "🐈‍⬛", campSkill: "探索派遣の報酬量 +20%", voiceLines: ["ニャハッ！一番乗りはボクのものだよー！"] },
+
+    ENEMIES: [
+    // 第1エリア：ヴェルデ平原
+    { id: "wolf_pack", name: "ミアズマ・ウルフ群", rank: "平原・通常", emoji: "🐺", recPower: 100, maxHp: 900, maxStagger: 60, atk: 65, parts: [], rewards: { credits: 1200, books: 4, cores: 1, gems: 40, rankExp: 35, activityPt: 10 } },
+    { id: "forest_boar", name: "苔むした大猪・ブル", rank: "平原・通常", emoji: "🐗", recPower: 140, maxHp: 1300, maxStagger: 75, atk: 85, parts: [{ name: "硬質の大牙", hpRatio: 0.4, drop: "大猪の鋭牙" }], rewards: { credits: 1600, books: 5, cores: 1, gems: 50, rankExp: 45, activityPt: 12 } },
+    { id: "crystal_beetle", name: "結晶甲虫・重装種", rank: "平原・精鋭", emoji: "🪲", recPower: 220, maxHp: 2100, maxStagger: 90, atk: 115, parts: [{ name: "高純度結晶殻", hpRatio: 0.45, drop: "純度結晶殻" }], rewards: { credits: 2600, books: 8, cores: 2, gems: 80, rankExp: 65, activityPt: 20 } },
+    { id: "moss_behemoth", name: "主霧獣『モス・ベヒーモス』", rank: "第1エリア主", emoji: "🦏", recPower: 360, maxHp: 4200, maxStagger: 120, atk: 175, parts: [{ name: "結晶の巨角", hpRatio: 0.35, drop: "ベヒーモスの結晶角" }, { name: "背中の苔殻", hpRatio: 0.40, drop: "古代樹の重甲殻" }], rewards: { credits: 5200, books: 15, cores: 4, gems: 160, rankExp: 120, activityPt: 35 } },
+    { id: "radiant_behemoth", name: "【融光種】煌角のベヒーモス", rank: "変異・融光種", emoji: "🌟", isRadiant: true, recPower: 540, maxHp: 6800, maxStagger: 145, atk: 245, parts: [{ name: "融光結晶角", hpRatio: 0.35, drop: "融光の煌角" }, { name: "過飽和の核殻", hpRatio: 0.35, drop: "融光アーク結晶" }], rewards: { credits: 8500, books: 24, cores: 6, gems: 220, rankExp: 180, activityPt: 50 } },
+
+    // 第2エリア：ヴォルト・キャニオン
+    { id: "spark_raptor", name: "紫電の疾走竜・ラプトル", rank: "峡谷・通常", emoji: "🦖", recPower: 420, maxHp: 4600, maxStagger: 110, atk: 200, parts: [{ name: "帯電トサカ", hpRatio: 0.4, drop: "紫電のトサカ" }], rewards: { credits: 5800, books: 17, cores: 4, gems: 100, rankExp: 130, activityPt: 30 } },
+    { id: "thunder_wyvern", name: "主霧獣『サンダー・ワイバーン』", rank: "第2エリア主", emoji: "🐉", recPower: 680, maxHp: 8500, maxStagger: 150, atk: 290, parts: [{ name: "右雷翼", hpRatio: 0.32, drop: "紫電の飛竜翼" }, { name: "蓄電の尾針", hpRatio: 0.28, drop: "高圧雷撃コア" }], rewards: { credits: 9500, books: 28, cores: 7, gems: 240, rankExp: 200, activityPt: 50 } },
+    { id: "radiant_wyvern", name: "【融光種】天雷のオーバーワイバーン", rank: "変異・融光種", emoji: "⚡", isRadiant: true, recPower: 920, maxHp: 12500, maxStagger: 175, atk: 380, parts: [{ name: "融光雷翼", hpRatio: 0.32, drop: "融光の天雷翼" }, { name: "暴走プラズマ核", hpRatio: 0.30, drop: "融光アーク結晶" }], rewards: { credits: 14000, books: 38, cores: 10, gems: 300, rankExp: 280, activityPt: 70 } },
+
+    // 第3〜6エリア：雪原・溶岩・水没・天蓋
+    { id: "frost_spider", name: "氷晶の機巧蜘蛛・アラクネ", rank: "雪原・精鋭", emoji: "🕷️", recPower: 820, maxHp: 10500, maxStagger: 155, atk: 340, parts: [{ name: "冷凍噴射口", hpRatio: 0.38, drop: "極低温ノズル" }], rewards: { credits: 11500, books: 32, cores: 8, gems: 180, rankExp: 240, activityPt: 55 } },
+    { id: "glacial_mammoth", name: "主霧獣『グレイシャル・マンモス』", rank: "第3エリア主", emoji: "🦣", recPower: 1100, maxHp: 15000, maxStagger: 180, atk: 430, parts: [{ name: "氷結の双牙", hpRatio: 0.35, drop: "永久凍土の巨牙" }, { name: "背中の冷却炉殻", hpRatio: 0.40, drop: "暴走冷却炉パーツ" }], rewards: { credits: 16000, books: 45, cores: 12, gems: 320, rankExp: 320, activityPt: 80 } },
+    { id: "magma_salamander", name: "主霧獣『マグマ・サラマンダー』", rank: "第4エリア主", emoji: "🦎", recPower: 1550, maxHp: 22000, maxStagger: 210, atk: 560, parts: [{ name: "灼熱の溶岩顎", hpRatio: 0.35, drop: "紅蓮の溶岩顎" }, { name: "業火の尾先", hpRatio: 0.35, drop: "マグマ結晶核" }], rewards: { credits: 23000, books: 60, cores: 16, gems: 400, rankExp: 450, activityPt: 100 } },
+    { id: "abyss_kraken", name: "主霧獣『アビス・クラーケン』", rank: "第5エリア主", emoji: "🦑", recPower: 2100, maxHp: 31000, maxStagger: 240, atk: 710, parts: [{ name: "深海の大触手", hpRatio: 0.35, drop: "深淵の触手繊維" }, { name: "頭部の発光核", hpRatio: 0.35, drop: "ネオン深海核" }], rewards: { credits: 32000, books: 80, cores: 22, gems: 500, rankExp: 600, activityPt: 130 } },
+    { id: "radiant_zero", name: "【融光種】原初の災厄・ゼロ", rank: "最終・融光主", emoji: "👁️", isRadiant: true, recPower: 2800, maxHp: 45000, maxStagger: 300, atk: 920, parts: [{ name: "天蓋の制御輪", hpRatio: 0.30, drop: "天蓋の制御リング" }, { name: "原初のミアズマ核", hpRatio: 0.35, drop: "原初の融光神核" }], rewards: { credits: 50000, books: 120, cores: 35, gems: 800, rankExp: 900, activityPt: 200 } }
+  ],
+
+  REGIONS: [
+    { id: "verde", name: "第1エリア：新緑の廃墟『ヴェルデ平原』", bg: "#213829", reqRank: 1, normalId: "wolf_pack", eliteId: "crystal_beetle", bossId: "moss_behemoth", radiantId: "radiant_behemoth", rareDrop: "アーク結晶鉱" },
+    { id: "volt", name: "第2エリア：雷鳴の峡谷『ヴォルト・キャニオン』", bg: "#2b2538", reqRank: 3, normalId: "spark_raptor", eliteId: "crystal_beetle", bossId: "thunder_wyvern", radiantId: "radiant_wyvern", rareDrop: "雷撃結晶" },
+    { id: "frost", name: "第3エリア：白銀の研究所『フロスト・ヘイヴン』", bg: "#1f303d", reqRank: 6, normalId: "frost_spider", eliteId: "frost_spider", bossId: "glacial_mammoth", radiantId: "radiant_wyvern", rareDrop: "永久氷晶" },
+    { id: "ignis", name: "第4エリア：灼熱の溶鉱炉跡『イグニス・カルデラ』", bg: "#38211f", reqRank: 10, normalId: "frost_spider", eliteId: "magma_salamander", bossId: "magma_salamander", radiantId: "radiant_zero", rareDrop: "溶岩精錬鉄" },
+    { id: "aqua", name: "第5エリア：水没ネオン街『アクア・メトロポリス』", bg: "#192d38", reqRank: 15, normalId: "abyss_kraken", eliteId: "abyss_kraken", bossId: "abyss_kraken", radiantId: "radiant_zero", rareDrop: "深海発光コア" },
+    { id: "spire", name: "第6エリア：天蓋の塔『アーク・スパイア』", bg: "#291b36", reqRank: 20, normalId: "abyss_kraken", eliteId: "radiant_zero", bossId: "radiant_zero", radiantId: "radiant_zero", rareDrop: "原初の天蓋結晶" }
+  ],
+  BUILTIN_MAILS: [
+    { id: "mail_launch_gift", date: "2026-11-26", title: "方舟都市司令部・開拓支援パック", body: "第7クリアラー小隊の地上降下を記念して、スカウト用結晶石と初期育成物資をお届けします！", rewards: { gems: 1600, credits: 10000, books: 20, cores: 5 } },
+    { id: "mail_ver16_update", date: "2026-11-26", title: "Step 5 前線キャンプ＆クラフト実装記念", body: "自動化工場ライン・モンスター生態リンク・武器鍛造・タイミング調理ミニゲームの実装記念プレゼント！", rewards: { gems: 1600, credits: 12000, en: 60 } }
+  ],
+
+  CRAFT_RECIPES: [
+    { id: "wp_behemoth", cat: "weapon", icon: "🗡️", name: "結晶角の大剣・改", req: { "ベヒーモスの結晶角": 1, "アーク結晶鉱": 2 }, credits: 2500, desc: "装備すると小隊全体の攻撃力 +12%（永続パッシブ）" },
+    { id: "wp_wyvern", cat: "weapon", icon: "🎯", name: "紫電の竜翼ライフル", req: { "紫電の飛竜翼": 1, "雷撃結晶": 2 }, credits: 5000, desc: "装備すると小隊全体の会心・スキル威力 +18%（永続パッシブ）" },
+    { id: "wp_radiant", cat: "weapon", icon: "👑", name: "融光神核・オーバーブレード", req: { "融光アーク結晶": 2, "純度結晶殻": 2 }, credits: 9000, desc: "融光種の力を宿す決戦兵器。小隊全体の攻撃力 +28%（永続パッシブ）" },
+    { id: "item_trap", cat: "gadget", icon: "⚡", name: "大型ショック拘束罠", req: { "アーク結晶鉱": 2, "純度結晶殻": 1 }, credits: 1200, desc: "ボス戦で使うと敵を即座に大ダウンさせ、部位破壊しやすくなる。" },
+    { id: "item_potion", cat: "gadget", icon: "🧪", name: "高濃度リペアポーション", req: { "アーク薬草": 2 }, credits: 600, desc: "戦闘中に小隊のHPを60%即時回復する携帯薬。" }
+  ],
+
+  SERIAL_CODES: {
+    "FRONTIER2026": { label: "リリース記念パック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 },
+    "MIASMA777":    { label: "第7小隊応援ギフト", gems: 1600, credits: 5000,  en: 40, books: 15, cores: 3 }
+  }
+};
