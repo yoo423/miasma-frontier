@@ -34,6 +34,7 @@ function calcCharPower(charId) {
   const rank = state.charRanks[charId] || 0;
   const dupe = state.charDupes[charId] || 0;
   const rarityMult = ch.rarity === "SSR" ? 1.35 : (ch.rarity === "SR" ? 1.18 : (ch.rarity === "R" ? 1.05 : 1.0));
+  const treeBonus = (window.MF_DATA.SKILL_TREE_NODES || []).slice(0, getSkillTreeStage(charId)).reduce((s, n) => s + n.powerBonus, 0);
   return Math.round((80 + lv * 14 + rank * 45) * rarityMult * (1 + dupe * 0.08));
 }
 
@@ -331,4 +332,71 @@ function attemptAscensionTrial(charId) {
   renderTopBar();
   renderCharDetailView();
   showToast(`🏆 ${req.trialName} 突破！上限が Lv.${getRankCap(rank + 1)} に解放！`);
+}
+
+// ---------- 固有スキル詳細＆6段階スキルツリー（潜在覚醒ボード） ----------
+function getSkillTreeStage(charId) {
+  state.skillTrees = state.skillTrees || {};
+  return state.skillTrees[charId] || 0;
+}
+
+function renderSkillTreeBox(charId) {
+  const ch = getCharProfile(charId);
+  const stage = getSkillTreeStage(charId);
+  const nodes = window.MF_DATA.SKILL_TREE_NODES || [];
+  const sk = ch.skills || { normal: "通常攻撃", active: "戦技", ult: "必殺連携" };
+
+  const treeHtml = nodes.map((n, idx) => {
+    const unlocked = idx < stage;
+    const isNext = idx === stage;
+    return `
+      <div style="border:2px solid ${unlocked ? "#18b88a" : (isNext ? "#ff7b39" : "var(--border)")};
+                  background:${unlocked ? "rgba(24,184,138,0.14)" : "var(--surface-sub)"};
+                  border-radius:10px; padding:7px 9px; margin-bottom:5px; opacity:${!unlocked && !isNext ? 0.6 : 1};">
+        <div class="top-row">
+          <strong style="font-size:12px;">${unlocked ? "✅" : (isNext ? "🔓" : "🔒")} Node ${n.step}：${n.name}</strong>
+          ${unlocked
+            ? `<span class="tag" style="background:#18b88a; color:#fff;">覚醒済</span>`
+            : (isNext
+                ? `<button class="btn-xs btn-accent2" onclick="unlockSkillNode('${charId}')">解放（記録${n.books}/コア${n.cores}/🪙${n.credits.toLocaleString()}）</button>`
+                : `<span style="font-size:10px; color:var(--muted);">前段階解放で開放</span>`)}
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${n.desc}（戦力 +${n.powerBonus}）</div>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("cd-skill-box").innerHTML = `
+    <div class="section-title"><span>⚡ 固有スキル一覧</span></div>
+    <div style="font-size:11px; background:var(--surface-sub); padding:8px; border-radius:10px; margin-bottom:10px; line-height:1.5;">
+      <div><strong>⚔️ 通常：</strong>${escapeHtml(sk.normal)}</div>
+      <div style="margin-top:3px;"><strong>🔥 戦技：</strong>${escapeHtml(sk.active)}</div>
+      <div style="margin-top:3px;"><strong>✨ 必殺連携：</strong>${escapeHtml(sk.ult)}</div>
+    </div>
+    <div class="section-title"><span>🌳 スキルツリー・潜在覚醒（${stage} / ${nodes.length}）</span></div>
+    ${treeHtml}
+  `;
+}
+
+function unlockSkillNode(charId) {
+  const stage = getSkillTreeStage(charId);
+  const nodes = window.MF_DATA.SKILL_TREE_NODES || [];
+  const node = nodes[stage];
+  if (!node) return;
+
+  if ((state.expBooks || 0) < node.books || (state.cores || 0) < node.cores || state.credits < node.credits) {
+    showToast(`素材不足（作戦記録 ${node.books} / 元素コア ${node.cores} / 🪙${node.credits.toLocaleString()} 必要）`);
+    return;
+  }
+  state.expBooks -= node.books;
+  state.cores -= node.cores;
+  state.credits -= node.credits;
+  state.skillTrees = state.skillTrees || {};
+  state.skillTrees[charId] = stage + 1;
+
+  saveGame();
+  playSfx("gift");
+  renderTopBar();
+  renderCharDetailView();
+  showToast(`🌳 スキルツリー「${node.name}」を解放しました！`);
 }
