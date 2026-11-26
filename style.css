@@ -467,3 +467,72 @@ input[type="text"], select {
   border-color: #ff9f1c;
   background: rgba(255, 209, 59, 0.16);
 }
+/* バトルアリーナ＆ゲージデザイン */
+.gauge-box {
+  margin: 5px 0;
+}
+.gauge-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 900;
+  margin-bottom: 2px;
+}
+.gauge-bar {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.gauge-bar > div {
+  height: 100%;
+  transition: width 0.15s linear;
+}
+
+.battle-popup {
+  background: var(--surface-sub);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--accent);
+  margin: 6px 0;
+}
+
+.battle-log {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface-sub);
+  padding: 5px 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.party-slot.active-leader {
+  background: var(--accent);
+  color: #121318;
+  transform: translateY(-2px);
+}
+
+@keyframes chainPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 208, 0, 0.8); }
+  50% { box-shadow: 0 0 14px 3px rgba(255, 208, 0, 0.95); }
+}
+
+.party-slot.chain-glow {
+  background: #ffd000;
+  color: #121318;
+  animation: chainPulse 0.7s infinite;
+}
+
+/* アプリ内更新履歴カード */
+.history-item {
+  border-left: 4px solid var(--accent);
+  background: var(--surface-sub);
+  padding: 8px 10px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 8px;
+}
