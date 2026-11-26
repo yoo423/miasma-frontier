@@ -311,5 +311,23 @@ window.MF_DATA = {
       rewards: { credits: 16000, books: 45, cores: 12, gems: 320, rankExp: 320 }
     }
   ]
+    ,
+  BUILTIN_MAILS: [
+    {
+      id: "mail_launch_gift",
+      date: "2026-11-26",
+      title: "方舟都市司令部・開拓支援パック",
+      body: "第7クリアラー小隊の地上降下を記念して、スカウト用結晶石と初期育成物資をお届けします！",
+      rewards: { gems: 1600, credits: 10000, books: 20, cores: 5 }
+    },
+    {
+      id: "mail_ver14_update",
+      date: "2026-11-26",
+      title: "Ver 1.4 アップデート感謝配布",
+      body: "移動アクション戦闘・AUTO討伐・プレゼントボックス・持ち物倉庫の実装記念プレゼントです！",
+      rewards: { gems: 800, en: 60, activityPt: 30 }
+    }
+  ]
+
 
 };
