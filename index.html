@@ -68,7 +68,7 @@
           <span style="font-size:11px; color:var(--muted);">Ver 1.2 Step 3</span>
         </div>
         <div class="menu-grid">
-          <button class="menu-btn btn-accent2" onclick="switchView('battle')">
+          <button class="menu-btn btn-accent2" onclick="switchView('world')">
             <span class="menu-badge">戦闘</span>
             <span class="m-ico">🗺️</span><span>出撃</span>
           </button>
@@ -106,6 +106,30 @@
         </div>
       </div>
     </main>
+        <!-- 1-B. オープンワールド探索（6大リージョン・霧の押し引き・採集＆敵湧き） -->
+    <section id="view-world" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🌍 オープンワールド開拓（6大リージョン）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="world-region-tabs" class="chip-grid cols-3" style="margin-bottom:8px;"></div>
+        <strong id="world-region-title" style="font-size:13px;">エリア名</strong>
+        <div id="world-region-meta" style="font-size:11px; margin:4px 0 6px;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+          <button class="btn-xs btn-primary" onclick="adjustRegionMist(-20)">🔆 浄化ビーコン（霧を晴らす）</button>
+          <button class="btn-xs btn-accent2" onclick="adjustRegionMist(20)">🟣 霧誘導装置（濃霧・レア2倍）</button>
+        </div>
+
+        <canvas id="world-canvas" width="340" height="220"
+                style="width:100%; height:220px; border-radius:12px; border:2px solid var(--border); touch-action:none; display:block;"></canvas>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <span style="font-size:11px; color:var(--muted);">画面タップで移動・採集・敵接触で戦闘！</span>
+          <button class="btn-xs" onclick="switchView('battle')">📋 討伐リスト直接選択</button>
+        </div>
+      </div>
+    </section>
 
         <!-- 2. 自由移動アクションバトル＆部位破壊画面 -->
     <section id="view-battle" class="view">
@@ -351,6 +375,7 @@
   <script src="gacha.js"></script>
   <script src="growth.js"></script>
   <script src="battle.js"></script>
+  <script src="world.js"></script>
   <script src="main.js"></script>
 
 </body>
