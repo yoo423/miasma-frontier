@@ -10,7 +10,7 @@ let showcaseCharId = "protagonist";
 function createDefaultSave() {
   return {
     initialized: false,
-    playerName: "ユウ",
+    playerName: "名無し",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
@@ -129,6 +129,7 @@ function switchView(viewId) {
 
   if (viewId === "home") renderHome();
   if (viewId === "squad") renderSquadView();
+  if (viewId === "char_detail") renderCharDetailView();
   if (viewId === "battle") renderBattleView();
   if (viewId === "gacha") renderGachaView();
   if (viewId === "creator") renderCreatorView();
@@ -241,16 +242,42 @@ function renderSquadView() {
   renderTopBar();
   renderPartyEditor();
 
-  const p = getCharProfile("protagonist");
-  document.getElementById("sq-protag-summary").textContent =
-    `${p.name}（${p.styleName}） / 現在：${window.MF_DATA.ELEMENTS[p.element].icon}${window.MF_DATA.ELEMENTS[p.element].name}・${window.MF_DATA.WEAPONS[p.weapon].icon}${window.MF_DATA.WEAPONS[p.weapon].name}`;
+  const totalPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
+  document.getElementById("sq-materials-bar").innerHTML = `
+    ⚔️ 小隊総戦力：<strong>${totalPower}</strong> ｜ 📘 記録：<strong>${state.expBooks || 0}</strong> ｜ 💠 コア：<strong>${state.cores || 0}</strong>
+  `;
 
-  document.getElementById("sq-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `
-    <button class="select-chip ${state.protagonistElement === el.id ? "selected" : ""}"
-            onclick="setProtagonistElement('${el.id}')">
-      ${el.icon} <strong>${el.name}</strong>
-    </button>
-  `).join("");
+  const sortedOwned = getSortedOwnedIds();
+  document.getElementById("sq-roster-list").innerHTML = sortedOwned.map(id => {
+    const ch = getCharProfile(id);
+    const el = window.MF_DATA.ELEMENTS[ch.element];
+    const wp = window.MF_DATA.WEAPONS[ch.weapon];
+    const lv = state.charLevels[id] || 1;
+    const cap = getRankCap(state.charRanks[id] || 0);
+    const dupe = state.charDupes[id] || 0;
+    const inParty = state.party.includes(id);
+
+    return `
+      <div class="roster-tile" onclick="openCharDetail('${id}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px;">
+          <span class="rank-pill">${ch.rarity}</span>
+          <span>${inParty ? "🛡️編成中" : `凸+${dupe}`}</span>
+        </div>
+        <div style="font-size:32px; margin:4px 0;">${ch.emoji}</div>
+        <div style="font-size:12px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${escapeHtml(ch.name)}
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-top:2px;">
+          ${el.icon}${el.name}・${wp.name}
+        </div>
+        <div style="font-size:11px; font-weight:900; margin-top:3px; color:var(--accent);">
+          Lv.${lv}/${cap} ▶
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 
   document.getElementById("sq-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `
     <button class="select-chip ${state.protagonistWeapon === wp.id ? "selected" : ""}"
@@ -321,6 +348,7 @@ function setProtagonistElement(elId) {
   saveGame();
   playSfx("switch");
   renderSquadView();
+  renderCharDetailView();
   showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`);
 }
 
@@ -329,6 +357,7 @@ function setProtagonistWeapon(wpId) {
   saveGame();
   playSfx("switch");
   renderSquadView();
+  renderCharDetailView();
   showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`);
 }
 
