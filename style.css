@@ -536,3 +536,43 @@ input[type="text"], select {
   border-radius: 0 10px 10px 0;
   margin-bottom: 8px;
 }
+/* 豪華スカウト演出（光の柱＆1枚めくりスポットライト） */
+.sky-beam {
+  width: 64px;
+  height: 75px;
+  margin: 0 auto -18px;
+  border-radius: 50% 50% 0 0;
+  filter: blur(4px);
+  transition: background 0.3s;
+}
+.beam-blue {
+  background: linear-gradient(to top, rgba(76, 201, 240, 0.85), transparent);
+}
+.beam-gold {
+  background: linear-gradient(to top, rgba(255, 208, 0, 0.95), transparent);
+}
+.beam-rainbow {
+  background: linear-gradient(to top, rgba(181, 101, 255, 0.95), rgba(255, 208, 0, 0.7), transparent);
+}
+
+@keyframes cardPopIn {
+  0% { transform: scale(0.86); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.spotlight-frame {
+  border: 3px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  background: var(--surface-sub);
+  animation: cardPopIn 0.25s ease-out;
+}
+.spotlight-frame.rarity-SSR {
+  border-color: #ff4d79;
+  box-shadow: 0 0 24px rgba(255, 209, 59, 0.75);
+  background: linear-gradient(135deg, rgba(255, 209, 59, 0.28), rgba(181, 101, 255, 0.28));
+}
+.spotlight-frame.rarity-SR {
+  border-color: #ff9f1c;
+  box-shadow: 0 0 16px rgba(255, 159, 28, 0.5);
+}
