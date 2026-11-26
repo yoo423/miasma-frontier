@@ -96,4 +96,196 @@ window.MF_CARDS = {
 
     return [
       { id: `${charId}_c1`, charId, ownerName: ch.name, rarity: ch.rarity, name: shortName(sk.normal, "通常連撃"), type: "attack", element: el, cost: 1, icon: "⚔️", power: Number((1.15 * mult).toFixed(2)), stagger: 14, exGain: 15, summary: `⚔️ ${Math.round(115 * mult)}% / 元素起点`, desc: `${ch.name}の基本攻撃。元素反応の1枚目として使いやすい。` },
-      
+      { id: `${charId}_c2`, charId, ownerName: ch.name, rarity: ch.rarity, name: shortName(sk.active, "固有戦技"), type: isShielder ? "guard" : (isHealer ? "heal" : "attack"), element: el, cost: 2, icon: isShielder ? "🛡️" : (isHealer ? "💚" : "🔥"), power: Number((2.25 * mult).toFixed(2)), stagger: 24, exGain: 24, healRatio: isHealer ? 0.24 : 0, shield: isShielder ? 0.9 : 0, summary: isShielder ? "🛡️大バリア＋攻撃" : (isHealer ? "💚24%回復＋攻撃" : `🔥大火力 ${Math.round(225 * mult)}%`), desc: sk.active },
+      { id: `${charId}_c3`, charId, ownerName: ch.name, rarity: ch.rarity, name: `${ch.name}・体勢崩し`, type: "break", element: el, cost: 1, icon: "💥", power: Number((1.05 * mult).toFixed(2)), stagger: 34, guardBreakMult: 2.2, exGain: 18, summary: "💥崩し / 装甲・溜め破壊", desc: "敵の『装甲硬化』や『必殺チャージ』に当てると2.2倍ダメージ＆強制中断！" }
+    ];
+  },
+
+  getUltCard(charId) {
+    const ch = getCharProfile(charId);
+    const sk = ch.skills || { ult: "必殺連携" };
+    const treeLv = typeof getSkillTreeStage === "function" ? getSkillTreeStage(charId) : 0;
+    const pwr = Number((3.6 + treeLv * 0.25).toFixed(2));
+    return { id: `${charId}_ult`, charId, ownerName: ch.name, rarity: "SSR", name: `【EX】${(sk.ult || "必殺連携").split("：")[0]}`, type: "ult", element: ch.element, cost: 0, icon: "🌟", power: pwr, stagger: 45, guardBreakMult: 1.8, isUlt: true, summary: `🌟 0コスト超必殺 ${Math.round(pwr * 100)}%`, desc: sk.ult };
+  },
+
+  buildActiveDeck() {
+    const charCards = [];
+    (state.party || []).forEach(id => charCards.push(...this.getCharCards(id)));
+    const tacticIds = (state.tacticDeck && state.tacticDeck.length === 8) ? state.tacticDeck : [...this.DEFAULT_TACTIC_DECK];
+    return [...charCards, ...tacticIds.map(tid => this.getLeveledTacticCard(tid)).filter(Boolean)];
+  }
+};
+
+// ---------- カード詳細モーダル ----------
+function openCardDetailModal(card) {
+  if (!card) return;
+  const el = window.MF_DATA.ELEMENTS[card.element] || window.MF_DATA.ELEMENTS.arc;
+  const typeLabel = { attack: "⚔️ 攻撃", break: "💥 崩し", guard: "🛡️ 防御・反撃", buff: "✨ 戦術・支援", heal: "💚 回復", ult: "🌟 EX必殺" }[card.type] || "";
+  const tipMap = {
+    break: "💡 コツ：敵の予兆が『🛡️装甲硬化』か『⚡チャージ中』の時に出すと特効＋行動キャンセル！",
+    guard: "💡 コツ：敵の予兆が『💢強攻撃』か『☄️大技』の時に出すと被ダメージ激減・反撃できます！",
+    attack: `💡 コツ：他の属性カードの直後に出すと『元素反応』が炸裂します！（${el.icon}${el.name}属性）`,
+    buff: "💡 コツ：3枚チェインの『1枚目』に置くと後続のカードを大幅に強化できます！",
+    heal: "💡 コツ：ピンチの立て直しや長期戦のボス攻略で安定感が上がります！",
+    ult: "💡 コツ：コスト0の切り札！元素反応やバフの後に3枚目として置くと超絶ダメージ！"
+  };
+  document.getElementById("cdm-title").textContent = `${card.icon} ${card.name}`;
+  document.getElementById("cdm-meta").innerHTML = `
+    <span class="tag">${card.rarity || "R"}</span><span class="tag">AP ${card.cost}</span>
+    <span class="tag">${el.icon}${el.name}</span><span class="tag">${typeLabel}</span>
+    ${card.cardLv ? `<span class="tag" style="background:#ffd13b;">Lv.${card.cardLv}</span>` : ""}
+  `;
+  document.getElementById("cdm-summary").textContent = card.summary || "";
+  document.getElementById("cdm-desc").textContent = card.desc || "";
+  document.getElementById("cdm-tip").textContent = tipMap[card.type] || "";
+  document.getElementById("modal-card-detail").classList.add("active");
+  playSfx("tap");
+}
+function closeCardDetailModal() { document.getElementById("modal-card-detail").classList.remove("active"); }
+function openTacticCardDetail(tid) { openCardDetailModal(window.MF_CARDS.getLeveledTacticCard(tid) || window.MF_CARDS.TACTIC_CARDS[tid]); }
+
+// ---------- デッキ編成画面 ----------
+function renderDeckView() {
+  renderTopBar();
+  state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
+  if (!state.tacticDeck || state.tacticDeck.length !== 8) state.tacticDeck = [...window.MF_CARDS.DEFAULT_TACTIC_DECK];
+
+  document.getElementById("deck-char-cards").innerHTML = state.party.map(id => {
+    const ch = getCharProfile(id);
+    const el = window.MF_DATA.ELEMENTS[ch.element];
+    const cards = window.MF_CARDS.getCharCards(id);
+    return `
+      <div class="card" style="padding:8px; margin-bottom:6px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+          ${window.MF_SPRITES.portraitHTML(ch, "icon")}
+          <div><strong style="font-size:12px;">${escapeHtml(ch.name)}（${el.icon}${el.name}）</strong><div style="font-size:10px; color:var(--muted);">固有カード3枚（自動でデッキ入り）</div></div>
+        </div>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">${cards.map(c => `<span class="tag">${c.icon}${escapeHtml(c.name)} (AP${c.cost})</span>`).join("")}</div>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("deck-tactic-count").textContent = `採用中の戦術カード（${state.tacticDeck.length} / 8枚）`;
+  document.getElementById("deck-current-tactics").innerHTML = state.tacticDeck.map((tid, idx) => {
+    const c = window.MF_CARDS.TACTIC_CARDS[tid];
+    return c ? `<button class="btn-xs" style="background:var(--surface-sub);" onclick="removeTacticCard(${idx})">${c.icon}${escapeHtml(c.name)} ✕</button>` : "";
+  }).join("");
+
+  const rarOrd = { SSR: 0, SR: 1, R: 2, N: 3 };
+  const ownedList = Object.values(window.MF_CARDS.TACTIC_CARDS)
+    .filter(c => window.MF_CARDS.getCardLevel(c.id) > 0)
+    .sort((a, b) => (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9));
+
+  document.getElementById("deck-tactic-pool").innerHTML = ownedList.map(c => {
+    const el = window.MF_DATA.ELEMENTS[c.element];
+    const lv = window.MF_CARDS.getCardLevel(c.id);
+    const inDeck = state.tacticDeck.filter(id => id === c.id).length;
+    const canAdd = state.tacticDeck.length < 8 && inDeck < 2;
+    return `
+      <div class="card" style="padding:8px; margin-bottom:6px;">
+        <div class="top-row">
+          <strong style="font-size:12px;" onclick="openTacticCardDetail('${c.id}')"><span class="rank-pill" style="font-size:9px;">${c.rarity}</span> ${c.icon} ${escapeHtml(c.name)} Lv.${lv}</strong>
+          <div style="display:flex; gap:4px;">
+            <button class="btn-xs" onclick="openTacticCardDetail('${c.id}')">？</button>
+            <button class="btn-xs ${canAdd ? "btn-primary" : ""}" ${canAdd ? "" : "disabled"} onclick="addTacticCard('${c.id}')">${inDeck >= 2 ? "2/2" : `+追加(${inDeck}/2)`}</button>
+          </div>
+        </div>
+        <div style="font-size:10px; color:var(--accent); font-weight:800; margin-top:3px;">${el.icon} AP${c.cost} ｜ ${escapeHtml(c.summary)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function addTacticCard(tid) {
+  if (state.tacticDeck.length >= 8) { showToast("戦術枠は8枚までです"); return; }
+  if (state.tacticDeck.filter(id => id === tid).length >= 2) { showToast("同名カードは2枚までです"); return; }
+  state.tacticDeck.push(tid); saveGame(); playSfx("tap"); renderDeckView();
+}
+function removeTacticCard(idx) { state.tacticDeck.splice(idx, 1); saveGame(); playSfx("tap"); renderDeckView(); }
+
+// ---------- カード図鑑（全36種コレクション＆達成報酬） ----------
+let dexRarityFilter = "ALL";
+
+function getOwnedCardCount() {
+  return Object.keys(window.MF_CARDS.TACTIC_CARDS).filter(id => window.MF_CARDS.getCardLevel(id) > 0).length;
+}
+
+function getUnclaimedDexCount() {
+  const owned = getOwnedCardCount();
+  const claimed = state.claimedDexMilestones || [];
+  return window.MF_CARDS.DEX_MILESTONES.filter(m => owned >= m.count && !claimed.includes(m.count)).length;
+}
+
+function renderCardDexView() {
+  renderTopBar();
+  const all = Object.values(window.MF_CARDS.TACTIC_CARDS);
+  const ownedCnt = getOwnedCardCount();
+  const claimed = state.claimedDexMilestones || [];
+
+  document.getElementById("dex-progress-bar").innerHTML = `
+    <div class="top-row" style="margin-bottom:4px;">
+      <strong>📚 戦術カード収集率：${ownedCnt} / ${all.length}種（${Math.round((ownedCnt / all.length) * 100)}%）</strong>
+      <button class="btn-xs btn-accent2" onclick="activeBannerId='card_pack'; switchView('gacha');">🃏 カードを引く</button>
+    </div>
+    <div class="gauge-bar"><div style="background:var(--accent); width:${Math.round((ownedCnt / all.length) * 100)}%;"></div></div>
+    <div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:7px;">
+      ${window.MF_CARDS.DEX_MILESTONES.map(m => {
+        const done = claimed.includes(m.count);
+        const ready = ownedCnt >= m.count && !done;
+        if (done) return `<span class="tag" style="background:#18b88a; color:#fff;">✓ ${m.count}種済</span>`;
+        if (ready) return `<button class="btn-xs btn-accent2" onclick="claimDexMilestone(${m.count})">🎁 ${m.count}種達成 💎+${m.gems}</button>`;
+        return `<span class="tag" style="opacity:0.65;">${m.count}種で💎+${m.gems}</span>`;
+      }).join("")}
+    </div>
+  `;
+
+  document.getElementById("dex-filter-tabs").innerHTML = ["ALL", "SSR", "SR", "R", "N"].map(r => `
+    <button class="btn-xs ${dexRarityFilter === r ? "btn-primary" : ""}" onclick="dexRarityFilter='${r}'; playSfx('tap'); renderCardDexView();">
+      ${r === "ALL" ? "すべて" : r}
+    </button>
+  `).join("");
+
+  const rarOrd = { SSR: 0, SR: 1, R: 2, N: 3 };
+  const filtered = all
+    .filter(c => dexRarityFilter === "ALL" || c.rarity === dexRarityFilter)
+    .sort((a, b) => (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9));
+
+  document.getElementById("dex-card-grid").innerHTML = filtered.map(c => {
+    const lv = window.MF_CARDS.getCardLevel(c.id);
+    const owned = lv > 0;
+    const el = window.MF_DATA.ELEMENTS[c.element];
+    if (!owned) {
+      return `
+        <div class="dex-card locked" onclick="openTacticCardDetail('${c.id}')">
+          <div class="hc-top"><span class="tag">${c.rarity}</span><span>${el.icon} AP${c.cost}</span></div>
+          <div style="font-size:28px; filter:grayscale(1) opacity(0.5); margin:6px 0;">${c.icon}</div>
+          <div style="font-size:11px; font-weight:900;">🔒 ${escapeHtml(c.name)}</div>
+          <div style="font-size:9px; color:var(--muted);">カード招集で解放</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="dex-card el-pat-${c.element}" onclick="openTacticCardDetail('${c.id}')">
+        <div class="hc-top"><span class="hc-cost">${c.cost}</span><span class="hc-type-pill">${c.rarity} Lv.${lv}</span></div>
+        <div style="font-size:28px; margin:5px 0;">${c.icon}</div>
+        <div class="hc-title">${escapeHtml(c.name)}</div>
+        <div style="font-size:9.5px; color:#f2f4ff; margin-top:2px;">${escapeHtml(c.summary)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function claimDexMilestone(targetCount) {
+  const m = window.MF_CARDS.DEX_MILESTONES.find(x => x.count === targetCount);
+  if (!m || getOwnedCardCount() < m.count) return;
+  state.claimedDexMilestones = state.claimedDexMilestones || [];
+  if (state.claimedDexMilestones.includes(m.count)) return;
+  state.claimedDexMilestones.push(m.count);
+  state.gems += m.gems;
+  saveGame();
+  playSfx("gift");
+  if (typeof updateTabletBadge === "function") updateTabletBadge();
+  renderCardDexView();
+  showToast(`🎉 ${m.label}受取！💎結晶石+${m.gems}！`);
+}
