@@ -57,10 +57,14 @@ function enterWorldRegion(regionId) {
   ];
 
   const mobs = [
-    { id: "m1", enemyId: reg.normalId, emoji: "🐺", label: "徘徊霧獣", x: 150, y: 72,  vx: 18,  isBoss: false },
-    { id: "m2", enemyId: reg.eliteId,  emoji: "🪲", label: "精鋭個体", x: 215, y: 145, vx: -14, isBoss: false },
-    { id: "m3", enemyId: reg.bossId,   emoji: "👑", label: "主霧獣（BOSS）", x: 290, y: 112, vx: 0, isBoss: true }
+    { id: "m1", enemyId: reg.normalId, emoji: "🐺", label: "徘徊霧獣", x: 145, y: 68,  vx: 18,  isBoss: false },
+    { id: "m2", enemyId: reg.eliteId,  emoji: "🪲", label: "精鋭個体", x: 215, y: 152, vx: -14, isBoss: false },
+    { id: "m3", enemyId: reg.bossId,   emoji: "👑", label: "エリア主霧獣", x: 290, y: 112, vx: 0, isBoss: true }
   ];
+  if (prog.mistLevel >= 60 && reg.radiantId) {
+    mobs.push({ id: "m4", enemyId: reg.radiantId, emoji: "🌟", label: "【融光種】変異体", x: 185, y: 105, vx: 12, isBoss: true });
+  }
+
 
   worldState = {
     region: reg,
