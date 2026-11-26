@@ -10,7 +10,7 @@ let showcaseCharId = "protagonist";
 function createDefaultSave() {
   return {
     initialized: false,
-    playerName: "ユウ",
+    playerName: "名無し",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
@@ -140,6 +140,8 @@ function switchView(viewId) {
   if (viewId === "gacha" && typeof renderGachaView === "function") renderGachaView();
   if (viewId === "mail" && typeof renderMailView === "function") renderMailView();
   if (viewId === "bag" && typeof renderBagView === "function") renderBagView();
+  if (viewId === "camp" && typeof renderCampView === "function") renderCampView();
+  if (viewId === "craft" && typeof renderCraftView === "function") renderCraftView();
   if (viewId === "creator") renderCreatorView();
   if (viewId === "terminal") renderTerminalView();
 }
