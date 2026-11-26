@@ -9,7 +9,7 @@ let showcaseCharId = "protagonist";
 function createDefaultSave() {
   return {
     initialized: false,
-    playerName: "ナナシ",
+    playerName: "ユウ",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
@@ -29,6 +29,11 @@ function createDefaultSave() {
     pityGuaranteed: false,
     ownedChars: ["protagonist", "momo", "mint", "aoi"],
     party: ["protagonist", "momo", "mint", "aoi"],
+    ownedCards: {
+      counter_stance: 1, aegis_wall: 1, shield_breaker: 1, shock_trap: 1,
+      element_boost: 1, tactical_draw: 1, weak_scan: 1, repair_kit: 1,
+      hydro_splash: 1, camp_ration: 1
+    },
     tacticDeck: [
       "counter_stance", "aegis_wall", "shield_breaker", "shock_trap",
       "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
@@ -59,6 +64,7 @@ function loadSave() {
       ...parsed,
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
+      ownedCards: { ...base.ownedCards, ...(parsed.ownedCards || {}) },
       tacticDeck: (parsed.tacticDeck && parsed.tacticDeck.length === 8) ? parsed.tacticDeck : base.tacticDeck,
       charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
@@ -70,20 +76,15 @@ function loadSave() {
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
-  } catch (e) {
-    return createDefaultSave();
-  }
+  } catch (e) { return createDefaultSave(); }
 }
 
-function saveGame() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-}
+function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
 function updateStamina() {
   const now = Date.now();
   const elapsed = now - (state.lastEnTimestamp || now);
   if (elapsed < EN_REGEN_MS) return;
-
   const ticks = Math.floor(elapsed / EN_REGEN_MS);
   state.lastEnTimestamp += ticks * EN_REGEN_MS;
   for (let i = 0; i < ticks; i++) {
@@ -93,30 +94,49 @@ function updateStamina() {
   saveGame();
 }
 
-function playSfx(type) {
-  if (window.MF_AUDIO) window.MF_AUDIO.playSfx(type);
-}
+function playSfx(type) { if (window.MF_AUDIO) window.MF_AUDIO.playSfx(type); }
 
 function toggleSound() {
-  state.soundOn = !state.soundOn;
-  saveGame();
+  state.soundOn = !state.soundOn; saveGame();
   if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
   if (state.soundOn) playSfx("switch");
   renderTopBar();
   showToast(state.soundOn ? "🔊 BGM・効果音 ON" : "🔇 BGM・効果音 OFF");
 }
 
-function applyTheme() {
-  document.body.classList.toggle("theme-tactical", state.uiTheme === "tactical");
-}
+function applyTheme() { document.body.classList.toggle("theme-tactical", state.uiTheme === "tactical"); }
 
 function toggleUiTheme() {
   state.uiTheme = state.uiTheme === "camp" ? "tactical" : "camp";
-  saveGame();
-  applyTheme();
-  playSfx("switch");
-  renderTopBar();
+  saveGame(); applyTheme(); playSfx("switch"); renderTopBar();
   showToast(state.uiTheme === "camp" ? "🏕️ 拠点クリーンUIに切替" : "⚡ 作戦端末UIに切替");
+}
+
+// タブレット開閉（細かいメニューを格納）
+function openTabletMenu() {
+  playSfx("switch");
+  if (typeof updateMailBadges === "function") updateMailBadges();
+  if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  document.getElementById("modal-tablet").classList.add("active");
+}
+
+function closeTabletMenu() {
+  document.getElementById("modal-tablet").classList.remove("active");
+}
+
+function tabletGo(viewId) {
+  closeTabletMenu();
+  switchView(viewId);
+}
+
+function updateTabletBadge() {
+  const badge = document.getElementById("home-tablet-badge");
+  if (!badge) return;
+  const mCnt = typeof getUnclaimedMailCount === "function" ? getUnclaimedMailCount() : 0;
+  const bCnt = typeof getUnclaimedBestiaryCount === "function" ? getUnclaimedBestiaryCount() : 0;
+  const total = mCnt + bCnt;
+  badge.style.display = total > 0 ? "inline-block" : "none";
+  badge.textContent = total > 9 ? "9+" : String(total);
 }
 
 function switchView(viewId) {
@@ -134,6 +154,7 @@ function switchView(viewId) {
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
+  if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
   if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
   if (viewId === "char_detail" && typeof renderCharDetailView === "function") renderCharDetailView();
@@ -165,11 +186,8 @@ function detectActiveReactions() {
   const els = state.party.map(id => getCharProfile(id).element);
   const found = [];
   window.MF_DATA.ELEMENT_REACTIONS.forEach(r => {
-    if (r.pair[1] === "any") {
-      if (els.includes(r.pair[0]) && els.some(e => e !== r.pair[0])) found.push(r.name);
-    } else if (els.includes(r.pair[0]) && els.includes(r.pair[1])) {
-      found.push(r.name);
-    }
+    if (r.pair[1] === "any") { if (els.includes(r.pair[0]) && els.some(e => e !== r.pair[0])) found.push(r.name); }
+    else if (els.includes(r.pair[0]) && els.includes(r.pair[1])) found.push(r.name);
   });
   return [...new Set(found)];
 }
@@ -189,6 +207,8 @@ function renderHome() {
   renderTopBar();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  updateTabletBadge();
+
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
   const ch = getCharProfile(showcaseCharId);
   const elInfo = window.MF_DATA.ELEMENTS[ch.element];
@@ -197,34 +217,35 @@ function renderHome() {
   const dupe = state.charDupes[ch.id] || 0;
 
   const pBox = document.getElementById("home-portrait");
-  pBox.innerHTML = window.MF_SPRITES.portraitHTML(ch, "full");
-  pBox.onclick = () => openPortraitZoom(ch.id);
+  pBox.innerHTML = window.MF_SPRITES.portraitHTML(ch, "hero");
+  pBox.onclick = () => openPortraitZoom(ch.id, true);
 
-  document.getElementById("home-char-name").textContent = `${ch.name}（Lv.${lv} / 凸${dupe}）`;
+  document.getElementById("home-char-name").textContent = `${ch.name}  Lv.${lv}`;
   const lines = ch.voiceLines;
-  document.getElementById("home-speech").textContent = lines[Math.floor(Math.random() * lines.length)];
+  document.getElementById("home-speech").textContent = `「${lines[Math.floor(Math.random() * lines.length)]}」`;
   document.getElementById("home-tags").innerHTML = `
     <span class="tag">${ch.rarity}</span>
     <span class="tag">${elInfo.icon}${elInfo.name}</span>
     <span class="tag">${wpInfo.icon}${wpInfo.name}</span>
-    <span class="tag">🏷️${ch.trait || "開拓隊員"}</span>
+    <span class="tag">凸+${dupe}</span>
   `;
 
   document.getElementById("home-party-strip").innerHTML = state.party.map(id => {
     const m = getCharProfile(id);
     const mEl = window.MF_DATA.ELEMENTS[m.element];
+    const active = id === showcaseCharId ? "border-color:var(--accent); background:rgba(24,184,138,0.16);" : "";
     return `
-      <div class="party-slot" onclick="cycleShowcase('${id}')">
+      <div class="party-slot" style="${active}" onclick="cycleShowcase('${id}')">
         ${window.MF_SPRITES.portraitHTML(m, "icon")}
-        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(m.name)}</div>
-        <div style="font-size:10px; color:var(--muted);">${mEl.icon} Lv.${state.charLevels[id] || 1}</div>
+        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:10px;">${escapeHtml(m.name)}</div>
+        <div style="font-size:9px; color:var(--muted);">${mEl.icon} Lv.${state.charLevels[id] || 1}</div>
       </div>
     `;
   }).join("");
 
   const reactions = detectActiveReactions();
   document.getElementById("home-reactions").textContent =
-    reactions.length > 0 ? `✨ 発動可能な元素反応：${reactions.join(" / ")}` : "✨ 主人公の属性を切り替えると元素反応が発生！";
+    reactions.length > 0 ? `✨ 発動可能な元素反応：${reactions.join(" / ")}` : "✨ 属性を組み合わせると元素反応が発生！";
 }
 
 function cycleShowcase(forceId) {
@@ -237,9 +258,7 @@ function renderSquadView() {
   renderTopBar();
   if (typeof renderPartyEditor === "function") renderPartyEditor();
   const totalPower = state.party.reduce((sum, id) => sum + (typeof calcCharPower === "function" ? calcCharPower(id) : 100), 0);
-  document.getElementById("sq-materials-bar").innerHTML = `
-    ⚔️ 小隊総戦力：<strong>${totalPower}</strong> ｜ 📘 記録：<strong>${state.expBooks || 0}</strong> ｜ 💠 コア：<strong>${state.cores || 0}</strong>
-  `;
+  document.getElementById("sq-materials-bar").innerHTML = `⚔️ 小隊総戦力：<strong>${totalPower}</strong> ｜ 📘 記録：<strong>${state.expBooks || 0}</strong> ｜ 💠 コア：<strong>${state.cores || 0}</strong>`;
   const ids = typeof getSortedOwnedIds === "function" ? getSortedOwnedIds() : state.ownedChars;
   document.getElementById("sq-roster-list").innerHTML = ids.map(id => {
     const ch = getCharProfile(id);
@@ -250,8 +269,7 @@ function renderSquadView() {
     return `
       <div class="roster-tile" onclick="openCharDetail('${id}')">
         <div style="display:flex; justify-content:space-between; font-size:10px;">
-          <span class="rank-pill">${ch.rarity}</span>
-          <span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span>
+          <span class="rank-pill">${ch.rarity}</span><span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span>
         </div>
         ${window.MF_SPRITES.portraitHTML(ch, "icon-lg")}
         <div style="font-size:12px; font-weight:900;">${escapeHtml(ch.name)}</div>
@@ -303,10 +321,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.2.0（TCG模様・カットイン・BGM・調査ノート）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.3.0（立ち絵ホーム・タブレット・Wiki・20種カード）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.2.0：演出・BGM・霧獣調査ノート実装</strong><div style="font-size:11px; color:var(--muted);">全カードの属性模様＆顔装飾、キャラ立ち絵カットイン演出、じっくり/倍速切替、4曲ループBGM、初討伐ボーナス付き霧獣調査ノートを実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.3.0：立ち絵メインホーム＆タブレット・Wiki・カード強化</strong><div style="font-size:11px; color:var(--muted);">顔フォーカス修正、立ち絵メインホーム、タブレット＆攻略Wiki、中央リザルト、全20種戦術カード＆カードガチャを実装。</div></div>`;
   }
 }
 
@@ -334,10 +352,6 @@ async function checkAppUpdate() {
 
 function resetAllSaveData() {
   if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); }
-}
-
-function notifyUpcoming(name, step) {
-  playSfx("tap"); showToast(`🚧「${name}」は ${step} で実装予定です！`);
 }
 
 function showToast(msg) {
