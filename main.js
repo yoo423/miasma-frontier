@@ -9,7 +9,7 @@ let showcaseCharId = "protagonist";
 function createDefaultSave() {
   return {
     initialized: false,
-    playerName: "ユウ",
+    playerName: "ナナシ",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
