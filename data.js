@@ -121,3 +121,21 @@ window.MF_DATA = {
     { id: "aqua", name: "第5エリア：水没ネオン街『アクア・メトロポリス』", bg: "#192d38", reqRank: 15, normalId: "abyss_kraken", eliteId: "abyss_kraken", bossId: "abyss_kraken", radiantId: "radiant_zero", rareDrop: "深海発光コア" },
     { id: "spire", name: "第6エリア：天蓋の塔『アーク・スパイア』", bg: "#291b36", reqRank: 20, normalId: "abyss_kraken", eliteId: "radiant_zero", bossId: "radiant_zero", radiantId: "radiant_zero", rareDrop: "原初の天蓋結晶" }
   ],
+  BUILTIN_MAILS: [
+    { id: "mail_launch_gift", date: "2026-11-26", title: "方舟都市司令部・開拓支援パック", body: "第7クリアラー小隊の地上降下を記念して、スカウト用結晶石と初期育成物資をお届けします！", rewards: { gems: 1600, credits: 10000, books: 20, cores: 5 } },
+    { id: "mail_ver16_update", date: "2026-11-26", title: "Step 5 前線キャンプ＆クラフト実装記念", body: "自動化工場ライン・モンスター生態リンク・武器鍛造・タイミング調理ミニゲームの実装記念プレゼント！", rewards: { gems: 1600, credits: 12000, en: 60 } }
+  ],
+
+  CRAFT_RECIPES: [
+    { id: "wp_behemoth", cat: "weapon", icon: "🗡️", name: "結晶角の大剣・改", req: { "ベヒーモスの結晶角": 1, "アーク結晶鉱": 2 }, credits: 2500, desc: "装備すると小隊全体の攻撃力 +12%（永続パッシブ）" },
+    { id: "wp_wyvern", cat: "weapon", icon: "🎯", name: "紫電の竜翼ライフル", req: { "紫電の飛竜翼": 1, "雷撃結晶": 2 }, credits: 5000, desc: "装備すると小隊全体の会心・スキル威力 +18%（永続パッシブ）" },
+    { id: "wp_radiant", cat: "weapon", icon: "👑", name: "融光神核・オーバーブレード", req: { "融光アーク結晶": 2, "純度結晶殻": 2 }, credits: 9000, desc: "融光種の力を宿す決戦兵器。小隊全体の攻撃力 +28%（永続パッシブ）" },
+    { id: "item_trap", cat: "gadget", icon: "⚡", name: "大型ショック拘束罠", req: { "アーク結晶鉱": 2, "純度結晶殻": 1 }, credits: 1200, desc: "ボス戦で使うと敵を即座に大ダウンさせ、部位破壊しやすくなる。" },
+    { id: "item_potion", cat: "gadget", icon: "🧪", name: "高濃度リペアポーション", req: { "アーク薬草": 2 }, credits: 600, desc: "戦闘中に小隊のHPを60%即時回復する携帯薬。" }
+  ],
+
+  SERIAL_CODES: {
+    "FRONTIER2026": { label: "リリース記念パック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 },
+    "MIASMA777":    { label: "第7小隊応援ギフト", gems: 1600, credits: 5000,  en: 40, books: 15, cores: 3 }
+  }
+};
