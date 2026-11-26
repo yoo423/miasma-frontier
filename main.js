@@ -9,6 +9,7 @@ let showcaseCharId = "protagonist";
 
 function createDefaultSave() {
   return {
+    activityPt: 0, mailbox: [], claimedMailIds: [],
     initialized: false,
     playerName: "名無し",
     styleId: "m_cool",
@@ -127,6 +128,8 @@ function switchView(viewId) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById(`view-${viewId}`).classList.add("active");
 
+  if (viewId === "mail") renderMailView();
+  if (viewId === "bag") renderBagView();
   if (viewId === "home") renderHome();
   if (viewId === "squad") renderSquadView();
   if (viewId === "char_detail") renderCharDetailView();
@@ -533,5 +536,6 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStamina();
   applyTheme();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
+  syncAdminMail();
   switchView(state.initialized ? "home" : "creator");
 });
