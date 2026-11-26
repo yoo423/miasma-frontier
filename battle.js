@@ -23,18 +23,30 @@ function updateAutoButtonUI() {
   btn.className = battleAutoMode ? "btn-xs btn-accent2" : "btn-xs btn-primary";
 }
 
+function getCraftAtkMultiplier() {
+  let bonus = 0;
+  const wp = state.craftedWeapons || [];
+  if (wp.includes("wp_behemoth")) bonus += 12;
+  if (wp.includes("wp_wyvern")) bonus += 18;
+  if (wp.includes("wp_radiant")) bonus += 28;
+  if (state.camp?.activeBuff?.atkBonus) bonus += state.camp.activeBuff.atkBonus;
+  return 1 + bonus / 100;
+}
+
 function renderBattleView() {
   renderTopBar();
   const listEl = document.getElementById("btl-enemy-list");
+  if (!listEl) return;
   const teamPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
 
-  listEl.innerHTML = window.MF_DATA.ENEMIES.map(en => {
+  listEl.innerHTML = (window.MF_DATA.ENEMIES || []).map(en => {
     const partsLabel = en.parts.length
       ? `💥 部位破壊：${en.parts.map(p => p.name).join("・")}`
       : "一般・精鋭ターゲット";
     const warn = teamPower < en.recPower ? "⚠️ 強敵" : "✅ 推奨圏内";
+    const radiantStyle = en.isRadiant ? "border-color:#ffd000;" : "";
     return `
-      <div class="card" style="padding:10px; margin-bottom:8px;">
+      <div class="card" style="padding:10px; margin-bottom:8px; ${radiantStyle}">
         <div class="top-row">
           <strong>${en.emoji} ${escapeHtml(en.name)} <span class="rank-pill">${en.rank}</span></strong>
           <span style="font-size:11px; font-weight:900;">推奨 ${en.recPower}（${warn}）</span>
@@ -52,7 +64,7 @@ function renderBattleView() {
 }
 
 function startBattle(enemyId) {
-  const template = window.MF_DATA.ENEMIES.find(e => e.id === enemyId);
+  const template = (window.MF_DATA.ENEMIES || []).find(e => e.id === enemyId);
   if (!template) return;
 
   prevThemeBeforeBattle = state.uiTheme;
@@ -60,13 +72,14 @@ function startBattle(enemyId) {
   battleAutoMode = false;
   playSfx("switch");
 
+  const atkMult = getCraftAtkMultiplier();
   const hasWeakSpotter = state.party.some(id => id === "mint" || id === "scanner");
   const members = state.party.map((id, idx) => {
     const ch = getCharProfile(id);
     const power = calcCharPower(id);
     return {
       id, name: ch.name, emoji: ch.emoji, element: ch.element, weapon: ch.weapon,
-      power, atk: Math.round(power * 0.45), maxHp: Math.round(power * 3.4),
+      power, atk: Math.round(power * 0.45 * atkMult), maxHp: Math.round(power * 3.4),
       x: 75 + idx * 14, y: 110 + (idx % 2 === 0 ? -24 : 24),
       anim: "idle", animTimer: 0, chainReady: false, swapCd: 0
     };
@@ -74,25 +87,27 @@ function startBattle(enemyId) {
 
   const totalMaxHp = members.reduce((s, m) => s + m.maxHp, 0);
   const parts = template.parts.map(p => ({
-    ...p, hp: Math.round(template.maxHp * p.hpRatio), maxHp: Math.round(template.maxHp * p.hpRatio),
-    broken: false, spotted: hasWeakSpotter
+    ...p,
+    hp: Math.round(template.maxHp * p.hpRatio),
+    maxHp: Math.round(template.maxHp * p.hpRatio),
+    broken: false,
+    spotted: hasWeakSpotter
   }));
 
   btl = {
     enemy: template,
     ex: 245, ey: 105,
-    eAnim: "idle", eAnimTimer: 0,
     hp: template.maxHp, maxHp: template.maxHp,
     stagger: 0, maxStagger: template.maxStagger,
     brokenTimer: 0, charge: 0,
-    telegraph: null, // { x, y, r } 敵の赤範囲攻撃予兆
+    telegraph: null,
     attachedElement: null,
     burnTimer: 0, electroTimer: 0, frozenTimer: 0, shredTimer: 0,
     parts, targetPartIdx: parts.length > 0 ? 0 : -1,
     members, activeIdx: 0,
     teamHp: totalMaxHp, teamMaxHp: totalMaxHp,
     shield: 0, sp: 55, maxSp: 100,
-    moveTarget: null, joyVec: { x: 0, y: 0 },
+    moveTarget: null,
     dodgeWindow: 0, dodgeCd: 0,
     atkCd: 0, allyTick: 0, time: 0,
     usedAuto: false, finished: false
@@ -102,7 +117,7 @@ function startBattle(enemyId) {
   document.getElementById("btl-result-box").style.display = "none";
   document.getElementById("btl-arena-panel").style.display = "block";
   updateAutoButtonUI();
-  setBattlePopup("🎮 画面タップ/ドラッグで移動！赤い範囲を避けて戦おう！");
+  setBattlePopup("🎮 画面タップ/ドラッグで移動！赤い予兆を避けて戦おう！");
   bindArenaControls();
 
   cancelAnimationFrame(btlLoopId);
@@ -131,20 +146,14 @@ function bindArenaControls() {
       updateAutoButtonUI();
     }
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     btl.moveTarget = {
-      x: Math.max(24, Math.min(canvas.width - 24, (clientX - rect.left) * scaleX)),
-      y: Math.max(34, Math.min(canvas.height - 28, (clientY - rect.top) * scaleY))
+      x: Math.max(24, Math.min(canvas.width - 24, (clientX - rect.left) * (canvas.width / rect.width))),
+      y: Math.max(34, Math.min(canvas.height - 28, (clientY - rect.top) * (canvas.height / rect.height)))
     };
   };
 
-  canvas.addEventListener("pointerdown", e => {
-    setPoint(e.clientX, e.clientY);
-  });
-  canvas.addEventListener("pointermove", e => {
-    if (e.buttons > 0) setPoint(e.clientX, e.clientY);
-  });
+  canvas.addEventListener("pointerdown", e => setPoint(e.clientX, e.clientY));
+  canvas.addEventListener("pointermove", e => { if (e.buttons > 0) setPoint(e.clientX, e.clientY); });
 }
 
 function battleFrameLoop(now) {
@@ -165,6 +174,7 @@ function updateBattleStep(dt) {
   if (btl.dodgeCd > 0) btl.dodgeCd = Math.max(0, btl.dodgeCd - dt);
   if (btl.shredTimer > 0) btl.shredTimer = Math.max(0, btl.shredTimer - dt);
   if (btl.atkCd > 0) btl.atkCd = Math.max(0, btl.atkCd - dt);
+
   btl.members.forEach(m => {
     if (m.swapCd > 0) m.swapCd = Math.max(0, m.swapCd - dt);
     if (m.animTimer > 0) {
@@ -173,7 +183,6 @@ function updateBattleStep(dt) {
     }
   });
 
-  // 継続元素ダメージ
   if (btl.burnTimer > 0) {
     btl.burnTimer = Math.max(0, btl.burnTimer - dt);
     applyDamageToEnemy(Math.round(leader.atk * 0.9 * dt), null, false, 0);
@@ -183,7 +192,6 @@ function updateBattleStep(dt) {
     applyDamageToEnemy(Math.round(leader.atk * 1.1 * dt), null, false, 0);
   }
 
-  // 自動討伐AI or 手動移動
   const isRanged = ["sniper", "assault", "staff"].includes(leader.weapon);
   const idealRange = isRanged ? 115 : 44;
 
@@ -191,10 +199,9 @@ function updateBattleStep(dt) {
     btl.usedAuto = true;
     const dx = btl.ex - leader.x;
     const dy = btl.ey - leader.y;
-    const dist = Math.hypot(dx, dy);
+    const dist = Math.hypot(dx, dy) || 1;
     if (btl.telegraph && Math.hypot(leader.x - btl.telegraph.x, leader.y - btl.telegraph.y) < btl.telegraph.r + 12) {
-      // 赤範囲から自動で離脱
-      leader.x = Math.max(24, Math.min(316, leader.x - (dx / (dist || 1)) * 130 * dt));
+      leader.x = Math.max(24, Math.min(316, leader.x - (dx / dist) * 130 * dt));
       leader.y = Math.max(36, Math.min(184, leader.y + (leader.y < 110 ? 110 : -110) * dt));
       leader.anim = "move";
     } else if (dist > idealRange) {
@@ -217,19 +224,16 @@ function updateBattleStep(dt) {
     }
   }
 
-  // リーダーの自動近接・射撃攻撃（射程内）
   const distToEnemy = Math.hypot(btl.ex - leader.x, btl.ey - leader.y);
   if (distToEnemy <= idealRange + 14 && btl.atkCd <= 0) {
     btl.atkCd = leader.weapon === "dual" ? 0.55 : 0.8;
     leader.anim = "attack";
     leader.animTimer = 0.25;
-    const dmg = Math.round(leader.atk * 0.72);
     const stag = leader.weapon === "hammer" || leader.weapon === "spear" ? 8 : 5;
     btl.sp = Math.min(btl.maxSp, btl.sp + (leader.element === "volt" ? 8 : 5));
-    applyDamageToEnemy(dmg, null, false, stag);
+    applyDamageToEnemy(Math.round(leader.atk * 0.72), null, false, stag);
   }
 
-  // 仲間3人の追従＆援護攻撃
   btl.allyTick += dt;
   btl.members.forEach((m, idx) => {
     if (idx === btl.activeIdx) return;
@@ -245,7 +249,6 @@ function updateBattleStep(dt) {
     applyDamageToEnemy(allyDmg, null, false, 3);
   }
 
-  // 敵の移動＆赤い範囲攻撃予兆
   if (btl.brokenTimer > 0) {
     btl.brokenTimer = Math.max(0, btl.brokenTimer - dt);
     btl.telegraph = null;
@@ -257,7 +260,6 @@ function updateBattleStep(dt) {
     btl.frozenTimer = Math.max(0, btl.frozenTimer - dt);
     btl.telegraph = null;
   } else {
-    // 敵がゆっくり追尾
     const edx = leader.x - btl.ex;
     const edy = leader.y - btl.ey;
     const edist = Math.hypot(edx, edy);
@@ -265,29 +267,22 @@ function updateBattleStep(dt) {
       btl.ex += (edx / edist) * 32 * dt;
       btl.ey += (edy / edist) * 32 * dt;
     }
-
     const rate = btl.attachedElement === "water" || btl.attachedElement === "ice" ? 20 : 28;
     btl.charge = Math.min(100, btl.charge + rate * dt);
-
-    // チャージ60%で赤い危険エリア出現
     if (btl.charge >= 60 && !btl.telegraph) {
       btl.telegraph = { x: leader.x, y: leader.y, r: 46 };
       setBattlePopup("⚠️ 赤い攻撃範囲から移動か[回避]で離れろ！");
     }
-    if (btl.charge >= 100) {
-      executeEnemyAttack();
-    }
+    if (btl.charge >= 100) executeEnemyAttack();
   }
 }
-
 function executeEnemyAttack() {
   const leader = btl.members[btl.activeIdx];
   const area = btl.telegraph || { x: btl.ex, y: btl.ey, r: 48 };
   btl.charge = 0;
   btl.telegraph = null;
 
-  const insideZone = Math.hypot(leader.x - area.x, leader.y - area.y) <= area.r;
-  if (!insideZone) {
+  if (Math.hypot(leader.x - area.x, leader.y - area.y) > area.r) {
     setBattlePopup("✨ 範囲外へ移動回避成功！");
     return;
   }
@@ -323,19 +318,13 @@ function drawBattleCanvas() {
   const ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;
 
-  // フィールド背景（開拓グリッド）
   ctx.fillStyle = "#171a24";
   ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = "rgba(255, 208, 0, 0.08)";
   ctx.lineWidth = 1;
-  for (let gx = 0; gx < w; gx += 28) {
-    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
-  }
-  for (let gy = 0; gy < h; gy += 28) {
-    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
-  }
+  for (let gx = 0; gx < w; gx += 28) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+  for (let gy = 0; gy < h; gy += 28) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
 
-  // 移動ターゲットマーカー
   if (btl.moveTarget) {
     ctx.strokeStyle = "#00e5ff";
     ctx.lineWidth = 2;
@@ -344,24 +333,16 @@ function drawBattleCanvas() {
     ctx.stroke();
   }
 
-  // 敵の赤い攻撃予兆エリア
   if (btl.telegraph) {
     const fillRatio = Math.max(0, (btl.charge - 60) / 40);
     ctx.fillStyle = "rgba(255, 77, 121, 0.22)";
     ctx.strokeStyle = "#ff4d79";
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(btl.telegraph.x, btl.telegraph.y, btl.telegraph.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
+    ctx.beginPath(); ctx.arc(btl.telegraph.x, btl.telegraph.y, btl.telegraph.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "rgba(255, 77, 121, 0.35)";
-    ctx.beginPath();
-    ctx.arc(btl.telegraph.x, btl.telegraph.y, btl.telegraph.r * fillRatio, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(btl.telegraph.x, btl.telegraph.y, btl.telegraph.r * fillRatio, 0, Math.PI * 2); ctx.fill();
   }
 
-  // 仲間＆敵ユニット描画（Y座標順ソート）
   const units = [];
   btl.members.forEach((m, idx) => {
     units.push({
@@ -390,12 +371,8 @@ function manualHeavyStrike() {
   const leader = btl.members[btl.activeIdx];
   leader.anim = "attack";
   leader.animTimer = 0.3;
-  // 敵方向へステップ接近
   const dx = btl.ex - leader.x, dy = btl.ey - leader.y, dist = Math.hypot(dx, dy);
-  if (dist > 42) {
-    leader.x += (dx / dist) * 26;
-    leader.y += (dy / dist) * 26;
-  }
+  if (dist > 42) { leader.x += (dx / dist) * 26; leader.y += (dy / dist) * 26; }
   btl.sp = Math.min(btl.maxSp, btl.sp + 10);
   playSfx("tap");
   applyDamageToEnemy(Math.round(leader.atk * 1.25), leader.element, false, 8);
@@ -421,7 +398,6 @@ function triggerDodge() {
   btl.dodgeWindow = 1.1;
   leader.anim = "dodge";
   leader.animTimer = 0.45;
-  // 敵から離れる方向へ素早くダッシュ回避
   const dx = leader.x - btl.ex, dy = leader.y - btl.ey, dist = Math.hypot(dx, dy) || 1;
   leader.x = Math.max(24, Math.min(316, leader.x + (dx / dist) * 44));
   leader.y = Math.max(36, Math.min(184, leader.y + (dy / dist) * 44));
@@ -435,12 +411,9 @@ function switchBattleLeader(idx) {
   const next = btl.members[idx];
   if (next.swapCd > 0) return;
 
-  next.x = prev.x;
-  next.y = prev.y;
-  next.anim = "attack";
-  next.animTimer = 0.35;
-  btl.activeIdx = idx;
-  next.swapCd = 1.8;
+  next.x = prev.x; next.y = prev.y;
+  next.anim = "attack"; next.animTimer = 0.35;
+  btl.activeIdx = idx; next.swapCd = 1.8;
   playSfx("switch");
 
   if (btl.brokenTimer > 0 && next.chainReady) {
@@ -480,8 +453,7 @@ function applyDamageToEnemy(baseDmg, elementId, strongApply, staggerGain) {
       btl.stagger = Math.min(btl.maxStagger, btl.stagger + 35);
       playSfx("gift");
       setBattlePopup(`💥 部位破壊！【${part.name}】を粉砕！`);
-      const nextIdx = btl.parts.findIndex(p => !p.broken);
-      btl.targetPartIdx = nextIdx;
+      btl.targetPartIdx = btl.parts.findIndex(p => !p.broken);
     }
   }
 
@@ -526,14 +498,12 @@ function finishBattle(isWin) {
   resBox.style.display = "block";
 
   if (!isWin) {
-    resBox.innerHTML = `
-      <h3 style="margin:0 0 6px; color:#ff595e;">💀 作戦撤退……</h3>
-      <button class="btn-primary" style="width:100%;" onclick="exitBattleArena()">戻る</button>
-    `;
+    resBox.innerHTML = `<h3 style="margin:0 0 6px; color:#ff595e;">💀 作戦撤退……</h3><button class="btn-primary" style="width:100%;" onclick="exitBattleArena()">戻る</button>`;
     return;
   }
 
   playSfx("gift");
+  if (state.camp?.activeBuff) state.camp.activeBuff = null;
   const rw = btl.enemy.rewards;
   const isManual = !btl.usedAuto;
   const brokenParts = btl.parts.filter(p => p.broken);
@@ -547,7 +517,6 @@ function finishBattle(isWin) {
     state.playerRank += 1;
   }
 
-  // 手動操作時のみ「活躍報酬（結晶石・活躍Pt・部位破壊素材）」を獲得
   let bonusHtml = "";
   if (isManual) {
     const actPt = rw.activityPt || 10;
@@ -555,20 +524,57 @@ function finishBattle(isWin) {
     state.activityPt = (state.activityPt || 0) + actPt;
     state.materials = state.materials || {};
     brokenParts.forEach(p => { state.materials[p.drop] = (state.materials[p.drop] || 0) + 1; });
-    bonusHtml = `
-      <div style="font-size:11px; color:#18b88a; font-weight:900; margin-top:4px;">
-        🎮 手動討伐ボーナス：💎+${rw.gems} / 🏅活躍Pt+${actPt}
-        ${brokenParts.length ? ` / 💥部位：${brokenParts.map(p => p.drop).join("・")}` : ""}
-      </div>
-    `;
+    bonusHtml = `<div style="font-size:11px; color:#18b88a; font-weight:900; margin-top:4px;">🎮 手動討伐ボーナス：💎+${rw.gems} / 🏅活躍Pt+${actPt}${brokenParts.length ? ` / 💥部位：${brokenParts.map(p => p.drop).join("・")}` : ""}</div>`;
   } else {
-    bonusHtml = `
-      <div style="font-size:11px; color:#ff9f1c; font-weight:800; margin-top:4px;">
-        🤖 自動討伐クリア（※AUTO使用のため活躍Pt・結晶石・部位報酬は対象外）
-      </div>
-    `;
+    bonusHtml = `<div style="font-size:11px; color:#ff9f1c; font-weight:800; margin-top:4px;">🤖 自動討伐クリア（※AUTO使用のため活躍Pt・結晶石・部位報酬は対象外）</div>`;
   }
 
   saveGame();
   renderTopBar();
-  
+  resBox.innerHTML = `
+    <h3 style="margin:0 0 6px; color:#18b88a;">🏆 討伐完了！</h3>
+    <div style="font-size:12px; font-weight:800;">基本報酬：🪙 +${rw.credits.toLocaleString()} ｜ 📘 記録+${rw.books} ｜ 💠 コア+${rw.cores}</div>
+    ${bonusHtml}
+    <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="exitBattleArena()">戦利品を倉庫へ送って戻る</button>
+  `;
+}
+
+function setBattlePopup(text) {
+  const el = document.getElementById("btl-popup");
+  if (el) el.textContent = text;
+}
+
+function renderBattleHUD() {
+  if (!btl) return;
+  document.getElementById("btl-enemy-name").textContent = `${btl.enemy.emoji} ${btl.enemy.name}`;
+  document.getElementById("btl-hp-fill").style.width = `${Math.round((btl.hp / btl.maxHp) * 100)}%`;
+  document.getElementById("btl-hp-text").textContent = `HP ${btl.hp.toLocaleString()} / ${btl.maxHp.toLocaleString()}`;
+  document.getElementById("btl-stagger-fill").style.width = `${Math.round((btl.stagger / btl.maxStagger) * 100)}%`;
+  document.getElementById("btl-stagger-text").textContent = `体勢 ${Math.round(btl.stagger)}/${btl.maxStagger}`;
+
+  document.getElementById("btl-parts-row").innerHTML = btl.parts.map((p, i) => `
+    <button class="btn-xs ${i === btl.targetPartIdx && !p.broken ? "btn-primary" : ""}"
+            style="opacity:${p.broken ? 0.45 : 1};" onclick="btl.targetPartIdx=${i};" ${p.broken ? "disabled" : ""}>
+      ${p.broken ? "💥破壊済" : "🎯"} ${p.name} ${p.broken ? "" : `${Math.ceil((p.hp / p.maxHp) * 100)}%`}
+    </button>
+  `).join("");
+
+  document.getElementById("btl-team-hp-fill").style.width = `${Math.round((btl.teamHp / btl.teamMaxHp) * 100)}%`;
+  document.getElementById("btl-team-hp-text").textContent = `小隊HP ${btl.teamHp}/${btl.teamMaxHp}`;
+  document.getElementById("btl-shield-text").textContent = btl.shield > 0 ? `✨バリア+${btl.shield}` : "";
+  document.getElementById("btl-sp-fill").style.width = `${Math.round((btl.sp / btl.maxSp) * 100)}%`;
+  document.getElementById("btl-sp-text").textContent = `SP ${Math.floor(btl.sp)}/100`;
+
+  document.getElementById("btl-party-bar").innerHTML = btl.members.map((m, idx) => {
+    const el = window.MF_DATA.ELEMENTS[m.element];
+    const isActive = idx === btl.activeIdx;
+    const isChain = m.chainReady && btl.brokenTimer > 0;
+    return `
+      <div class="party-slot ${isChain ? "chain-glow" : (isActive ? "active-leader" : "")}" onclick="switchBattleLeader(${idx})">
+        <span class="slot-icon">${m.emoji}</span>
+        <div style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(m.name)}</div>
+        <div style="font-size:9px; font-weight:900;">${isChain ? "⚡連携!" : (isActive ? "★操作中" : `${el.icon}交代`)}</div>
+      </div>
+    `;
+  }).join("");
+}
