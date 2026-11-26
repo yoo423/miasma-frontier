@@ -31,15 +31,15 @@
           <span>⚡ EN <strong id="tb-en">160/160</strong><span id="tb-reserve" class="res-sub">予備 +0</span></span>
         </div>
         <div class="res-chip">
-          <span>🪙 <strong id="tb-credits">5,000</strong></span>
+          <span>🪙 <strong id="tb-credits">8,000</strong></span>
         </div>
         <div class="res-chip">
-          <span>💎 <strong id="tb-gems">1,600</strong></span>
+          <span>💎 <strong id="tb-gems">3,200</strong></span>
         </div>
       </div>
     </header>
 
-    <!-- 1. ホーム画面（前線キャンプ拠点） -->
+    <!-- 1. ホーム画面 -->
     <main id="view-home" class="view">
       <div class="card showcase-card">
         <div id="home-portrait" class="portrait-frame" onclick="cycleShowcase()"></div>
@@ -48,35 +48,31 @@
             <strong id="home-char-name" style="font-size:14px;">隊長（Lv.1）</strong>
             <button class="btn-xs" onclick="cycleShowcase()">🔄 交代</button>
           </div>
-          <div id="home-speech" class="speech-bubble" onclick="cycleShowcase()">
-            第7クリアラー小隊、調査を開始する！
-          </div>
+          <div id="home-speech" class="speech-bubble" onclick="cycleShowcase()"></div>
           <div id="home-tags" class="char-meta-tags"></div>
         </div>
       </div>
 
-      <!-- 第7クリアラー小隊 4人編成 -->
       <div class="card">
         <div class="section-title">
-          <span>🛡️ 第7クリアラー小隊（初期メンバー）</span>
-          <button class="btn-xs btn-primary" onclick="switchView('squad')">武器・属性切替</button>
+          <span>🛡️ 第7クリアラー小隊（出撃編成）</span>
+          <button class="btn-xs btn-primary" onclick="switchView('squad')">編成・育成</button>
         </div>
         <div id="home-party-strip" class="party-strip"></div>
         <div id="home-reactions" class="reaction-banner"></div>
       </div>
 
-      <!-- 8大メニュー -->
       <div class="card">
         <div class="section-title">
           <span>🧭 作戦メニュー</span>
-          <span style="font-size:11px; color:var(--muted);">Ver 1.0 Step 1</span>
+          <span style="font-size:11px; color:var(--muted);">Ver 1.1 Step 2</span>
         </div>
         <div class="menu-grid">
           <button class="menu-btn btn-accent2" onclick="notifyUpcoming('ワールド出撃・ボス狩猟', 'Step 3〜4')">
             <span class="m-ico">🗺️</span><span>出撃</span>
           </button>
           <button class="menu-btn" onclick="switchView('squad')">
-            <span class="menu-badge">切替OK</span>
+            <span class="menu-badge">育成</span>
             <span class="m-ico">🧑‍✈️</span><span>隊員</span>
           </button>
           <button class="menu-btn" onclick="switchView('creator')">
@@ -88,71 +84,88 @@
           <button class="menu-btn" onclick="notifyUpcoming('武器鍛造・罠・調理', 'Step 5')">
             <span class="m-ico">🔨</span><span>クラフト</span>
           </button>
-          <button class="menu-btn" onclick="notifyUpcoming('スカウト（ガチャ）', 'Step 2')">
+          <button class="menu-btn btn-primary" onclick="switchView('gacha')">
+            <span class="menu-badge">PU開催</span>
             <span class="m-ico">🌠</span><span>スカウト</span>
           </button>
           <button class="menu-btn" onclick="notifyUpcoming('デイリー・ウィークリー任務', 'Step 6')">
             <span class="m-ico">📋</span><span>任務</span>
           </button>
-          <button class="menu-btn btn-primary" onclick="switchView('terminal')">
+          <button class="menu-btn" onclick="switchView('terminal')">
             <span class="m-ico">📱</span><span>端末</span>
           </button>
         </div>
       </div>
     </main>
 
-    <!-- 2. 隊員・主人公の武器＆属性自由切替画面 -->
+    <!-- 2. 隊員編成・主人公切替・重厚育成画面 -->
     <section id="view-squad" class="view">
       <div class="card">
         <div class="section-title">
-          <span>⚔️ 主人公の武器・属性カスタム</span>
+          <span>🛡️ 4人パーティ編成（タップで入れ替え）</span>
           <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
         </div>
-        <div id="sq-protag-summary" style="font-size:12px; font-weight:800; margin-bottom:8px;"></div>
+        <div id="sq-party-editor" class="party-strip"></div>
+        <div id="sq-slot-picker" style="display:none; margin-top:8px;"></div>
+      </div>
 
-        <div style="font-size:12px; font-weight:900; margin:6px 0 4px;">共鳴属性を選択（6属性）</div>
-        <div id="sq-element-grid" class="chip-grid cols-3"></div>
-
-        <div style="font-size:12px; font-weight:900; margin:10px 0 4px;">武器種を選択（全8種）</div>
+      <div class="card">
+        <div class="section-title"><span>⚔️ 主人公の武器・属性自由切替</span></div>
+        <div id="sq-protag-summary" style="font-size:12px; font-weight:800; margin-bottom:6px;"></div>
+        <div id="sq-element-grid" class="chip-grid cols-3" style="margin-bottom:8px;"></div>
         <div id="sq-weapon-grid" class="chip-grid"></div>
       </div>
 
       <div class="card">
-        <div class="section-title"><span>🐾 現在の所属隊員（Rランク初期メンバー）</span></div>
+        <div class="section-title"><span>📈 隊員育成（Lv.1〜100・昇格試練）</span></div>
+        <div id="sq-materials-bar" style="font-size:11px; margin-bottom:8px; background:var(--surface-sub); padding:6px 8px; border-radius:8px;"></div>
         <div id="sq-roster-list"></div>
       </div>
     </section>
 
-    <!-- 3. 主人公クリエイト画面 -->
+    <!-- 3. スカウト（ガチャ）画面 -->
+    <section id="view-gacha" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🌠 軌道スカウト（隊員招集）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="gacha-banner-tabs" class="chip-grid cols-3" style="margin-bottom:8px;"></div>
+        <div id="gacha-banner-card" style="background:var(--surface-sub); border:2px solid var(--border); border-radius:14px; padding:10px;"></div>
+        <div id="gacha-pity-text" style="font-size:11px; font-weight:900; color:var(--miasma); margin:8px 0;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <button onclick="executeScout(1)">1回招集<br><span style="font-size:11px;">💎 160</span></button>
+          <button class="btn-accent2" onclick="executeScout(10)">10回招集（SR以上確定）<br><span style="font-size:11px;">💎 1,600</span></button>
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-top:8px;">
+          提供割合：SSR 3.0%（80連天井） / SR 15.0% / R 42.0% / N 40.0%
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 主人公クリエイト画面 -->
     <section id="view-creator" class="view">
       <div class="card">
         <div class="section-title">
           <span>🪪 第7クリアラー小隊・隊長登録</span>
           <button class="btn-xs" onclick="switchView('home')">閉じる</button>
         </div>
-        <p style="font-size:12px; color:var(--muted); margin:0 0 10px;">
-          主人公の名前・見た目・初期武器・共鳴属性を設定します（拠点からいつでも変更できます）。
-        </p>
-
         <label style="font-size:12px; font-weight:900;">1. 隊長の名前</label>
-        <input type="text" id="cr-name-input" maxlength="12" placeholder="名前を入力（例：ユウ）" style="margin:4px 0 10px;" />
-
+        <input type="text" id="cr-name-input" maxlength="12" placeholder="名前を入力" style="margin:4px 0 10px;" />
         <label style="font-size:12px; font-weight:900;">2. スタイル（見た目）</label>
         <div id="cr-style-grid" class="chip-grid" style="margin:4px 0 10px;"></div>
-
         <label style="font-size:12px; font-weight:900;">3. 初期共鳴属性</label>
         <div id="cr-element-grid" class="chip-grid cols-3" style="margin:4px 0 10px;"></div>
-
         <label style="font-size:12px; font-weight:900;">4. 初期武器種</label>
         <div id="cr-weapon-grid" class="chip-grid" style="margin:4px 0 14px;"></div>
-
-        <button class="btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="confirmProtagonist()">
+        <button class="btn-primary" style="width:100%; padding:12px;" onclick="confirmProtagonist()">
           🚀 この設定で前線キャンプへ降下する！
         </button>
       </div>
     </section>
 
-    <!-- 4. ハンター端末（シリアルコード・アプデ確認・セーブ管理） -->
+    <!-- 5. ハンター端末 -->
     <section id="view-terminal" class="view">
       <div class="card">
         <div class="section-title">
@@ -163,18 +176,14 @@
         <button class="btn-primary" style="width:100%;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
         <div id="term-update-status" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
       </div>
-
       <div class="card">
         <div class="section-title"><span>🎁 シリアルコード入力</span></div>
-        <p style="font-size:11px; color:var(--muted); margin:0 0 6px;">
-          テスト用コード：<code>FRONTIER2026</code> / <code>MIASMA777</code>
-        </p>
+        <p style="font-size:11px; color:var(--muted); margin:0 0 6px;">コード例：<code>FRONTIER2026</code> / <code>MIASMA777</code></p>
         <div style="display:flex; gap:6px;">
           <input type="text" id="term-code-input" placeholder="コードを入力" />
           <button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button>
         </div>
       </div>
-
       <div class="card">
         <div class="section-title"><span>⚠️ データ管理</span></div>
         <button style="width:100%;" onclick="resetAllSaveData()">セーブデータを初期化する</button>
@@ -182,9 +191,27 @@
     </section>
   </div>
 
+  <!-- ガチャ演出＆結果モーダル -->
+  <div id="modal-gacha" class="modal-overlay">
+    <div class="modal-box">
+      <div id="gacha-modal-stage">
+        <div id="pod-visual" class="pod-orb pod-blue">🛰️</div>
+        <div id="pod-label" style="font-size:14px; font-weight:900;">軌道ビーコンより降下中……</div>
+        <button class="btn-xs" style="margin-top:12px;" onclick="showGachaResultGrid()">演出スキップ ⏭</button>
+      </div>
+      <div id="gacha-modal-results" style="display:none;">
+        <h3 style="margin:0 0 6px; font-size:16px;">🎉 招集完了！</h3>
+        <div id="gacha-result-grid" class="pull-grid"></div>
+        <button class="btn-primary" style="width:100%;" onclick="closeGachaModal()">確認OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script src="data.js"></script>
+  <script src="gacha.js"></script>
+  <script src="growth.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
