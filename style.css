@@ -382,3 +382,88 @@ input[type="text"], select {
 .toast.show {
   opacity: 1;
 }
+/* スカウト（ガチャ）演出モーダル＆カード */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 19, 24, 0.85);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 90;
+}
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.4);
+}
+
+@keyframes podPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.pod-orb {
+  width: 110px;
+  height: 110px;
+  margin: 14px auto;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46px;
+  animation: podPulse 0.75s infinite ease-in-out;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.pod-blue {
+  background: radial-gradient(circle, #4cc9f0, #1982c4);
+  box-shadow: 0 0 28px #4cc9f0;
+}
+.pod-gold {
+  background: radial-gradient(circle, #ffe66d, #ff9f1c);
+  box-shadow: 0 0 36px #ffd000;
+}
+.pod-rainbow {
+  background: conic-gradient(#ff595e, #ffca3a, #8ac926, #1982c4, #b565ff, #ff595e);
+  box-shadow: 0 0 46px #ffffff, 0 0 60px #b565ff;
+}
+
+.pull-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  max-height: 58dvh;
+  overflow-y: auto;
+  margin: 10px 0;
+}
+
+.pull-card {
+  background: var(--surface-sub);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 7px 5px;
+  text-align: center;
+}
+
+.pull-card.rarity-SSR {
+  border-color: #ff4d79;
+  background: linear-gradient(135deg, rgba(255, 209, 59, 0.25), rgba(181, 101, 255, 0.25));
+}
+
+.pull-card.rarity-SR {
+  border-color: #ff9f1c;
+  background: rgba(255, 209, 59, 0.16);
+}
