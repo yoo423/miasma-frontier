@@ -32,6 +32,7 @@ function createDefaultSave() {
     charLevels: { protagonist: 1, momo: 1, mint: 1, aoi: 1 },
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
+    materials: {},
     redeemedCodes: []
   };
 }
@@ -128,6 +129,7 @@ function switchView(viewId) {
 
   if (viewId === "home") renderHome();
   if (viewId === "squad") renderSquadView();
+  if (viewId === "battle") renderBattleView();
   if (viewId === "gacha") renderGachaView();
   if (viewId === "creator") renderCreatorView();
   if (viewId === "terminal") renderTerminalView();
@@ -378,9 +380,72 @@ function confirmProtagonist() {
   switchView("home");
 }
 
+const BUILTIN_HISTORY = [
+  {
+    version: "1.2.0",
+    date: "2026-11-26",
+    title: "Step 3：リアルタイム元素連携バトル＆部位破壊",
+    detail: "4人クイック交代、6元素反応、体勢ブレイク連携コンボ、主霧獣の部位破壊ドロップ、アプリ内更新履歴を追加。"
+  },
+  {
+    version: "1.1.0",
+    date: "2026-11-26",
+    title: "Step 2：軌道スカウト（ガチャ）＆重厚育成システム",
+    detail: "限定ピックアップ＆恒常ガチャ（昇格演出・80連天井）、全28キャラ、Lv.1〜100育成＆昇格試練、パーティ編成を実装。"
+  },
+  {
+    version: "1.0.0",
+    date: "2026-11-26",
+    title: "Step 1：基盤・主人公クリエイト・ハイブリッドUI",
+    detail: "隊長登録、武器8種・属性6種の自由切替、拠点クリーンUI＆作戦端末UI切替、セーブ＆アップデート検知を実装。"
+  }
+];
+
+function renderHistoryList(items) {
+  const listEl = document.getElementById("term-history-list");
+  if (!listEl) return;
+  listEl.innerHTML = (items || BUILTIN_HISTORY).map(h => `
+    <div class="history-item">
+      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;">
+        <span>Ver ${escapeHtml(h.version)}：${escapeHtml(h.title)}</span>
+        <span style="color:var(--muted);">${escapeHtml(h.date || "")}</span>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4;">
+        ${escapeHtml(h.detail)}
+      </div>
+    </div>
+  `).join("");
+}
+
 function renderTerminalView() {
   document.getElementById("term-version").textContent = `現在のバージョン：Ver ${window.MF_DATA.APP_VERSION}`;
+  renderHistoryList(BUILTIN_HISTORY);
+  fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(info => { if (info?.history) renderHistoryList(info.history); })
+    .catch(() => {});
 }
+
+async function checkAppUpdate() {
+  const statusEl = document.getElementById("term-update-status");
+  statusEl.textContent = "最新バージョンを確認中...";
+  try {
+    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
+    const info = await res.json();
+    if (info?.history) renderHistoryList(info.history);
+    if (info.version !== window.MF_DATA.APP_VERSION) {
+      statusEl.innerHTML = `🆕 <strong>Ver ${escapeHtml(info.version)}</strong> が配信中！<br>${escapeHtml(info.notes || "")}`;
+      if (confirm(`最新バージョン（Ver ${info.version}）へ更新しますか？※セーブデータは保持されます`)) {
+        location.reload(true);
+      }
+    } else {
+      statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）です。`;
+    }
+  } catch (e) {
+    statusEl.textContent = "オフラインまたは確認中です。";
+  }
+}
+
 
 function redeemSerialCode() {
   const input = document.getElementById("term-code-input");
@@ -403,24 +468,7 @@ function redeemSerialCode() {
   showToast(`🎁 ${reward.label}受取！（結晶石+${reward.gems} / 記録+${reward.books}）`);
 }
 
-async function checkAppUpdate() {
-  const statusEl = document.getElementById("term-update-status");
-  statusEl.textContent = "最新バージョンを確認中...";
-  try {
-    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
-    const info = await res.json();
-    if (info.version !== window.MF_DATA.APP_VERSION) {
-      statusEl.innerHTML = `🆕 <strong>Ver ${escapeHtml(info.version)}</strong> が配信中！<br>${escapeHtml(info.notes || "")}`;
-      if (confirm(`最新バージョン（Ver ${info.version}）へ更新しますか？※セーブデータは保持されます`)) {
-        location.reload(true);
-      }
-    } else {
-      statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）です。`;
-    }
-  } catch (e) {
-    statusEl.textContent = "オフラインまたは確認中です。";
-  }
-}
+
 
 function resetAllSaveData() {
   if (confirm("本当にすべてのセーブデータを初期化しますか？")) {
