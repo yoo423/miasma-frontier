@@ -30,6 +30,10 @@ function createDefaultSave() {
     pityGuaranteed: false,
     ownedChars: ["protagonist", "momo", "mint", "aoi"],
     party: ["protagonist", "momo", "mint", "aoi"],
+    tacticDeck: [
+      "counter_stance", "aegis_wall", "shield_breaker", "shock_trap",
+      "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
+    ],
     charLevels: { protagonist: 1, momo: 1, mint: 1, aoi: 1 },
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
@@ -53,6 +57,7 @@ function loadSave() {
       ...parsed,
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
+      tacticDeck: (parsed.tacticDeck && parsed.tacticDeck.length === 8) ? parsed.tacticDeck : base.tacticDeck,
       charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
       charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) },
@@ -135,8 +140,8 @@ function switchView(viewId) {
   if (target) target.classList.add("active");
 
   if (viewId === "home") renderHome();
-  if (viewId === "world" && typeof renderWorldView === "function") renderWorldView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
   if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
   if (viewId === "char_detail" && typeof renderCharDetailView === "function") renderCharDetailView();
   if (viewId === "gacha" && typeof renderGachaView === "function") renderGachaView();
@@ -264,17 +269,13 @@ function renderSquadView() {
 }
 
 function setProtagonistElement(elId) {
-  state.protagonistElement = elId;
-  saveGame();
-  playSfx("switch");
+  state.protagonistElement = elId; saveGame(); playSfx("switch");
   if (typeof renderCharDetailView === "function") renderCharDetailView();
   showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`);
 }
 
 function setProtagonistWeapon(wpId) {
-  state.protagonistWeapon = wpId;
-  saveGame();
-  playSfx("switch");
+  state.protagonistWeapon = wpId; saveGame(); playSfx("switch");
   if (typeof renderCharDetailView === "function") renderCharDetailView();
   showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`);
 }
@@ -289,23 +290,13 @@ function renderCreatorView() {
 function refreshCreatorSelections() {
   document.getElementById("cr-style-grid").innerHTML = window.MF_DATA.PROTAGONIST_STYLES.map(s => {
     const thumb = window.MF_SPRITES.portraitHTML({ id: "protagonist", isProtagonist: true, styleId: s.id, name: s.name, emoji: s.emoji }, "icon");
-    return `
-      <button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" style="text-align:center;"
-              onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">
-        ${thumb}
-        <strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span>
-      </button>
-    `;
+    return `<button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" style="text-align:center;" onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">${thumb}<strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span></button>`;
   }).join("");
   document.getElementById("cr-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `
-    <button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">
-      ${el.icon} <strong>${el.name}</strong>
-    </button>
+    <button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">${el.icon} <strong>${el.name}</strong></button>
   `).join("");
   document.getElementById("cr-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `
-    <button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}" onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">
-      ${wp.icon} <strong>${wp.name}</strong>
-    </button>
+    <button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}" onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">${wp.icon} <strong>${wp.name}</strong></button>
   `).join("");
 }
 
@@ -318,10 +309,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = `現在のバージョン：Ver ${window.MF_DATA.APP_VERSION}`;
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.0.0（戦略カードRPG刷新）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 1.7.0：全キャラ立ち絵・自動反映システム実装</strong><div style="font-size:11px; color:var(--muted);">assetsフォルダにキャラ画像を置くだけで全画面に自動表示＆タップ全身拡大に対応。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.0.0：戦略チェイン＆読み合いカードバトル実装</strong><div style="font-size:11px; color:var(--muted);">20枚デッキ編成、3枚チェイン元素コンボ、攻撃・防御カウンター・崩しの3すくみ読み合い、EX必殺カードを実装。</div></div>`;
   }
 }
 
@@ -343,7 +334,7 @@ async function checkAppUpdate() {
     const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
     const info = await res.json();
     if (info.version !== window.MF_DATA.APP_VERSION && confirm(`最新 Ver ${info.version} に更新しますか？`)) location.reload(true);
-    else statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）です。`;
+    else statusEl.textContent = "✅ 最新ビルドで動作中です。";
   } catch (e) { statusEl.textContent = "確認完了"; }
 }
 
