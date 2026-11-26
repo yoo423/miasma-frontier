@@ -2,15 +2,9 @@ let editingSlotIndex = null;
 let selectedDetailCharId = "protagonist";
 
 function getLevelUpCost(currentLv) {
-  if (currentLv < 20) {
-    return { books: 1 + Math.floor(currentLv / 5), credits: 150 * currentLv };
-  }
-  if (currentLv < 60) {
-    return { books: 4 + Math.floor((currentLv - 20) / 3), credits: 450 * currentLv };
-  }
-  if (currentLv < 80) {
-    return { books: 18 + (currentLv - 60), credits: 1200 * currentLv };
-  }
+  if (currentLv < 20) return { books: 1 + Math.floor(currentLv / 5), credits: 150 * currentLv };
+  if (currentLv < 60) return { books: 4 + Math.floor((currentLv - 20) / 3), credits: 450 * currentLv };
+  if (currentLv < 80) return { books: 18 + (currentLv - 60), credits: 1200 * currentLv };
   return { books: 45 + (currentLv - 80) * 3, credits: 3500 * currentLv };
 }
 
@@ -28,14 +22,20 @@ function getAscensionCost(rank) {
   return table[rank] || null;
 }
 
+function getSkillTreeStage(charId) {
+  state.skillTrees = state.skillTrees || {};
+  return state.skillTrees[charId] || 0;
+}
+
 function calcCharPower(charId) {
   const ch = getCharProfile(charId);
   const lv = state.charLevels[charId] || 1;
   const rank = state.charRanks[charId] || 0;
   const dupe = state.charDupes[charId] || 0;
+  const nodes = window.MF_DATA.SKILL_TREE_NODES || [];
+  const treeBonus = nodes.slice(0, getSkillTreeStage(charId)).reduce((s, n) => s + n.powerBonus, 0);
   const rarityMult = ch.rarity === "SSR" ? 1.35 : (ch.rarity === "SR" ? 1.18 : (ch.rarity === "R" ? 1.05 : 1.0));
-  const treeBonus = (window.MF_DATA.SKILL_TREE_NODES || []).slice(0, getSkillTreeStage(charId)).reduce((s, n) => s + n.powerBonus, 0);
-  return Math.round((80 + lv * 14 + rank * 45) * rarityMult * (1 + dupe * 0.08));
+  return Math.round((80 + lv * 14 + rank * 45 + treeBonus) * rarityMult * (1 + dupe * 0.08));
 }
 
 function getCharStats(charId) {
@@ -78,18 +78,11 @@ function renderPartyEditor() {
   }).join("");
 
   const picker = document.getElementById("sq-slot-picker");
-  if (editingSlotIndex === null) {
-    picker.style.display = "none";
-    return;
-  }
+  if (editingSlotIndex === null) { picker.style.display = "none"; return; }
   picker.style.display = "block";
-  const candidates = state.ownedChars.filter(
-    id => !state.party.includes(id) || state.party[editingSlotIndex] === id
-  );
+  const candidates = state.ownedChars.filter(id => !state.party.includes(id) || state.party[editingSlotIndex] === id);
   picker.innerHTML = `
-    <div style="font-size:11px; font-weight:900; margin-bottom:6px;">
-      枠${editingSlotIndex + 1}に編成する隊員を選択：
-    </div>
+    <div style="font-size:11px; font-weight:900; margin-bottom:6px;">枠${editingSlotIndex + 1}に編成する隊員を選択：</div>
     <div class="chip-grid">
       ${candidates.map(id => {
         const c = getCharProfile(id);
@@ -121,7 +114,6 @@ function assignPartySlot(slotIdx, charId) {
   showToast(`${getCharProfile(charId).name} を編成しました！`);
 }
 
-// ---------- 1人1画面・キャラクター詳細＆育成ビュー ----------
 function openCharDetail(charId) {
   selectedDetailCharId = charId;
   switchView("char_detail");
@@ -130,17 +122,14 @@ function openCharDetail(charId) {
 function cycleDetailChar(delta) {
   const list = getSortedOwnedIds();
   const idx = list.indexOf(selectedDetailCharId);
-  const next = (idx + delta + list.length) % list.length;
-  selectedDetailCharId = list[next];
+  selectedDetailCharId = list[(idx + delta + list.length) % list.length];
   playSfx("tap");
   renderCharDetailView();
 }
 
 function renderCharDetailView() {
   renderTopBar();
-  if (!state.ownedChars.includes(selectedDetailCharId)) {
-    selectedDetailCharId = "protagonist";
-  }
+  if (!state.ownedChars.includes(selectedDetailCharId)) selectedDetailCharId = "protagonist";
 
   const id = selectedDetailCharId;
   const ch = getCharProfile(id);
@@ -154,11 +143,9 @@ function renderCharDetailView() {
   const nextCost = getLevelUpCost(lv);
   const ascReq = getAscensionCost(rank);
   const list = getSortedOwnedIds();
-  const posText = `${list.indexOf(id) + 1} / ${list.length}`;
 
-  document.getElementById("cd-header-title").textContent = `${ch.name}（${posText}）`;
+  document.getElementById("cd-header-title").textContent = `${ch.name}（${list.indexOf(id) + 1} / ${list.length}）`;
 
-  // 大きな立ち絵＆セリフ
   const line = ch.voiceLines?.[Math.floor(Math.random() * ch.voiceLines.length)] || "作戦準備完了です！";
   document.getElementById("cd-hero-box").innerHTML = `
     <div style="display:grid; grid-template-columns:138px 1fr; gap:10px; align-items:center;">
@@ -178,7 +165,7 @@ function renderCharDetailView() {
         <h3 style="margin:0 0 4px; font-size:18px;">${escapeHtml(ch.name)}</h3>
         <div style="font-size:11px; font-weight:900; margin-bottom:6px;">
           ${el.icon} ${el.name}属性 ｜ ${wp.icon} ${wp.name}<br>
-          🐾 ${ch.kemonomimi}
+          🏷️ ${ch.trait || "開拓隊員"}
         </div>
         <div class="speech-bubble" style="font-size:11px;" onclick="playSfx('switch'); renderCharDetailView();">
           💬「${escapeHtml(line)}」
@@ -187,7 +174,6 @@ function renderCharDetailView() {
     </div>
   `;
 
-  // ステータス＆限界突破ゲージ
   const stars = Array.from({ length: 5 }, (_, i) => (i < dupe ? "★" : "☆")).join("");
   document.getElementById("cd-stats-box").innerHTML = `
     <div class="stat-grid">
@@ -202,17 +188,14 @@ function renderCharDetailView() {
     </div>
   `;
 
-  // レベルアップ・昇格操作エリア
   const pct = Math.min(100, Math.round((lv / cap) * 100));
   let growthControls = "";
   if (lv >= cap && ascReq) {
     growthControls = `
-      <div style="font-size:11px; color:var(--accent-2); font-weight:900; margin-bottom:6px;">
-        ⚠️ 現在のレベル上限（Lv.${cap}）に到達しています！
-      </div>
+      <div style="font-size:11px; color:var(--accent-2); font-weight:900; margin-bottom:6px;">⚠️ 現在のレベル上限（Lv.${cap}）に到達しています！</div>
       <button class="btn-accent2" style="width:100%; padding:11px;" onclick="attemptAscensionTrial('${id}')">
         🏆 ${ascReq.trialName} に挑む<br>
-        <span style="font-size:10px;">必要：💠元素コア ${ascReq.cores}個 / 🪙${ascReq.credits.toLocaleString()} / 推奨戦力 ${ascReq.reqPower}</span>
+        <span style="font-size:10px;">必要：💠コア ${ascReq.cores} / 🪙${ascReq.credits.toLocaleString()} / 推奨戦力 ${ascReq.reqPower}</span>
       </button>
     `;
   } else if (lv < 100) {
@@ -238,25 +221,22 @@ function renderCharDetailView() {
       <strong style="font-size:14px;">Lv.${lv} / ${cap}</strong>
       <span style="font-size:11px; color:var(--muted);">昇格ランク ${rank} / 4</span>
     </div>
-    <div class="gauge-bar" style="margin-bottom:10px;">
-      <div style="background:var(--accent); width:${pct}%;"></div>
-    </div>
+    <div class="gauge-bar" style="margin-bottom:10px;"><div style="background:var(--accent); width:${pct}%;"></div></div>
     ${growthControls}
   `;
 
-  // 主人公専用：その場で武器・属性切替
+  renderSkillTreeBox(id);
+
   const protagBox = document.getElementById("cd-protag-box");
   if (ch.isProtagonist) {
     protagBox.style.display = "block";
     document.getElementById("cd-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(e => `
-      <button class="select-chip ${state.protagonistElement === e.id ? "selected" : ""}"
-              onclick="setProtagonistElement('${e.id}')">
+      <button class="select-chip ${state.protagonistElement === e.id ? "selected" : ""}" onclick="setProtagonistElement('${e.id}')">
         ${e.icon} <strong>${e.name}</strong>
       </button>
     `).join("");
     document.getElementById("cd-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(w => `
-      <button class="select-chip ${state.protagonistWeapon === w.id ? "selected" : ""}"
-              onclick="setProtagonistWeapon('${w.id}')">
+      <button class="select-chip ${state.protagonistWeapon === w.id ? "selected" : ""}" onclick="setProtagonistWeapon('${w.id}')">
         ${w.icon} <strong>${w.name}</strong>
       </button>
     `).join("");
@@ -265,82 +245,9 @@ function renderCharDetailView() {
   }
 }
 
-function levelUpCharacter(charId, steps) {
-  const ch = getCharProfile(charId);
-  let lv = state.charLevels[charId] || 1;
-  const rank = state.charRanks[charId] || 0;
-  const cap = getRankCap(rank);
-
-  if (lv >= cap) {
-    showToast(`上限Lv.${cap}に到達！「昇格試練」で上限を解放してください`);
-    return;
-  }
-
-  let leveled = 0;
-  for (let i = 0; i < steps; i++) {
-    if (lv >= cap) break;
-    const cost = getLevelUpCost(lv);
-    if ((state.expBooks || 0) < cost.books || state.credits < cost.credits) {
-      if (leveled === 0) {
-        showToast(`素材不足（作戦記録 ${cost.books}冊 / 🪙${cost.credits.toLocaleString()} 必要）`);
-        return;
-      }
-      break;
-    }
-    state.expBooks -= cost.books;
-    state.credits -= cost.credits;
-    lv += 1;
-    leveled += 1;
-  }
-
-  state.charLevels[charId] = lv;
-  saveGame();
-  playSfx("switch");
-  renderTopBar();
-  renderCharDetailView();
-  showToast(`${ch.name} が Lv.${lv} にアップ！（戦力 ${calcCharPower(charId)}）`);
-}
-
-function attemptAscensionTrial(charId) {
-  const ch = getCharProfile(charId);
-  const rank = state.charRanks[charId] || 0;
-  const req = getAscensionCost(rank);
-  if (!req) return;
-
-  if ((state.cores || 0) < req.cores || state.credits < req.credits) {
-    showToast(`試練素材不足（元素コア ${req.cores}個 / 🪙${req.credits.toLocaleString()} 必要）`);
-    return;
-  }
-
-  const teamPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
-  if (teamPower < req.reqPower) {
-    showToast(`⚠️ 戦力不足！小隊総戦力 ${req.reqPower} 以上で挑めます（現在 ${teamPower}）`);
-    return;
-  }
-
-  state.cores -= req.cores;
-  state.credits -= req.credits;
-  state.charRanks[charId] = rank + 1;
-
-  if (ch.isProtagonist) {
-    const nextRar = rank + 1 === 1 ? "SR" : (rank + 1 >= 2 ? "SSR" : "R");
-    window.MF_DATA.CHARACTERS.protagonist.rarity = nextRar;
-  }
-
-  saveGame();
-  playSfx("gift");
-  renderTopBar();
-  renderCharDetailView();
-  showToast(`🏆 ${req.trialName} 突破！上限が Lv.${getRankCap(rank + 1)} に解放！`);
-}
-
-// ---------- 固有スキル詳細＆6段階スキルツリー（潜在覚醒ボード） ----------
-function getSkillTreeStage(charId) {
-  state.skillTrees = state.skillTrees || {};
-  return state.skillTrees[charId] || 0;
-}
-
 function renderSkillTreeBox(charId) {
+  const box = document.getElementById("cd-skill-box");
+  if (!box) return;
   const ch = getCharProfile(charId);
   const stage = getSkillTreeStage(charId);
   const nodes = window.MF_DATA.SKILL_TREE_NODES || [];
@@ -366,7 +273,7 @@ function renderSkillTreeBox(charId) {
     `;
   }).join("");
 
-  document.getElementById("cd-skill-box").innerHTML = `
+  box.innerHTML = `
     <div class="section-title"><span>⚡ 固有スキル一覧</span></div>
     <div style="font-size:11px; background:var(--surface-sub); padding:8px; border-radius:10px; margin-bottom:10px; line-height:1.5;">
       <div><strong>⚔️ 通常：</strong>${escapeHtml(sk.normal)}</div>
@@ -399,4 +306,64 @@ function unlockSkillNode(charId) {
   renderTopBar();
   renderCharDetailView();
   showToast(`🌳 スキルツリー「${node.name}」を解放しました！`);
+}
+
+function levelUpCharacter(charId, steps) {
+  const ch = getCharProfile(charId);
+  let lv = state.charLevels[charId] || 1;
+  const rank = state.charRanks[charId] || 0;
+  const cap = getRankCap(rank);
+
+  if (lv >= cap) { showToast(`上限Lv.${cap}に到達！「昇格試練」で解放してください`); return; }
+
+  let leveled = 0;
+  for (let i = 0; i < steps; i++) {
+    if (lv >= cap) break;
+    const cost = getLevelUpCost(lv);
+    if ((state.expBooks || 0) < cost.books || state.credits < cost.credits) {
+      if (leveled === 0) showToast(`素材不足（記録 ${cost.books} / 🪙${cost.credits.toLocaleString()} 必要）`);
+      break;
+    }
+    state.expBooks -= cost.books;
+    state.credits -= cost.credits;
+    lv += 1;
+    leveled += 1;
+  }
+  if (leveled === 0) return;
+
+  state.charLevels[charId] = lv;
+  saveGame();
+  playSfx("switch");
+  renderTopBar();
+  renderCharDetailView();
+  showToast(`${ch.name} が Lv.${lv} にアップ！（戦力 ${calcCharPower(charId)}）`);
+}
+
+function attemptAscensionTrial(charId) {
+  const ch = getCharProfile(charId);
+  const rank = state.charRanks[charId] || 0;
+  const req = getAscensionCost(rank);
+  if (!req) return;
+
+  if ((state.cores || 0) < req.cores || state.credits < req.credits) {
+    showToast(`試練素材不足（元素コア ${req.cores}個 / 🪙${req.credits.toLocaleString()} 必要）`);
+    return;
+  }
+  const teamPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
+  if (teamPower < req.reqPower) {
+    showToast(`⚠️ 戦力不足！小隊総戦力 ${req.reqPower} 以上で挑めます（現在 ${teamPower}）`);
+    return;
+  }
+
+  state.cores -= req.cores;
+  state.credits -= req.credits;
+  state.charRanks[charId] = rank + 1;
+  if (ch.isProtagonist) {
+    window.MF_DATA.CHARACTERS.protagonist.rarity = rank + 1 === 1 ? "SR" : "SSR";
+  }
+  saveGame();
+  playSfx("gift");
+  renderTopBar();
+  renderCharDetailView();
+  showToast(`🏆 ${req.trialName} 突破！上限が Lv.${getRankCap(rank + 1)} に解放！`);
 }
