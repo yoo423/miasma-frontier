@@ -9,18 +9,18 @@ let showcaseCharId = "protagonist";
 
 function createDefaultSave() {
   return {
-    activityPt: 0, mailbox: [], claimedMailIds: [],
     initialized: false,
-    playerName: "名無し",
+    playerName: "ユウ",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
     playerRank: 1,
     playerExp: 0,
-    gems: 3200, // 最初から20連分お試し可能
+    gems: 3200,
     credits: 8000,
     expBooks: 30,
     cores: 6,
+    activityPt: 0,
     en: 160,
     reserveEn: 0,
     lastEnTimestamp: Date.now(),
@@ -34,6 +34,9 @@ function createDefaultSave() {
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     materials: {},
+    regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
+    mailbox: [],
+    claimedMailIds: [],
     redeemedCodes: []
   };
 }
@@ -48,8 +51,12 @@ function loadSave() {
       ...base,
       ...parsed,
       ownedChars: parsed.ownedChars || base.ownedChars,
+      party: parsed.party || base.party,
+      charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
-      charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) }
+      charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) },
+      materials: parsed.materials || {},
+      regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
   } catch (e) {
     return createDefaultSave();
@@ -67,19 +74,15 @@ function updateStamina() {
 
   const ticks = Math.floor(elapsed / EN_REGEN_MS);
   state.lastEnTimestamp += ticks * EN_REGEN_MS;
-
   for (let i = 0; i < ticks; i++) {
-    if (state.en < MAX_EN) {
-      state.en += 1;
-    } else if (state.reserveEn < MAX_RESERVE_EN && i % 2 === 0) {
-      state.reserveEn = Math.min(MAX_RESERVE_EN, state.reserveEn + 1);
-    }
+    if (state.en < MAX_EN) state.en += 1;
+    else if (state.reserveEn < MAX_RESERVE_EN && i % 2 === 0) state.reserveEn += 1;
   }
   saveGame();
 }
 
 function playSfx(type) {
-  if (!state.soundOn) return;
+  if (!state?.soundOn) return;
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === "suspended") audioCtx.resume();
@@ -126,34 +129,30 @@ function toggleUiTheme() {
 function switchView(viewId) {
   playSfx("tap");
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  document.getElementById(`view-${viewId}`).classList.add("active");
+  const target = document.getElementById(`view-${viewId}`);
+  if (target) target.classList.add("active");
 
-  if (viewId === "mail") renderMailView();
-  if (viewId === "bag") renderBagView();
   if (viewId === "home") renderHome();
-  if (viewId === "squad") renderSquadView();
-  if (viewId === "char_detail") renderCharDetailView();
-  if (viewId === "battle") renderBattleView();
-  if (viewId === "gacha") renderGachaView();
+  if (viewId === "world" && typeof renderWorldView === "function") renderWorldView();
+  if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
+  if (viewId === "char_detail" && typeof renderCharDetailView === "function") renderCharDetailView();
+  if (viewId === "gacha" && typeof renderGachaView === "function") renderGachaView();
+  if (viewId === "mail" && typeof renderMailView === "function") renderMailView();
+  if (viewId === "bag" && typeof renderBagView === "function") renderBagView();
   if (viewId === "creator") renderCreatorView();
   if (viewId === "terminal") renderTerminalView();
 }
 
 function getCharProfile(charId) {
-  const base = window.MF_DATA.CHARACTERS[charId];
-  if (!base) return null;
+  const base = window.MF_DATA.CHARACTERS[charId] || window.MF_DATA.CHARACTERS.protagonist;
   if (base.isProtagonist) {
     const style = window.MF_DATA.PROTAGONIST_STYLES.find(s => s.id === state.styleId) || window.MF_DATA.PROTAGONIST_STYLES[0];
     const rank = state.charRanks?.protagonist || 0;
     const dynRarity = rank >= 2 ? "SSR" : (rank === 1 ? "SR" : "R");
     return {
-      ...base,
-      rarity: dynRarity,
-      name: state.playerName,
-      emoji: style.emoji,
-      styleName: style.name,
-      element: state.protagonistElement,
-      weapon: state.protagonistWeapon
+      ...base, rarity: dynRarity, name: state.playerName, emoji: style.emoji,
+      styleName: style.name, element: state.protagonistElement, weapon: state.protagonistWeapon
     };
   }
   return base;
@@ -185,6 +184,7 @@ function renderTopBar() {
 
 function renderHome() {
   renderTopBar();
+  if (typeof updateMailBadges === "function") updateMailBadges();
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
   const ch = getCharProfile(showcaseCharId);
   const elInfo = window.MF_DATA.ELEMENTS[ch.element];
@@ -225,122 +225,39 @@ function renderHome() {
 
   const reactions = detectActiveReactions();
   document.getElementById("home-reactions").textContent =
-    reactions.length > 0
-      ? `✨ 発動可能な元素反応：${reactions.join(" / ")}`
-      : "✨ 主人公の属性を切り替えると元素反応が発生します！";
+    reactions.length > 0 ? `✨ 発動可能な元素反応：${reactions.join(" / ")}` : "✨ 主人公の属性を切り替えると元素反応が発生！";
 }
 
 function cycleShowcase(forceId) {
   playSfx("tap");
-  if (forceId) {
-    showcaseCharId = forceId;
-  } else {
-    const ids = state.ownedChars;
-    showcaseCharId = ids[(ids.indexOf(showcaseCharId) + 1) % ids.length];
-  }
+  showcaseCharId = forceId || state.ownedChars[(state.ownedChars.indexOf(showcaseCharId) + 1) % state.ownedChars.length];
   renderHome();
 }
 
 function renderSquadView() {
   renderTopBar();
-  renderPartyEditor();
-
-  const totalPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
+  if (typeof renderPartyEditor === "function") renderPartyEditor();
+  const totalPower = state.party.reduce((sum, id) => sum + (typeof calcCharPower === "function" ? calcCharPower(id) : 100), 0);
   document.getElementById("sq-materials-bar").innerHTML = `
     ⚔️ 小隊総戦力：<strong>${totalPower}</strong> ｜ 📘 記録：<strong>${state.expBooks || 0}</strong> ｜ 💠 コア：<strong>${state.cores || 0}</strong>
   `;
-
-  const sortedOwned = getSortedOwnedIds();
-  document.getElementById("sq-roster-list").innerHTML = sortedOwned.map(id => {
+  const ids = typeof getSortedOwnedIds === "function" ? getSortedOwnedIds() : state.ownedChars;
+  document.getElementById("sq-roster-list").innerHTML = ids.map(id => {
     const ch = getCharProfile(id);
     const el = window.MF_DATA.ELEMENTS[ch.element];
     const wp = window.MF_DATA.WEAPONS[ch.weapon];
     const lv = state.charLevels[id] || 1;
-    const cap = getRankCap(state.charRanks[id] || 0);
-    const dupe = state.charDupes[id] || 0;
-    const inParty = state.party.includes(id);
-
+    const cap = typeof getRankCap === "function" ? getRankCap(state.charRanks[id] || 0) : 20;
     return `
       <div class="roster-tile" onclick="openCharDetail('${id}')">
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:10px;">
           <span class="rank-pill">${ch.rarity}</span>
-          <span>${inParty ? "🛡️編成中" : `凸+${dupe}`}</span>
+          <span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span>
         </div>
         <div style="font-size:32px; margin:4px 0;">${ch.emoji}</div>
-        <div style="font-size:12px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${escapeHtml(ch.name)}
-        </div>
-        <div style="font-size:10px; color:var(--muted); margin-top:2px;">
-          ${el.icon}${el.name}・${wp.name}
-        </div>
-        <div style="font-size:11px; font-weight:900; margin-top:3px; color:var(--accent);">
-          Lv.${lv}/${cap} ▶
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-
-  document.getElementById("sq-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `
-    <button class="select-chip ${state.protagonistWeapon === wp.id ? "selected" : ""}"
-            onclick="setProtagonistWeapon('${wp.id}')">
-      ${wp.icon} <strong>${wp.name}</strong>
-    </button>
-  `).join("");
-
-  const totalPower = state.party.reduce((sum, id) => sum + calcCharPower(id), 0);
-  document.getElementById("sq-materials-bar").innerHTML = `
-    📘 作戦記録：<strong>${state.expBooks || 0}冊</strong> ｜ 💠 元素コア：<strong>${state.cores || 0}個</strong> ｜ ⚔️ 小隊総戦力：<strong>${totalPower}</strong>
-  `;
-
-  const rarityOrder = { SSR: 0, SR: 1, R: 2, N: 3 };
-  const sortedOwned = [...state.ownedChars].sort((a, b) => {
-    const ca = getCharProfile(a), cb = getCharProfile(b);
-    return (rarityOrder[ca.rarity] ?? 9) - (rarityOrder[cb.rarity] ?? 9);
-  });
-
-  document.getElementById("sq-roster-list").innerHTML = sortedOwned.map(id => {
-    const ch = getCharProfile(id);
-    const el = window.MF_DATA.ELEMENTS[ch.element];
-    const wp = window.MF_DATA.WEAPONS[ch.weapon];
-    const lv = state.charLevels[id] || 1;
-    const rank = state.charRanks[id] || 0;
-    const dupe = state.charDupes[id] || 0;
-    const cap = getRankCap(rank);
-    const power = calcCharPower(id);
-    const nextCost = getLevelUpCost(lv);
-    const ascReq = getAscensionCost(rank);
-
-    let actionBtn = "";
-    if (lv >= cap && ascReq) {
-      actionBtn = `
-        <button class="btn-xs btn-accent2" onclick="attemptAscensionTrial('${id}')">
-          🏆 昇格試練（コア${ascReq.cores}・🪙${ascReq.credits.toLocaleString()} / 推奨戦力${ascReq.reqPower}）
-        </button>
-      `;
-    } else if (lv < 100) {
-      actionBtn = `
-        <button class="btn-xs btn-primary" onclick="levelUpCharacter('${id}', 1)">
-          +1 Lv（記録${nextCost.books} / 🪙${nextCost.credits.toLocaleString()}）
-        </button>
-        <button class="btn-xs" onclick="levelUpCharacter('${id}', 5)">+5 Lv</button>
-      `;
-    } else {
-      actionBtn = `<span class="tag" style="background:#ffd13b;">👑 MAX Lv.100</span>`;
-    }
-
-    return `
-      <div class="card" style="padding:10px; margin-bottom:8px;">
-        <div class="top-row">
-          <strong>${ch.emoji} ${escapeHtml(ch.name)} <span class="rank-pill">${ch.rarity}</span> <span class="tag">凸+${dupe}</span></strong>
-          <span style="font-size:12px; font-weight:900;">Lv.${lv}/${cap}（戦力${power}）</span>
-        </div>
-        <div style="font-size:11px; margin-top:4px;">
-          ${el.icon}${el.name} ｜ ${wp.icon}${wp.name} ｜ 🐾${ch.kemonomimi}
-        </div>
-        <div style="font-size:10px; color:var(--muted); margin:3px 0 6px;">🏭 ${ch.campSkill}</div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">${actionBtn}</div>
+        <div style="font-size:12px; font-weight:900;">${escapeHtml(ch.name)}</div>
+        <div style="font-size:10px; color:var(--muted);">${el.icon}${el.name}・${wp.name}</div>
+        <div style="font-size:11px; font-weight:900; color:var(--accent);">Lv.${lv}/${cap} ▶</div>
       </div>
     `;
   }).join("");
@@ -350,7 +267,6 @@ function setProtagonistElement(elId) {
   state.protagonistElement = elId;
   saveGame();
   playSfx("switch");
-  renderSquadView();
   renderCharDetailView();
   showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`);
 }
@@ -359,40 +275,30 @@ function setProtagonistWeapon(wpId) {
   state.protagonistWeapon = wpId;
   saveGame();
   playSfx("switch");
-  renderSquadView();
   renderCharDetailView();
   showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`);
 }
 
 let tempStyleId = "m_cool", tempWeaponId = "sword", tempElementId = "arc";
-
 function renderCreatorView() {
-  tempStyleId = state.styleId;
-  tempWeaponId = state.protagonistWeapon;
-  tempElementId = state.protagonistElement;
+  tempStyleId = state.styleId; tempWeaponId = state.protagonistWeapon; tempElementId = state.protagonistElement;
   document.getElementById("cr-name-input").value = state.playerName;
   refreshCreatorSelections();
 }
 
 function refreshCreatorSelections() {
   document.getElementById("cr-style-grid").innerHTML = window.MF_DATA.PROTAGONIST_STYLES.map(s => `
-    <button class="select-chip ${tempStyleId === s.id ? "selected" : ""}"
-            onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">
-      <span style="font-size:18px;">${s.emoji}</span> <strong>${s.name}</strong><br>
-      <span style="font-size:10px;">${s.tag}</span>
+    <button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">
+      <span style="font-size:18px;">${s.emoji}</span> <strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span>
     </button>
   `).join("");
-
   document.getElementById("cr-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `
-    <button class="select-chip ${tempElementId === el.id ? "selected" : ""}"
-            onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">
+    <button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">
       ${el.icon} <strong>${el.name}</strong>
     </button>
   `).join("");
-
   document.getElementById("cr-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `
-    <button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}"
-            onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">
+    <button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}" onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">
       ${wp.icon} <strong>${wp.name}</strong>
     </button>
   `).join("");
@@ -401,141 +307,64 @@ function refreshCreatorSelections() {
 function confirmProtagonist() {
   const rawName = document.getElementById("cr-name-input").value.trim();
   if (!rawName) { showToast("隊長の名前を入力してください！"); return; }
-  state.initialized = true;
-  state.playerName = rawName.slice(0, 12);
-  state.styleId = tempStyleId;
-  state.protagonistWeapon = tempWeaponId;
-  state.protagonistElement = tempElementId;
-  saveGame();
-  playSfx("gift");
-  showToast(`ようこそ、${state.playerName}隊長！`);
-  switchView("home");
-}
-
-const BUILTIN_HISTORY = [
-  {
-    version: "1.2.0",
-    date: "2026-11-26",
-    title: "Step 3：リアルタイム元素連携バトル＆部位破壊",
-    detail: "4人クイック交代、6元素反応、体勢ブレイク連携コンボ、主霧獣の部位破壊ドロップ、アプリ内更新履歴を追加。"
-  },
-  {
-    version: "1.1.0",
-    date: "2026-11-26",
-    title: "Step 2：軌道スカウト（ガチャ）＆重厚育成システム",
-    detail: "限定ピックアップ＆恒常ガチャ（昇格演出・80連天井）、全28キャラ、Lv.1〜100育成＆昇格試練、パーティ編成を実装。"
-  },
-  {
-    version: "1.0.0",
-    date: "2026-11-26",
-    title: "Step 1：基盤・主人公クリエイト・ハイブリッドUI",
-    detail: "隊長登録、武器8種・属性6種の自由切替、拠点クリーンUI＆作戦端末UI切替、セーブ＆アップデート検知を実装。"
-  }
-];
-
-function renderHistoryList(items) {
-  const listEl = document.getElementById("term-history-list");
-  if (!listEl) return;
-  listEl.innerHTML = (items || BUILTIN_HISTORY).map(h => `
-    <div class="history-item">
-      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;">
-        <span>Ver ${escapeHtml(h.version)}：${escapeHtml(h.title)}</span>
-        <span style="color:var(--muted);">${escapeHtml(h.date || "")}</span>
-      </div>
-      <div style="font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4;">
-        ${escapeHtml(h.detail)}
-      </div>
-    </div>
-  `).join("");
+  state.initialized = true; state.playerName = rawName.slice(0, 12);
+  state.styleId = tempStyleId; state.protagonistWeapon = tempWeaponId; state.protagonistElement = tempElementId;
+  saveGame(); playSfx("gift"); switchView("home");
 }
 
 function renderTerminalView() {
   document.getElementById("term-version").textContent = `現在のバージョン：Ver ${window.MF_DATA.APP_VERSION}`;
-  renderHistoryList(BUILTIN_HISTORY);
-  fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" })
-    .then(r => r.ok ? r.json() : null)
-    .then(info => { if (info?.history) renderHistoryList(info.history); })
-    .catch(() => {});
-}
-
-async function checkAppUpdate() {
-  const statusEl = document.getElementById("term-update-status");
-  statusEl.textContent = "最新バージョンを確認中...";
-  try {
-    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
-    const info = await res.json();
-    if (info?.history) renderHistoryList(info.history);
-    if (info.version !== window.MF_DATA.APP_VERSION) {
-      statusEl.innerHTML = `🆕 <strong>Ver ${escapeHtml(info.version)}</strong> が配信中！<br>${escapeHtml(info.notes || "")}`;
-      if (confirm(`最新バージョン（Ver ${info.version}）へ更新しますか？※セーブデータは保持されます`)) {
-        location.reload(true);
-      }
-    } else {
-      statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）です。`;
-    }
-  } catch (e) {
-    statusEl.textContent = "オフラインまたは確認中です。";
+  const listEl = document.getElementById("term-history-list");
+  if (listEl) {
+    listEl.innerHTML = `<div class="history-item"><strong>Ver ${window.MF_DATA.APP_VERSION}：Step 4 オープンワールド探索＆アクション戦闘</strong><div style="font-size:11px; color:var(--muted);">6大リージョン探索、霧の押し引き開拓、採集＆敵湧き、SD移動戦闘＆AUTO切替、配布箱＆倉庫を実装。</div></div>`;
   }
 }
-
 
 function redeemSerialCode() {
   const input = document.getElementById("term-code-input");
   const code = input.value.trim().toUpperCase();
-  if (!code) return;
-  if (state.redeemedCodes.includes(code)) { showToast("このコードは既に使用済みです"); return; }
   const reward = window.MF_DATA.SERIAL_CODES[code];
-  if (!reward) { showToast("無効なシリアルコードです"); return; }
-
-  state.redeemedCodes.push(code);
-  state.gems += reward.gems;
-  state.credits += reward.credits;
-  state.en += reward.en;
-  state.expBooks = (state.expBooks || 0) + (reward.books || 0);
-  state.cores = (state.cores || 0) + (reward.cores || 0);
-  saveGame();
-  playSfx("gift");
-  renderTopBar();
-  input.value = "";
-  showToast(`🎁 ${reward.label}受取！（結晶石+${reward.gems} / 記録+${reward.books}）`);
+  if (!code || state.redeemedCodes.includes(code) || !reward) { showToast("無効または使用済みのコードです"); return; }
+  state.redeemedCodes.push(code); state.gems += reward.gems; state.credits += reward.credits;
+  state.en += reward.en; state.expBooks += (reward.books || 0); state.cores += (reward.cores || 0);
+  saveGame(); playSfx("gift"); renderTopBar(); input.value = "";
+  showToast(`🎁 ${reward.label}を受取ました！`);
 }
 
-
+async function checkAppUpdate() {
+  const statusEl = document.getElementById("term-update-status");
+  statusEl.textContent = "確認中...";
+  try {
+    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
+    const info = await res.json();
+    if (info.version !== window.MF_DATA.APP_VERSION && confirm(`最新 Ver ${info.version} に更新しますか？`)) location.reload(true);
+    else statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）です。`;
+  } catch (e) { statusEl.textContent = "確認完了"; }
+}
 
 function resetAllSaveData() {
-  if (confirm("本当にすべてのセーブデータを初期化しますか？")) {
-    localStorage.removeItem(SAVE_KEY);
-    state = createDefaultSave();
-    saveGame();
-    switchView("creator");
-    showToast("データを初期化しました");
-  }
+  if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); }
 }
 
-function notifyUpcoming(featureName, stepLabel) {
-  playSfx("tap");
-  showToast(`🚧「${featureName}」は ${stepLabel} で実装予定です！`);
+function notifyUpcoming(name, step) {
+  playSfx("tap"); showToast(`🚧「${name}」は ${step} で実装予定です！`);
 }
 
 function showToast(msg) {
   const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove("show"), 2600);
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
-  }[c]));
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 }
 
 window.addEventListener("DOMContentLoaded", () => {
   state = loadSave();
   updateStamina();
   applyTheme();
+  if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
-  syncAdminMail();
   switchView(state.initialized ? "home" : "creator");
 });
