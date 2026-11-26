@@ -297,6 +297,45 @@
       </div>
     </section>
 
+        <!-- 7-B. 前線キャンプ自動化工場＆モンスター生態リンク -->
+    <section id="view-camp" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🏭 前線キャンプ・自動生産ライン</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="camp-pending-box" style="background:var(--surface-sub); padding:10px; border-radius:12px; margin-bottom:10px;"></div>
+        <div style="font-size:12px; font-weight:900; margin-bottom:6px;">⚙️ 工場設備の強化</div>
+        <div id="camp-facility-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>🐾 モンスター生態リンク（工業ブースト）</span></div>
+        <div id="camp-beast-grid" class="chip-grid"></div>
+      </div>
+    </section>
+
+    <!-- 7-C. 武器鍛造＆タイミング調理クラフト -->
+    <section id="view-craft" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🍳 タイミング調理ミニゲーム</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="craft-buff-status" style="font-size:11px; font-weight:900; color:var(--accent); margin-bottom:8px;"></div>
+        <div style="position:relative; height:22px; background:var(--surface-sub); border:2px solid var(--border); border-radius:999px; overflow:hidden; margin-bottom:8px;">
+          <div style="position:absolute; left:38%; width:24%; height:100%; background:rgba(24,184,138,0.45);"></div>
+          <div id="cook-cursor" style="position:absolute; left:0%; top:0; width:6px; height:100%; background:#ff4d5a;"></div>
+        </div>
+        <button id="btn-cook-action" class="btn-primary" style="width:100%;" onclick="startCookingGame()">🍳 キャンプ飯を作る（無料）</button>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><span>🔨 武器鍛造・狩猟ガジェット作成</span></div>
+        <div id="craft-recipe-list"></div>
+      </div>
+    </section>
+
     <!-- 8. ハンター端末 -->
     <section id="view-terminal" class="view">
       <div class="card">
