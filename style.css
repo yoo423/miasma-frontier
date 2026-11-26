@@ -576,3 +576,38 @@ input[type="text"], select {
   border-color: #ff9f1c;
   box-shadow: 0 0 16px rgba(255, 159, 28, 0.5);
 }
+/* 1キャラ専用詳細画面・グリッド */
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.roster-tile {
+  background: var(--surface-sub);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.stat-cell {
+  background: var(--surface-sub);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 3px;
+  text-align: center;
+  font-size: 11px;
+}
+.stat-cell span {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+}
