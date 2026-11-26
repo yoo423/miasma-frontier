@@ -96,15 +96,22 @@
             <span class="menu-badge">履歴</span>
             <span class="m-ico">📱</span><span>端末</span>
           </button>
+          <button class="menu-btn" onclick="switchView('mail')">
+            <span id="home-mail-badge" class="menu-badge" style="display:none;">NEW</span>
+            <span class="m-ico">🎁</span><span>配布箱</span>
+          </button>
+          <button class="menu-btn" onclick="switchView('bag')">
+            <span class="m-ico">🎒</span><span>倉庫</span>
+          </button>
         </div>
       </div>
     </main>
 
-    <!-- 2. リアルタイム元素連携バトル＆部位破壊画面 -->
+        <!-- 2. 自由移動アクションバトル＆部位破壊画面 -->
     <section id="view-battle" class="view">
       <div id="btl-select-panel" class="card">
         <div class="section-title">
-          <span>⚔️ 霧獣討伐・模擬戦セレクト</span>
+          <span>⚔️ 霧獣討伐・フィールド出撃</span>
           <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
         </div>
         <div id="btl-enemy-list"></div>
@@ -112,44 +119,40 @@
 
       <div id="btl-arena-panel" class="card" style="display:none;">
         <div class="top-row">
-          <div>
-            <strong id="btl-enemy-name" style="font-size:15px;">敵名</strong>
-            <span id="btl-enemy-badge" class="rank-pill">BOSS</span>
+          <strong id="btl-enemy-name" style="font-size:14px;">敵名</strong>
+          <div style="display:flex; gap:5px;">
+            <button id="btn-btl-auto" class="btn-xs btn-primary" onclick="toggleBattleAuto()">🎮 手動操作</button>
+            <button class="btn-xs" onclick="exitBattleArena()">撤退</button>
           </div>
-          <button class="btn-xs" onclick="exitBattleArena()">撤退</button>
         </div>
-        <div id="btl-enemy-status" style="font-size:11px; font-weight:900; color:var(--miasma); margin-top:3px;">通常状態</div>
 
         <div class="gauge-box">
-          <div class="gauge-label"><span id="btl-hp-text">HP</span><span>本体耐久</span></div>
+          <div class="gauge-label"><span id="btl-hp-text">HP</span><span id="btl-stagger-text">体勢 0</span></div>
           <div class="gauge-bar"><div id="btl-hp-fill" style="background:#ff595e; width:100%;"></div></div>
         </div>
-        <div class="gauge-box">
-          <div class="gauge-label"><span id="btl-stagger-text">体勢値</span><span>満タンでブレイクダウン</span></div>
-          <div class="gauge-bar"><div id="btl-stagger-fill" style="background:#ffd000; width:0%;"></div></div>
-        </div>
-        <div class="gauge-box">
-          <div class="gauge-label"><span id="btl-charge-text">敵行動ゲージ</span><span>65%以上で回避受付</span></div>
-          <div class="gauge-bar"><div id="btl-charge-fill" style="background:#b565ff; width:0%;"></div></div>
-        </div>
+        <div class="gauge-bar" style="height:6px; margin-bottom:5px;"><div id="btl-stagger-fill" style="background:#ffd000; width:0%;"></div></div>
 
-        <div id="btl-parts-row" style="display:flex; gap:5px; flex-wrap:wrap; margin:6px 0;"></div>
-        <div id="btl-popup" class="battle-popup">交戦中！</div>
-        <div id="btl-log" class="battle-log"></div>
+        <div id="btl-parts-row" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;"></div>
+
+        <!-- キャラを動かして戦うアクションフィールド -->
+        <canvas id="btl-canvas" width="340" height="210"
+                style="width:100%; height:210px; border-radius:12px; border:2px solid var(--border); touch-action:none; display:block;"></canvas>
+
+        <div id="btl-popup" class="battle-popup">画面タップで移動！赤い予兆を避けろ！</div>
 
         <div class="gauge-box">
           <div class="gauge-label"><span id="btl-team-hp-text">小隊HP</span><span id="btl-shield-text"></span></div>
           <div class="gauge-bar"><div id="btl-team-hp-fill" style="background:#18b88a; width:100%;"></div></div>
         </div>
         <div class="gauge-box">
-          <div class="gauge-label"><span id="btl-sp-text">SP 50/100</span><span>戦技コスト 35</span></div>
-          <div class="gauge-bar"><div id="btl-sp-fill" style="background:#00e5ff; width:50%;"></div></div>
+          <div class="gauge-label"><span id="btl-sp-text">SP 55/100</span><span>戦技 35</span></div>
+          <div class="gauge-bar"><div id="btl-sp-fill" style="background:#00e5ff; width:55%;"></div></div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:8px 0;">
-          <button onclick="manualHeavyStrike()">⚔️ 強撃<br><span style="font-size:10px;">SP+10</span></button>
-          <button id="btn-btl-skill" class="btn-accent2" onclick="useActiveSkill()">🔥 戦技<br><span style="font-size:10px;">SP 35</span></button>
-          <button id="btn-btl-dodge" class="btn-primary" onclick="triggerDodge()">🛡️ ジャスト回避</button>
+          <button onclick="manualHeavyStrike()">⚔️ 強撃</button>
+          <button class="btn-accent2" onclick="useActiveSkill()">🔥 戦技(35)</button>
+          <button class="btn-primary" onclick="triggerDodge()">💨 回避</button>
         </div>
 
         <div id="btl-party-bar" class="party-strip"></div>
@@ -275,6 +278,33 @@
       </div>
     </section>
   </div>
+    <!-- 7. プレゼントボックス（運営配布箱） -->
+    <section id="view-mail" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🎁 プレゼントボックス（司令部配布）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <button class="btn-accent2" style="width:100%; margin-bottom:10px;" onclick="claimAllMails()">✨ すべて一括受取</button>
+        <div id="mail-list"></div>
+      </div>
+    </section>
+
+    <!-- 8. 持ち物倉庫（インベントリ） -->
+    <section id="view-bag" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🎒 持ち物倉庫（インベントリ）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div class="chip-grid cols-3" style="margin-bottom:8px;">
+          <button class="select-chip" onclick="currentBagTab='all'; renderBagView();">すべて</button>
+          <button class="select-chip" onclick="currentBagTab='growth'; renderBagView();">育成・通貨</button>
+          <button class="select-chip" onclick="currentBagTab='boss'; renderBagView();">霧獣・希少素材</button>
+        </div>
+        <div id="bag-item-grid"></div>
+      </div>
+    </section>
 
    <!-- ガチャ演出モーダル -->
   <div id="modal-gacha" class="modal-overlay">
@@ -315,10 +345,13 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="data.js"></script>
+   <script src="data.js"></script>
+  <script src="sprites.js"></script>
+  <script src="inventory.js"></script>
   <script src="gacha.js"></script>
   <script src="growth.js"></script>
   <script src="battle.js"></script>
   <script src="main.js"></script>
+
 </body>
 </html>
