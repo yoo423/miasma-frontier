@@ -4,7 +4,6 @@ const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 let state = null;
-let audioCtx = null;
 let showcaseCharId = "protagonist";
 
 function createDefaultSave() {
@@ -40,6 +39,7 @@ function createDefaultSave() {
     skillTrees: {},
     clearedStories: [],
     bondPoints: {},
+    huntLog: {},
     materials: {},
     regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
     mailbox: [],
@@ -66,6 +66,7 @@ function loadSave() {
       skillTrees: parsed.skillTrees || {},
       clearedStories: parsed.clearedStories || [],
       bondPoints: parsed.bondPoints || {},
+      huntLog: parsed.huntLog || {},
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
@@ -93,35 +94,16 @@ function updateStamina() {
 }
 
 function playSfx(type) {
-  if (!state?.soundOn) return;
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
-    const now = audioCtx.currentTime;
-    const tone = (f, t, d, w = "triangle", v = 0.14) => {
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = w;
-      osc.frequency.setValueAtTime(f, t);
-      g.gain.setValueAtTime(v, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + d);
-      osc.connect(g);
-      g.connect(audioCtx.destination);
-      osc.start(t);
-      osc.stop(t + d);
-    };
-    if (type === "tap") tone(740, now, 0.06, "sine", 0.1);
-    if (type === "switch") { tone(523, now, 0.08); tone(784, now + 0.06, 0.12); }
-    if (type === "gift") { tone(659, now, 0.1); tone(880, now + 0.09, 0.1); tone(1174, now + 0.18, 0.25); }
-  } catch (e) {}
+  if (window.MF_AUDIO) window.MF_AUDIO.playSfx(type);
 }
 
 function toggleSound() {
   state.soundOn = !state.soundOn;
   saveGame();
+  if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
   if (state.soundOn) playSfx("switch");
   renderTopBar();
-  showToast(state.soundOn ? "🔊 サウンド ON" : "🔇 サウンド OFF");
+  showToast(state.soundOn ? "🔊 BGM・効果音 ON" : "🔇 BGM・効果音 OFF");
 }
 
 function applyTheme() {
@@ -143,9 +125,15 @@ function switchView(viewId) {
   const target = document.getElementById(`view-${viewId}`);
   if (target) target.classList.add("active");
 
+  if (window.MF_AUDIO) {
+    if (viewId === "story") window.MF_AUDIO.playBgm("story");
+    else if (viewId !== "battle") window.MF_AUDIO.playBgm("home");
+  }
+
   if (viewId === "home") renderHome();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
   if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
   if (viewId === "char_detail" && typeof renderCharDetailView === "function") renderCharDetailView();
@@ -200,6 +188,7 @@ function renderTopBar() {
 function renderHome() {
   renderTopBar();
   if (typeof updateMailBadges === "function") updateMailBadges();
+  if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
   const ch = getCharProfile(showcaseCharId);
   const elInfo = window.MF_DATA.ELEMENTS[ch.element];
@@ -314,10 +303,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.1.0（物語＆分岐探索マップ）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.2.0（TCG模様・カットイン・BGM・調査ノート）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.1.0：Step 2 立ち絵ストーリー会話劇＆分岐ルート開拓マップ実装</strong><div style="font-size:11px; color:var(--muted);">第1〜3章のノベル会話劇（選択肢＆絆システム）と、4フロア分岐の霧の開拓マップ（イベント・野営・融光種・ボス）を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.2.0：演出・BGM・霧獣調査ノート実装</strong><div style="font-size:11px; color:var(--muted);">全カードの属性模様＆顔装飾、キャラ立ち絵カットイン演出、じっくり/倍速切替、4曲ループBGM、初討伐ボーナス付き霧獣調査ノートを実装。</div></div>`;
   }
 }
 
@@ -365,6 +354,7 @@ window.addEventListener("DOMContentLoaded", () => {
   state = loadSave();
   updateStamina();
   applyTheme();
+  if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
   switchView(state.initialized ? "home" : "creator");
