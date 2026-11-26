@@ -40,7 +40,7 @@
     </header>
 
     <!-- 1. ホーム画面 -->
-    <main id="view-home" class="view">
+    <main id="view-home" class="view active">
       <div class="card showcase-card">
         <div id="home-portrait" class="portrait-frame" onclick="cycleShowcase()"></div>
         <div>
@@ -65,11 +65,11 @@
       <div class="card">
         <div class="section-title">
           <span>🧭 作戦メニュー</span>
-          <span style="font-size:11px; color:var(--muted);">Ver 1.2 Step 3</span>
+          <span style="font-size:11px; color:var(--muted);">Ver 1.5 Step 4</span>
         </div>
         <div class="menu-grid">
           <button class="menu-btn btn-accent2" onclick="switchView('world')">
-            <span class="menu-badge">戦闘</span>
+            <span class="menu-badge">探索</span>
             <span class="m-ico">🗺️</span><span>出撃</span>
           </button>
           <button class="menu-btn" onclick="switchView('squad')">
@@ -89,13 +89,6 @@
             <span class="menu-badge">PU開催</span>
             <span class="m-ico">🌠</span><span>スカウト</span>
           </button>
-          <button class="menu-btn" onclick="notifyUpcoming('デイリー・ウィークリー任務', 'Step 6')">
-            <span class="m-ico">📋</span><span>任務</span>
-          </button>
-          <button class="menu-btn" onclick="switchView('terminal')">
-            <span class="menu-badge">履歴</span>
-            <span class="m-ico">📱</span><span>端末</span>
-          </button>
           <button class="menu-btn" onclick="switchView('mail')">
             <span id="home-mail-badge" class="menu-badge" style="display:none;">NEW</span>
             <span class="m-ico">🎁</span><span>配布箱</span>
@@ -103,10 +96,17 @@
           <button class="menu-btn" onclick="switchView('bag')">
             <span class="m-ico">🎒</span><span>倉庫</span>
           </button>
+          <button class="menu-btn" onclick="notifyUpcoming('デイリー・ウィークリー任務', 'Step 6')">
+            <span class="m-ico">📋</span><span>任務</span>
+          </button>
+          <button class="menu-btn" onclick="switchView('terminal')">
+            <span class="m-ico">📱</span><span>端末</span>
+          </button>
         </div>
       </div>
     </main>
-        <!-- 1-B. オープンワールド探索（6大リージョン・霧の押し引き・採集＆敵湧き） -->
+
+    <!-- 1-B. オープンワールド探索（6大リージョン・霧の押し引き・採集＆敵湧き） -->
     <section id="view-world" class="view">
       <div class="card">
         <div class="section-title">
@@ -119,7 +119,7 @@
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
           <button class="btn-xs btn-primary" onclick="adjustRegionMist(-20)">🔆 浄化ビーコン（霧を晴らす）</button>
-          <button class="btn-xs btn-accent2" onclick="adjustRegionMist(20)">🟣 霧誘導装置（濃霧・レア2倍）</button>
+          <button class="btn-xs btn-accent2" onclick="adjustRegionMist(20)">🟣 霧誘導装置（濃霧・融光種出現）</button>
         </div>
 
         <canvas id="world-canvas" width="340" height="220"
@@ -131,12 +131,12 @@
       </div>
     </section>
 
-        <!-- 2. 自由移動アクションバトル＆部位破壊画面 -->
+    <!-- 2. 自由移動アクションバトル＆部位破壊画面 -->
     <section id="view-battle" class="view">
       <div id="btl-select-panel" class="card">
         <div class="section-title">
-          <span>⚔️ 霧獣討伐・フィールド出撃</span>
-          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+          <span>⚔️ 霧獣・融光種 討伐ターゲット一覧</span>
+          <button class="btn-xs" onclick="switchView('world')">← マップへ</button>
         </div>
         <div id="btl-enemy-list"></div>
       </div>
@@ -158,7 +158,6 @@
 
         <div id="btl-parts-row" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;"></div>
 
-        <!-- キャラを動かして戦うアクションフィールド -->
         <canvas id="btl-canvas" width="340" height="210"
                 style="width:100%; height:210px; border-radius:12px; border:2px solid var(--border); touch-action:none; display:block;"></canvas>
 
@@ -184,7 +183,7 @@
       </div>
     </section>
 
-       <!-- 3. 隊員編成＆名簿一覧画面 -->
+    <!-- 3. 隊員編成＆名簿一覧画面 -->
     <section id="view-squad" class="view">
       <div class="card">
         <div class="section-title">
@@ -270,7 +269,35 @@
       </div>
     </section>
 
-    <!-- 6. ハンター端末（更新履歴・シリアルコード・初期化） -->
+    <!-- 6. プレゼントボックス -->
+    <section id="view-mail" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🎁 プレゼントボックス（司令部配布）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <button class="btn-accent2" style="width:100%; margin-bottom:10px;" onclick="claimAllMails()">✨ すべて一括受取</button>
+        <div id="mail-list"></div>
+      </div>
+    </section>
+
+    <!-- 7. 持ち物倉庫 -->
+    <section id="view-bag" class="view">
+      <div class="card">
+        <div class="section-title">
+          <span>🎒 持ち物倉庫（インベントリ）</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div class="chip-grid cols-3" style="margin-bottom:8px;">
+          <button class="select-chip" onclick="currentBagTab='all'; renderBagView();">すべて</button>
+          <button class="select-chip" onclick="currentBagTab='growth'; renderBagView();">育成・通貨</button>
+          <button class="select-chip" onclick="currentBagTab='boss'; renderBagView();">霧獣・希少素材</button>
+        </div>
+        <div id="bag-item-grid"></div>
+      </div>
+    </section>
+
+    <!-- 8. ハンター端末 -->
     <section id="view-terminal" class="view">
       <div class="card">
         <div class="section-title">
@@ -302,38 +329,10 @@
       </div>
     </section>
   </div>
-    <!-- 7. プレゼントボックス（運営配布箱） -->
-    <section id="view-mail" class="view">
-      <div class="card">
-        <div class="section-title">
-          <span>🎁 プレゼントボックス（司令部配布）</span>
-          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
-        </div>
-        <button class="btn-accent2" style="width:100%; margin-bottom:10px;" onclick="claimAllMails()">✨ すべて一括受取</button>
-        <div id="mail-list"></div>
-      </div>
-    </section>
 
-    <!-- 8. 持ち物倉庫（インベントリ） -->
-    <section id="view-bag" class="view">
-      <div class="card">
-        <div class="section-title">
-          <span>🎒 持ち物倉庫（インベントリ）</span>
-          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
-        </div>
-        <div class="chip-grid cols-3" style="margin-bottom:8px;">
-          <button class="select-chip" onclick="currentBagTab='all'; renderBagView();">すべて</button>
-          <button class="select-chip" onclick="currentBagTab='growth'; renderBagView();">育成・通貨</button>
-          <button class="select-chip" onclick="currentBagTab='boss'; renderBagView();">霧獣・希少素材</button>
-        </div>
-        <div id="bag-item-grid"></div>
-      </div>
-    </section>
-
-   <!-- ガチャ演出モーダル -->
+  <!-- ガチャ演出モーダル -->
   <div id="modal-gacha" class="modal-overlay">
     <div class="modal-box">
-      <!-- 段階昇格ステージ -->
       <div id="gacha-modal-stage">
         <div id="pod-beam" class="sky-beam beam-blue"></div>
         <div id="pod-visual" class="pod-orb pod-blue">🛰️</div>
@@ -344,20 +343,14 @@
           <button class="btn-xs" onclick="showGachaResultGrid()">結果一覧へ ⏭</button>
         </div>
       </div>
-
-      <!-- 1人ずつセリフ＆立ち絵付きでお披露目 -->
       <div id="gacha-modal-spotlight" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <span id="spotlight-counter" style="font-size:11px; font-weight:900;">招集結果 1 / 10</span>
           <button class="btn-xs" onclick="showGachaResultGrid()">まとめて表示 ⏭</button>
         </div>
         <div id="spotlight-card-body" onclick="nextSpotlightCard()"></div>
-        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="nextSpotlightCard()">
-          タップして次へ ▶
-        </button>
+        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="nextSpotlightCard()">タップして次へ ▶</button>
       </div>
-
-      <!-- 最終一覧 -->
       <div id="gacha-modal-results" style="display:none;">
         <h3 style="margin:0 0 6px; font-size:16px;">🎉 招集完了！</h3>
         <div id="gacha-result-grid" class="pull-grid"></div>
@@ -366,17 +359,15 @@
     </div>
   </div>
 
-
   <div id="toast" class="toast"></div>
 
-   <script src="data.js"></script>
+  <script src="data.js"></script>
   <script src="sprites.js"></script>
   <script src="inventory.js"></script>
   <script src="gacha.js"></script>
   <script src="growth.js"></script>
-  <script src="battle.js"></script>
   <script src="world.js"></script>
+  <script src="battle.js"></script>
   <script src="main.js"></script>
-
 </body>
 </html>
