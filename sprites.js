@@ -1,5 +1,45 @@
+window.MF_IMG_VER = "170";
+
+window.mfImgFallback = function(img) {
+  const step = Number(img.dataset.step || 0);
+  const base = img.dataset.base || "";
+  const fb = img.dataset.fb || "";
+  const v = window.MF_IMG_VER;
+  const list = [
+    base + ".png?v=" + v,
+    base + ".jpeg?v=" + v,
+    fb ? fb + ".jpg?v=" + v : "",
+    fb ? fb + ".png?v=" + v : "",
+    fb ? fb + ".jpeg?v=" + v : ""
+  ].filter(Boolean);
+
+  if (step < list.length) {
+    img.dataset.step = String(step + 1);
+    img.src = list[step];
+  } else {
+    img.style.display = "none";
+    if (img.nextElementSibling) img.nextElementSibling.style.display = "flex";
+  }
+};
+
+window.openPortraitZoom = function(charId) {
+  const modal = document.getElementById("modal-portrait-zoom");
+  if (!modal || typeof getCharProfile !== "function") return;
+  const ch = getCharProfile(charId);
+  const titleEl = document.getElementById("zoom-char-title");
+  const bodyEl = document.getElementById("zoom-img-body");
+  if (titleEl) titleEl.textContent = `${ch.name}（${ch.rarity}）`;
+  if (bodyEl) bodyEl.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
+  modal.classList.add("active");
+  if (typeof playSfx === "function") playSfx("tap");
+};
+
+window.closePortraitZoom = function() {
+  const modal = document.getElementById("modal-portrait-zoom");
+  if (modal) modal.classList.remove("active");
+};
+
 window.MF_SPRITES = {
-  // キャラごとの見た目・配色・アニメ設定（後から立ち絵や差分を追加しやすい構造）
   APPEARANCE: {
     protagonist: { hair: "#3d405b", accent: "#00e5ff", ear: "none",   pose: "command" },
     lunaria:     { hair: "#3b231e", accent: "#ff4d5a", ear: "ribbon", pose: "greatsword" },
@@ -21,11 +61,46 @@ window.MF_SPRITES = {
     aoi:         { hair: "#3a5a40", accent: "#b565ff", ear: "none",   pose: "gun" }
   },
 
+  esc(s) {
+    return String(s || "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+    }[c]));
+  },
+
   getVisual(charId) {
     return this.APPEARANCE[charId] || { hair: "#4a4e69", accent: "#ffd000", ear: "none", pose: "sword" };
   },
 
-  // フィールド上のちびキャラ（SD）＆モーション描画
+  // 立ち絵＆サムネイル共通HTML生成（assets/<id>.jpg / .png / .jpeg を自動読込）
+  portraitHTML(ch, mode = "full") {
+    const sid = ch.styleId || (typeof state !== "undefined" ? state.styleId : "m_cool") || "m_cool";
+    const base = ch.isProtagonist ? `assets/protagonist_${sid}` : `assets/${ch.id}`;
+    const fb = ch.isProtagonist ? "assets/protagonist" : "";
+    const firstSrc = `${base}.jpg?v=${window.MF_IMG_VER}`;
+    const alt = this.esc(ch.name);
+
+    if (mode === "icon" || mode === "icon-lg") {
+      const cls = mode === "icon-lg" ? "avatar-thumb lg" : "avatar-thumb";
+      return `
+        <div class="${cls}">
+          <img class="portrait-img-icon" src="${firstSrc}" data-base="${base}" data-fb="${fb}" data-step="0"
+               alt="${alt}" onerror="mfImgFallback(this)" />
+          <div class="avatar-fallback" style="display:none;">${ch.emoji || "👤"}</div>
+        </div>
+      `;
+    }
+
+    const imgCls = mode === "contain" ? "portrait-img-contain" : "portrait-img-full";
+    return `
+      <img class="${imgCls}" src="${firstSrc}" data-base="${base}" data-fb="${fb}" data-step="0"
+           alt="${alt}" onerror="mfImgFallback(this)" />
+      <div class="portrait-fallback" style="display:none;">
+        <span style="font-size:46px;">${ch.emoji || "👤"}</span>
+        <span style="font-size:11px; font-weight:900;">${alt}</span>
+      </div>
+    `;
+  },
+
   drawChibiUnit(ctx, opts) {
     const { x, y, charId, element, time, stateAnim, facing, isEnemy, emoji, label, hpRatio } = opts;
     const bob = Math.sin(time * (stateAnim === "move" ? 16 : 6)) * (stateAnim === "move" ? 4 : 2);
@@ -35,14 +110,12 @@ window.MF_SPRITES = {
     ctx.save();
     ctx.globalAlpha = dodgeAlpha;
 
-    // 足元の影
     ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
     ctx.beginPath();
     ctx.ellipse(x, y + 20, isEnemy ? 26 : 16, isEnemy ? 10 : 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (isEnemy) {
-      // 敵・主霧獣ユニット描画
       const scale = opts.isBoss ? 1.45 : 1.05;
       ctx.font = `${Math.round(38 * scale)}px sans-serif`;
       ctx.textAlign = "center";
@@ -54,14 +127,12 @@ window.MF_SPRITES = {
       const ux = x + atkThrust;
       const uy = y + bob;
 
-      // 属性オーラリング
       ctx.strokeStyle = elColor;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.ellipse(x, y + 19, 19, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // 体（ジャケット）
       ctx.fillStyle = vis.accent;
       ctx.strokeStyle = "#121318";
       ctx.lineWidth = 2;
@@ -70,14 +141,12 @@ window.MF_SPRITES = {
       ctx.fill();
       ctx.stroke();
 
-      // 頭部
       ctx.fillStyle = "#ffe5d9";
       ctx.beginPath();
       ctx.arc(ux, uy - 14, 11, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // 髪＆ケモミミ装飾
       ctx.fillStyle = vis.hair;
       ctx.beginPath();
       ctx.arc(ux, uy - 17, 11.5, Math.PI, 0);
@@ -109,7 +178,6 @@ window.MF_SPRITES = {
         ctx.fill();
       }
 
-      // 武器斬撃エフェクト
       if (stateAnim === "attack") {
         ctx.strokeStyle = elColor;
         ctx.lineWidth = 4;
@@ -119,7 +187,6 @@ window.MF_SPRITES = {
       }
     }
 
-    // 頭上ネーム＆ミニHPバー
     if (label) {
       ctx.font = "bold 10px sans-serif";
       ctx.textAlign = "center";
@@ -133,7 +200,6 @@ window.MF_SPRITES = {
       ctx.fillStyle = isEnemy ? "#ff595e" : "#18b88a";
       ctx.fillRect(x - bw / 2, y + 25, bw * Math.max(0, Math.min(1, hpRatio)), 4);
     }
-
     ctx.restore();
   }
 };
