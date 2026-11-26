@@ -1,0 +1,17 @@
+{
+  "name": "ミアズマ・フロンティア",
+  "short_name": "ミアズマF",
+  "start_url": "/miasma-frontier/",
+  "scope": "/miasma-frontier/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f6f0",
+  "theme_color": "#18b88a",
+  "icons": [
+    {
+      "src": "assets/lunaria.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
