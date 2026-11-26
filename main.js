@@ -10,7 +10,7 @@ let showcaseCharId = "protagonist";
 function createDefaultSave() {
   return {
     initialized: false,
-    playerName: "名無し",
+    playerName: "ユウ",
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
@@ -33,6 +33,7 @@ function createDefaultSave() {
     charLevels: { protagonist: 1, momo: 1, mint: 1, aoi: 1 },
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
+    skillTrees: {},
     materials: {},
     regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
     mailbox: [],
@@ -55,6 +56,7 @@ function loadSave() {
       charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
       charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) },
+      skillTrees: parsed.skillTrees || {},
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
@@ -269,7 +271,7 @@ function setProtagonistElement(elId) {
   state.protagonistElement = elId;
   saveGame();
   playSfx("switch");
-  renderCharDetailView();
+  if (typeof renderCharDetailView === "function") renderCharDetailView();
   showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`);
 }
 
@@ -277,7 +279,7 @@ function setProtagonistWeapon(wpId) {
   state.protagonistWeapon = wpId;
   saveGame();
   playSfx("switch");
-  renderCharDetailView();
+  if (typeof renderCharDetailView === "function") renderCharDetailView();
   showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`);
 }
 
@@ -318,7 +320,7 @@ function renderTerminalView() {
   document.getElementById("term-version").textContent = `現在のバージョン：Ver ${window.MF_DATA.APP_VERSION}`;
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver ${window.MF_DATA.APP_VERSION}：Step 4 オープンワールド探索＆アクション戦闘</strong><div style="font-size:11px; color:var(--muted);">6大リージョン探索、霧の押し引き開拓、採集＆敵湧き、SD移動戦闘＆AUTO切替、配布箱＆倉庫を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver ${window.MF_DATA.APP_VERSION}：固有スキル＆スキルツリー・キャンプ＆クラフト実装</strong><div style="font-size:11px; color:var(--muted);">全キャラの固有スキル明記・6段階スキルツリー覚醒・前線キャンプ自動化工場・タイミング調理を実装。</div></div>`;
   }
 }
 
