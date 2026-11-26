@@ -34,6 +34,7 @@ function createDefaultSave() {
       element_boost: 1, tactical_draw: 1, weak_scan: 1, repair_kit: 1,
       hydro_splash: 1, camp_ration: 1
     },
+    claimedDexMilestones: [],
     tacticDeck: [
       "counter_stance", "aegis_wall", "shield_breaker", "shock_trap",
       "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
@@ -65,6 +66,7 @@ function loadSave() {
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
       ownedCards: { ...base.ownedCards, ...(parsed.ownedCards || {}) },
+      claimedDexMilestones: parsed.claimedDexMilestones || [],
       tacticDeck: (parsed.tacticDeck && parsed.tacticDeck.length === 8) ? parsed.tacticDeck : base.tacticDeck,
       charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
@@ -112,31 +114,32 @@ function toggleUiTheme() {
   showToast(state.uiTheme === "camp" ? "🏕️ 拠点クリーンUIに切替" : "⚡ 作戦端末UIに切替");
 }
 
-// タブレット開閉（細かいメニューを格納）
 function openTabletMenu() {
   playSfx("switch");
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
 }
-
-function closeTabletMenu() {
-  document.getElementById("modal-tablet").classList.remove("active");
-}
-
-function tabletGo(viewId) {
-  closeTabletMenu();
-  switchView(viewId);
-}
+function closeTabletMenu() { document.getElementById("modal-tablet").classList.remove("active"); }
+function tabletGo(viewId) { closeTabletMenu(); switchView(viewId); }
 
 function updateTabletBadge() {
-  const badge = document.getElementById("home-tablet-badge");
-  if (!badge) return;
   const mCnt = typeof getUnclaimedMailCount === "function" ? getUnclaimedMailCount() : 0;
   const bCnt = typeof getUnclaimedBestiaryCount === "function" ? getUnclaimedBestiaryCount() : 0;
-  const total = mCnt + bCnt;
-  badge.style.display = total > 0 ? "inline-block" : "none";
-  badge.textContent = total > 9 ? "9+" : String(total);
+  const dCnt = typeof getUnclaimedDexCount === "function" ? getUnclaimedDexCount() : 0;
+
+  const dexBadge = document.getElementById("home-dex-badge");
+  if (dexBadge) {
+    dexBadge.style.display = dCnt > 0 ? "inline-block" : "none";
+    dexBadge.textContent = `${dCnt}件`;
+  }
+  const badge = document.getElementById("home-tablet-badge");
+  if (badge) {
+    const total = mCnt + bCnt + dCnt;
+    badge.style.display = total > 0 ? "inline-block" : "none";
+    badge.textContent = total > 9 ? "9+" : String(total);
+  }
 }
 
 function switchView(viewId) {
@@ -156,6 +159,7 @@ function switchView(viewId) {
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
+  if (viewId === "card_dex" && typeof renderCardDexView === "function") renderCardDexView();
   if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
   if (viewId === "char_detail" && typeof renderCharDetailView === "function") renderCharDetailView();
   if (viewId === "gacha" && typeof renderGachaView === "function") renderGachaView();
@@ -268,9 +272,7 @@ function renderSquadView() {
     const cap = typeof getRankCap === "function" ? getRankCap(state.charRanks[id] || 0) : 20;
     return `
       <div class="roster-tile" onclick="openCharDetail('${id}')">
-        <div style="display:flex; justify-content:space-between; font-size:10px;">
-          <span class="rank-pill">${ch.rarity}</span><span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span>
-        </div>
+        <div style="display:flex; justify-content:space-between; font-size:10px;"><span class="rank-pill">${ch.rarity}</span><span>${state.party.includes(id) ? "🛡️編成中" : `凸+${state.charDupes[id] || 0}`}</span></div>
         ${window.MF_SPRITES.portraitHTML(ch, "icon-lg")}
         <div style="font-size:12px; font-weight:900;">${escapeHtml(ch.name)}</div>
         <div style="font-size:10px; color:var(--muted);">${el.icon}${el.name}・${wp.name}</div>
@@ -280,38 +282,19 @@ function renderSquadView() {
   }).join("");
 }
 
-function setProtagonistElement(elId) {
-  state.protagonistElement = elId; saveGame(); playSfx("switch");
-  if (typeof renderCharDetailView === "function") renderCharDetailView();
-  showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`);
-}
-
-function setProtagonistWeapon(wpId) {
-  state.protagonistWeapon = wpId; saveGame(); playSfx("switch");
-  if (typeof renderCharDetailView === "function") renderCharDetailView();
-  showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`);
-}
+function setProtagonistElement(elId) { state.protagonistElement = elId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`); }
+function setProtagonistWeapon(wpId) { state.protagonistWeapon = wpId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`); }
 
 let tempStyleId = "m_cool", tempWeaponId = "sword", tempElementId = "arc";
-function renderCreatorView() {
-  tempStyleId = state.styleId; tempWeaponId = state.protagonistWeapon; tempElementId = state.protagonistElement;
-  document.getElementById("cr-name-input").value = state.playerName;
-  refreshCreatorSelections();
-}
-
+function renderCreatorView() { tempStyleId = state.styleId; tempWeaponId = state.protagonistWeapon; tempElementId = state.protagonistElement; document.getElementById("cr-name-input").value = state.playerName; refreshCreatorSelections(); }
 function refreshCreatorSelections() {
   document.getElementById("cr-style-grid").innerHTML = window.MF_DATA.PROTAGONIST_STYLES.map(s => {
     const thumb = window.MF_SPRITES.portraitHTML({ id: "protagonist", isProtagonist: true, styleId: s.id, name: s.name, emoji: s.emoji }, "icon");
     return `<button class="select-chip ${tempStyleId === s.id ? "selected" : ""}" style="text-align:center;" onclick="tempStyleId='${s.id}'; playSfx('tap'); refreshCreatorSelections();">${thumb}<strong>${s.name}</strong><br><span style="font-size:10px;">${s.tag}</span></button>`;
   }).join("");
-  document.getElementById("cr-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `
-    <button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">${el.icon} <strong>${el.name}</strong></button>
-  `).join("");
-  document.getElementById("cr-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `
-    <button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}" onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">${wp.icon} <strong>${wp.name}</strong></button>
-  `).join("");
+  document.getElementById("cr-element-grid").innerHTML = Object.values(window.MF_DATA.ELEMENTS).map(el => `<button class="select-chip ${tempElementId === el.id ? "selected" : ""}" onclick="tempElementId='${el.id}'; playSfx('tap'); refreshCreatorSelections();">${el.icon} <strong>${el.name}</strong></button>`).join("");
+  document.getElementById("cr-weapon-grid").innerHTML = Object.values(window.MF_DATA.WEAPONS).map(wp => `<button class="select-chip ${tempWeaponId === wp.id ? "selected" : ""}" onclick="tempWeaponId='${wp.id}'; playSfx('tap'); refreshCreatorSelections();">${wp.icon} <strong>${wp.name}</strong></button>`).join("");
 }
-
 function confirmProtagonist() {
   const rawName = document.getElementById("cr-name-input").value.trim();
   if (!rawName) { showToast("隊長の名前を入力してください！"); return; }
@@ -321,10 +304,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.3.0（立ち絵ホーム・タブレット・Wiki・20種カード）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.4.0（36種カード・図鑑・長編物語）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.3.0：立ち絵メインホーム＆タブレット・Wiki・カード強化</strong><div style="font-size:11px; color:var(--muted);">顔フォーカス修正、立ち絵メインホーム、タブレット＆攻略Wiki、中央リザルト、全20種戦術カード＆カードガチャを実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.4.0：カード36種増量＆カード図鑑・長編メインストーリー</strong><div style="font-size:11px; color:var(--muted);">ホーム顔被り解消、戦術カード全36種＆収集報酬付きカード図鑑、序章〜第4章の本格ストーリーを実装。</div></div>`;
   }
 }
 
@@ -349,20 +332,9 @@ async function checkAppUpdate() {
     else statusEl.textContent = "✅ 最新ビルドで動作中です。";
   } catch (e) { statusEl.textContent = "確認完了"; }
 }
-
-function resetAllSaveData() {
-  if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); }
-}
-
-function showToast(msg) {
-  const el = document.getElementById("toast");
-  el.textContent = msg; el.classList.add("show");
-  clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove("show"), 2600);
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
-}
+function resetAllSaveData() { if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
+function showToast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove("show"), 2600); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])); }
 
 window.addEventListener("DOMContentLoaded", () => {
   state = loadSave();
