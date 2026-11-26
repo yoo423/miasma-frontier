@@ -65,10 +65,11 @@
       <div class="card">
         <div class="section-title">
           <span>🧭 作戦メニュー</span>
-          <span style="font-size:11px; color:var(--muted);">Ver 1.1 Step 2</span>
+          <span style="font-size:11px; color:var(--muted);">Ver 1.2 Step 3</span>
         </div>
         <div class="menu-grid">
-          <button class="menu-btn btn-accent2" onclick="notifyUpcoming('ワールド出撃・ボス狩猟', 'Step 3〜4')">
+          <button class="menu-btn btn-accent2" onclick="switchView('battle')">
+            <span class="menu-badge">戦闘</span>
             <span class="m-ico">🗺️</span><span>出撃</span>
           </button>
           <button class="menu-btn" onclick="switchView('squad')">
@@ -92,13 +93,71 @@
             <span class="m-ico">📋</span><span>任務</span>
           </button>
           <button class="menu-btn" onclick="switchView('terminal')">
+            <span class="menu-badge">履歴</span>
             <span class="m-ico">📱</span><span>端末</span>
           </button>
         </div>
       </div>
     </main>
 
-    <!-- 2. 隊員編成・主人公切替・重厚育成画面 -->
+    <!-- 2. リアルタイム元素連携バトル＆部位破壊画面 -->
+    <section id="view-battle" class="view">
+      <div id="btl-select-panel" class="card">
+        <div class="section-title">
+          <span>⚔️ 霧獣討伐・模擬戦セレクト</span>
+          <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
+        </div>
+        <div id="btl-enemy-list"></div>
+      </div>
+
+      <div id="btl-arena-panel" class="card" style="display:none;">
+        <div class="top-row">
+          <div>
+            <strong id="btl-enemy-name" style="font-size:15px;">敵名</strong>
+            <span id="btl-enemy-badge" class="rank-pill">BOSS</span>
+          </div>
+          <button class="btn-xs" onclick="exitBattleArena()">撤退</button>
+        </div>
+        <div id="btl-enemy-status" style="font-size:11px; font-weight:900; color:var(--miasma); margin-top:3px;">通常状態</div>
+
+        <div class="gauge-box">
+          <div class="gauge-label"><span id="btl-hp-text">HP</span><span>本体耐久</span></div>
+          <div class="gauge-bar"><div id="btl-hp-fill" style="background:#ff595e; width:100%;"></div></div>
+        </div>
+        <div class="gauge-box">
+          <div class="gauge-label"><span id="btl-stagger-text">体勢値</span><span>満タンでブレイクダウン</span></div>
+          <div class="gauge-bar"><div id="btl-stagger-fill" style="background:#ffd000; width:0%;"></div></div>
+        </div>
+        <div class="gauge-box">
+          <div class="gauge-label"><span id="btl-charge-text">敵行動ゲージ</span><span>65%以上で回避受付</span></div>
+          <div class="gauge-bar"><div id="btl-charge-fill" style="background:#b565ff; width:0%;"></div></div>
+        </div>
+
+        <div id="btl-parts-row" style="display:flex; gap:5px; flex-wrap:wrap; margin:6px 0;"></div>
+        <div id="btl-popup" class="battle-popup">交戦中！</div>
+        <div id="btl-log" class="battle-log"></div>
+
+        <div class="gauge-box">
+          <div class="gauge-label"><span id="btl-team-hp-text">小隊HP</span><span id="btl-shield-text"></span></div>
+          <div class="gauge-bar"><div id="btl-team-hp-fill" style="background:#18b88a; width:100%;"></div></div>
+        </div>
+        <div class="gauge-box">
+          <div class="gauge-label"><span id="btl-sp-text">SP 50/100</span><span>戦技コスト 35</span></div>
+          <div class="gauge-bar"><div id="btl-sp-fill" style="background:#00e5ff; width:50%;"></div></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:8px 0;">
+          <button onclick="manualHeavyStrike()">⚔️ 強撃<br><span style="font-size:10px;">SP+10</span></button>
+          <button id="btn-btl-skill" class="btn-accent2" onclick="useActiveSkill()">🔥 戦技<br><span style="font-size:10px;">SP 35</span></button>
+          <button id="btn-btl-dodge" class="btn-primary" onclick="triggerDodge()">🛡️ ジャスト回避</button>
+        </div>
+
+        <div id="btl-party-bar" class="party-strip"></div>
+        <div id="btl-result-box" class="card" style="display:none; margin-top:10px; background:var(--surface-sub);"></div>
+      </div>
+    </section>
+
+    <!-- 3. 隊員編成・主人公切替・重厚育成画面 -->
     <section id="view-squad" class="view">
       <div class="card">
         <div class="section-title">
@@ -123,7 +182,7 @@
       </div>
     </section>
 
-    <!-- 3. スカウト（ガチャ）画面 -->
+    <!-- 4. スカウト（ガチャ）画面 -->
     <section id="view-gacha" class="view">
       <div class="card">
         <div class="section-title">
@@ -138,13 +197,10 @@
           <button onclick="executeScout(1)">1回招集<br><span style="font-size:11px;">💎 160</span></button>
           <button class="btn-accent2" onclick="executeScout(10)">10回招集（SR以上確定）<br><span style="font-size:11px;">💎 1,600</span></button>
         </div>
-        <div style="font-size:10px; color:var(--muted); margin-top:8px;">
-          提供割合：SSR 3.0%（80連天井） / SR 15.0% / R 42.0% / N 40.0%
-        </div>
       </div>
     </section>
 
-    <!-- 4. 主人公クリエイト画面 -->
+    <!-- 5. 主人公クリエイト画面 -->
     <section id="view-creator" class="view">
       <div class="card">
         <div class="section-title">
@@ -165,17 +221,23 @@
       </div>
     </section>
 
-    <!-- 5. ハンター端末 -->
+    <!-- 6. ハンター端末（更新履歴・シリアルコード・初期化） -->
     <section id="view-terminal" class="view">
       <div class="card">
         <div class="section-title">
-          <span>📱 ハンター端末・システム</span>
+          <span>📱 ハンター端末・アップデート</span>
           <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
         </div>
         <div id="term-version" style="font-size:12px; font-weight:900; margin-bottom:6px;"></div>
         <button class="btn-primary" style="width:100%;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
         <div id="term-update-status" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
       </div>
+
+      <div class="card">
+        <div class="section-title"><span>📜 アプリ更新履歴（パッチノート）</span></div>
+        <div id="term-history-list"></div>
+      </div>
+
       <div class="card">
         <div class="section-title"><span>🎁 シリアルコード入力</span></div>
         <p style="font-size:11px; color:var(--muted); margin:0 0 6px;">コード例：<code>FRONTIER2026</code> / <code>MIASMA777</code></p>
@@ -184,6 +246,7 @@
           <button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button>
         </div>
       </div>
+
       <div class="card">
         <div class="section-title"><span>⚠️ データ管理</span></div>
         <button style="width:100%;" onclick="resetAllSaveData()">セーブデータを初期化する</button>
@@ -191,7 +254,7 @@
     </section>
   </div>
 
-  <!-- ガチャ演出＆結果モーダル -->
+  <!-- ガチャ演出モーダル -->
   <div id="modal-gacha" class="modal-overlay">
     <div class="modal-box">
       <div id="gacha-modal-stage">
@@ -212,6 +275,7 @@
   <script src="data.js"></script>
   <script src="gacha.js"></script>
   <script src="growth.js"></script>
+  <script src="battle.js"></script>
   <script src="main.js"></script>
 </body>
 </html>
