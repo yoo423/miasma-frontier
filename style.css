@@ -105,6 +105,22 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #24212c; color: #fff; border: 2px solid #ffd000; padding: 9px 16px; border-radius: 999px; font-size: 12px; font-weight: 800; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
+/* 立ち絵ストーリー会話劇＆分岐開拓マップUI */
+.novel-stage {
+  width: 100%; height: 260px; border-radius: 14px; border: 2.5px solid var(--border);
+  background: linear-gradient(180deg, #e9e4f5 0%, #f6f4ee 65%); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 8px;
+}
+.novel-box { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+.novel-speaker { display: inline-block; background: var(--accent); color: #121318; font-size: 11px; font-weight: 900; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--border); margin-bottom: 6px; }
+.novel-text { font-size: 13px; line-height: 1.55; font-weight: 800; min-height: 54px; }
+
+.nodes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.node-card { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; cursor: pointer; box-shadow: 0 3px 0 var(--shadow); }
+.node-card.node-boss { grid-column: 1 / -1; border-color: #ff4d79; background: linear-gradient(135deg, rgba(255, 77, 121, 0.2), rgba(139, 70, 232, 0.2)); }
+.node-card.node-radiant { border-color: #ffd000; background: rgba(255, 208, 0, 0.16); }
+.node-card.node-camp { border-color: #18b88a; background: rgba(24, 184, 138, 0.14); }
+
 /* モーダル＆ガチャ */
 .modal-overlay { position: fixed; inset: 0; background: rgba(18, 19, 24, 0.85); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 14px; z-index: 90; }
 .modal-overlay.active { display: flex; }
@@ -126,13 +142,12 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .pull-card.rarity-SSR { border-color: #ff4d79; background: linear-gradient(135deg, rgba(255, 209, 59, 0.25), rgba(181, 101, 255, 0.25)); }
 .pull-card.rarity-SR { border-color: #ff9f1c; background: rgba(255, 209, 59, 0.16); }
 
-/* 新・読み合いカードバトルUI */
+/* 読み合いカードバトルUI */
 .intent-banner { background: linear-gradient(135deg, rgba(255, 77, 121, 0.22), rgba(157, 78, 221, 0.25)); border: 2px solid #ff4d79; border-radius: 10px; padding: 7px 9px; margin: 6px 0; color: #fff; }
 .chain-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
 .chain-slot { border: 2px dashed var(--border); border-radius: 10px; padding: 6px 4px; text-align: center; min-height: 52px; font-size: 11px; display: flex; flex-direction: column; justify-content: center; }
 .chain-slot.filled { border-style: solid; background: rgba(255, 208, 0, 0.16); cursor: pointer; }
 .battle-log-box { background: rgba(0, 0, 0, 0.35); border-radius: 8px; padding: 6px 8px; font-size: 11px; line-height: 1.45; margin: 5px 0; min-height: 38px; }
-
 .hand-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
 .hand-card { text-align: left; padding: 7px 8px; border-radius: 11px; display: flex; flex-direction: column; gap: 3px; background: var(--surface-sub); }
 .hand-card.type-attack { border-color: #ff595e; }
