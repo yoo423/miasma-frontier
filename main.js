@@ -38,6 +38,8 @@ function createDefaultSave() {
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     skillTrees: {},
+    clearedStories: [],
+    bondPoints: {},
     materials: {},
     regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
     mailbox: [],
@@ -62,6 +64,8 @@ function loadSave() {
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
       charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) },
       skillTrees: parsed.skillTrees || {},
+      clearedStories: parsed.clearedStories || [],
+      bondPoints: parsed.bondPoints || {},
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
@@ -140,6 +144,7 @@ function switchView(viewId) {
   if (target) target.classList.add("active");
 
   if (viewId === "home") renderHome();
+  if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
   if (viewId === "squad" && typeof renderSquadView === "function") renderSquadView();
@@ -309,10 +314,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.0.0（戦略カードRPG刷新）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.1.0（物語＆分岐探索マップ）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.0.0：戦略チェイン＆読み合いカードバトル実装</strong><div style="font-size:11px; color:var(--muted);">20枚デッキ編成、3枚チェイン元素コンボ、攻撃・防御カウンター・崩しの3すくみ読み合い、EX必殺カードを実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.1.0：Step 2 立ち絵ストーリー会話劇＆分岐ルート開拓マップ実装</strong><div style="font-size:11px; color:var(--muted);">第1〜3章のノベル会話劇（選択肢＆絆システム）と、4フロア分岐の霧の開拓マップ（イベント・野営・融光種・ボス）を実装。</div></div>`;
   }
 }
 
