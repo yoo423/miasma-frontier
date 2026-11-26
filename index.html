@@ -254,14 +254,34 @@
     </section>
   </div>
 
-  <!-- ガチャ演出モーダル -->
+   <!-- ガチャ演出モーダル -->
   <div id="modal-gacha" class="modal-overlay">
     <div class="modal-box">
+      <!-- 段階昇格ステージ -->
       <div id="gacha-modal-stage">
+        <div id="pod-beam" class="sky-beam beam-blue"></div>
         <div id="pod-visual" class="pod-orb pod-blue">🛰️</div>
         <div id="pod-label" style="font-size:14px; font-weight:900;">軌道ビーコンより降下中……</div>
-        <button class="btn-xs" style="margin-top:12px;" onclick="showGachaResultGrid()">演出スキップ ⏭</button>
+        <div id="pod-sub-label" style="font-size:11px; color:var(--muted); margin-top:4px;"></div>
+        <div style="display:flex; gap:8px; justify-content:center; margin-top:14px;">
+          <button class="btn-xs" onclick="startSpotlightReveal()">演出スキップ ▶</button>
+          <button class="btn-xs" onclick="showGachaResultGrid()">結果一覧へ ⏭</button>
+        </div>
       </div>
+
+      <!-- 1人ずつセリフ＆立ち絵付きでお披露目 -->
+      <div id="gacha-modal-spotlight" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span id="spotlight-counter" style="font-size:11px; font-weight:900;">招集結果 1 / 10</span>
+          <button class="btn-xs" onclick="showGachaResultGrid()">まとめて表示 ⏭</button>
+        </div>
+        <div id="spotlight-card-body" onclick="nextSpotlightCard()"></div>
+        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="nextSpotlightCard()">
+          タップして次へ ▶
+        </button>
+      </div>
+
+      <!-- 最終一覧 -->
       <div id="gacha-modal-results" style="display:none;">
         <h3 style="margin:0 0 6px; font-size:16px;">🎉 招集完了！</h3>
         <div id="gacha-result-grid" class="pull-grid"></div>
@@ -269,6 +289,7 @@
       </div>
     </div>
   </div>
+
 
   <div id="toast" class="toast"></div>
 
