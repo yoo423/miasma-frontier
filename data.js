@@ -235,4 +235,81 @@ window.MF_DATA = {
     "FRONTIER2026": { label: "リリース記念パック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 },
     "MIASMA777":    { label: "第7小隊応援ギフト", gems: 1600, credits: 5000,  en: 40, books: 15, cores: 3 }
   }
+    ,
+  ENEMIES: [
+    {
+      id: "wolf_pack",
+      name: "ミアズマ・ウルフ群",
+      rank: "通常霧獣",
+      emoji: "🐺",
+      recPower: 100,
+      maxHp: 900,
+      maxStagger: 60,
+      atk: 65,
+      parts: [],
+      rewards: { credits: 1200, books: 4, cores: 1, gems: 40, rankExp: 35 }
+    },
+    {
+      id: "crystal_beetle",
+      name: "結晶甲虫・重装種",
+      rank: "精鋭霧獣",
+      emoji: "🪲",
+      recPower: 220,
+      maxHp: 2100,
+      maxStagger: 90,
+      atk: 115,
+      parts: [
+        { name: "高純度結晶殻", hpRatio: 0.45, drop: "純度結晶殻" }
+      ],
+      rewards: { credits: 2600, books: 8, cores: 2, gems: 80, rankExp: 65 }
+    },
+    {
+      id: "moss_behemoth",
+      name: "主霧獣『モス・ベヒーモス』",
+      rank: "第1エリア主霧獣",
+      emoji: "🦏",
+      recPower: 360,
+      maxHp: 4200,
+      maxStagger: 120,
+      atk: 175,
+      parts: [
+        { name: "結晶の巨角", hpRatio: 0.35, drop: "ベヒーモスの結晶角" },
+        { name: "背中の苔殻", hpRatio: 0.40, drop: "古代樹の重甲殻" },
+        { name: "強靭な巨尾", hpRatio: 0.30, drop: "巨獣の剛尾" }
+      ],
+      rewards: { credits: 5200, books: 15, cores: 4, gems: 160, rankExp: 120 }
+    },
+    {
+      id: "thunder_wyvern",
+      name: "主霧獣『サンダー・ワイバーン』",
+      rank: "第2エリア主霧獣",
+      emoji: "🐉",
+      recPower: 680,
+      maxHp: 8500,
+      maxStagger: 150,
+      atk: 290,
+      parts: [
+        { name: "右雷翼", hpRatio: 0.32, drop: "紫電の飛竜翼" },
+        { name: "左雷翼", hpRatio: 0.32, drop: "紫電の飛竜翼" },
+        { name: "蓄電の尾針", hpRatio: 0.28, drop: "高圧雷撃コア" }
+      ],
+      rewards: { credits: 9500, books: 28, cores: 7, gems: 240, rankExp: 200 }
+    },
+    {
+      id: "glacial_mammoth",
+      name: "主霧獣『グレイシャル・マンモス』",
+      rank: "第3エリア主霧獣",
+      emoji: "🦣",
+      recPower: 1100,
+      maxHp: 15000,
+      maxStagger: 180,
+      atk: 430,
+      parts: [
+        { name: "氷結の双牙", hpRatio: 0.35, drop: "永久凍土の巨牙" },
+        { name: "背中の冷却炉殻", hpRatio: 0.40, drop: "暴走冷却炉パーツ" }
+      ],
+      rewards: { credits: 16000, books: 45, cores: 12, gems: 320, rankExp: 320 }
+    }
+  ]
+
 };
