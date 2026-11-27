@@ -79,7 +79,7 @@ body.theme-tactical .home-hero-stage { background: radial-gradient(circle at 50%
 .hero-speech-text { font-size: 11.5px; font-weight: 800; line-height: 1.4; color: #f4f5fa; cursor: pointer; }
 
 .portrait-img-hero    { width: 100%; height: 100%; object-fit: contain; object-position: center top; display: block; }
-.portrait-img-contain { width: 100%; height: 100%; object-fit: contain; display: block; background: #f6f4ee; }
+.portrait-img-contain { width: 100%; height: 100%; object-fit: contain; object-position: center top; display: block; background: transparent; }
 .portrait-img-face { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; transform: scale(1.85); transform-origin: 50% 14%; display: block; }
 .portrait-img-face-zoom { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; transform: scale(1.75); transform-origin: 50% 15%; display: block; background: #f6f4ee; }
 .portrait-frame { width: 126px; height: 164px; border-radius: 14px; border: 2.5px solid var(--border); background: #f6f4ee; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -110,55 +110,72 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #24212c; color: #fff; border: 2px solid #ffd000; padding: 9px 16px; border-radius: 999px; font-size: 12px; font-weight: 800; z-index: 110; opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
-/* カード図鑑＆物語＆開拓マップ */
+/* ===== 商業RPG級ノベルステージ（立ち絵顔見切れ完全修正＋背景7種） ===== */
 .dex-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
 .dex-card { border: 2.5px solid var(--border); border-radius: 13px; padding: 8px; text-align: center; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); }
 .dex-card.locked { background: var(--surface-sub); opacity: 0.7; }
-.novel-loc-bar { font-size: 11px; font-weight: 900; background: #24212c; color: #ffd13b; padding: 4px 9px; border-radius: 8px; margin-bottom: 6px; }
-.novel-stage { width: 100%; height: 265px; border-radius: 14px; border: 2.5px solid var(--border); background: linear-gradient(180deg, #e9e4f5 0%, #f6f4ee 65%); overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: background 0.4s; }
-.novel-box { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+.novel-loc-bar { font-size: 11px; font-weight: 900; background: #1c1e2b; color: #ffd13b; padding: 5px 10px; border-radius: 8px; margin-bottom: 6px; border-left: 4px solid var(--accent); }
+
+.novel-stage {
+  position: relative; width: 100%; height: 295px; border-radius: 14px;
+  border: 2.5px solid var(--border); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 10px 6px; margin-bottom: 8px; transition: background 0.45s ease;
+}
+.novel-bg-ark     { background: linear-gradient(180deg, #16213e 0%, #2a3a5e 55%, #e8ecf5 100%); }
+.novel-bg-field   { background: linear-gradient(180deg, #7ec8e3 0%, #c8e6c9 62%, #f4f1e6 100%); }
+.novel-bg-sunset  { background: linear-gradient(180deg, #2c1e3d 0%, #c0584c 52%, #f4c078 100%); }
+.novel-bg-mist    { background: linear-gradient(180deg, #251938 0%, #553b7a 58%, #d7cde8 100%); }
+.novel-bg-ruins   { background: linear-gradient(180deg, #1b242c 0%, #374a57 58%, #dce4ea 100%); }
+.novel-bg-radiant { background: linear-gradient(180deg, #3b1c47 0%, #996d1d 55%, #fff2b2 100%); }
+
+@keyframes charEnter { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+.novel-char-wrap {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  animation: charEnter 0.25s ease-out;
+}
+.novel-char-wrap img {
+  width: auto !important; height: auto !important;
+  max-width: 92% !important; max-height: 98% !important;
+  object-fit: contain !important; object-position: center top !important;
+  transform: none !important;
+  border-radius: 12px; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
+}
+.novel-narration-emblem { color: #ffd13b; font-size: 13px; font-weight: 900; letter-spacing: 0.2em; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85); }
+.novel-stage.novel-shake { animation: stageShake 0.36s ease; }
+
+.novel-box { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 11px 13px; transition: background 0.25s; }
+.novel-box.is-narration { background: #191b26; color: #f4f5fa; border-color: #ffd000; }
 .novel-speaker { display: inline-block; background: var(--accent); color: #121318; font-size: 11px; font-weight: 900; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--border); margin-bottom: 6px; }
-.novel-text { font-size: 13px; line-height: 1.6; font-weight: 800; min-height: 60px; }
+.novel-text { font-size: 13px; line-height: 1.65; font-weight: 800; min-height: 70px; }
+
 .nodes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
 .node-card { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; cursor: pointer; box-shadow: 0 3px 0 var(--shadow); }
 .node-card.node-boss { grid-column: 1 / -1; border-color: #ff4d79; background: linear-gradient(135deg, rgba(255, 77, 121, 0.2), rgba(139, 70, 232, 0.2)); }
 .node-card.node-radiant { border-color: #ffd000; background: rgba(255, 208, 0, 0.16); }
 .node-card.node-camp { border-color: #18b88a; background: rgba(24, 184, 138, 0.14); }
 
-/* ===== RPG × 戦術プレイマット・豪華演出 ===== */
-.playmat-board {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(157, 78, 221, 0.18), transparent 62%),
-    repeating-linear-gradient(0deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px),
-    repeating-linear-gradient(90deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px),
-    linear-gradient(180deg, #161a26 0%, #111520 55%, #181c2b 100%);
-  border: 3px solid #ffd000; border-radius: 16px; padding: 10px 9px 12px;
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7), 0 6px 0 rgba(0, 0, 0, 0.45);
-}
-
+/* ===== RPG × 戦術プレイマット ===== */
+.playmat-board { background: radial-gradient(circle at 50% 42%, rgba(157, 78, 221, 0.18), transparent 62%), repeating-linear-gradient(0deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px), linear-gradient(180deg, #161a26 0%, #111520 55%, #181c2b 100%); border: 3px solid #ffd000; border-radius: 16px; padding: 10px 9px 12px; box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7), 0 6px 0 rgba(0, 0, 0, 0.45); }
 .battle-stage { position: relative; height: 106px; border-radius: 11px; border: 2px solid rgba(255, 208, 0, 0.65); margin: 5px 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .stage-field { background: radial-gradient(circle at 50% 35%, #2d4c3b 0%, #131e18 78%); }
 .stage-boss  { background: radial-gradient(circle at 50% 35%, #4a235a 0%, #150b1f 78%); }
 .stage-radiant { background: radial-gradient(circle at 50% 35%, #6e5614 0%, #221034 80%); box-shadow: inset 0 0 24px rgba(255, 208, 0, 0.45); }
 @keyframes ragePulse { 0%, 100% { box-shadow: inset 0 0 20px rgba(255, 46, 76, 0.55); border-color: #ff2e4c; } 50% { box-shadow: inset 0 0 42px rgba(255, 46, 76, 0.9); border-color: #ffd000; } }
 .battle-stage.stage-enraged { animation: ragePulse 1.2s infinite ease-in-out; }
-
 @keyframes enemyFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .stage-enemy-emoji { font-size: 60px; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.65)); animation: enemyFloat 2.4s infinite ease-in-out; z-index: 1; }
 @keyframes stageShake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-8px, 4px); } 45% { transform: translate(8px, -4px); } 70% { transform: translate(-5px, -3px); } }
 .battle-stage.shake { animation: stageShake 0.34s ease; }
 
-/* 豪華フラッシュ＆衝撃波リング */
 .fx-layer, .float-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
-@keyframes fxFlashAnim { 0% { opacity: 0.95; } 100% { opacity: 0; } }
-.fx-flash { position: absolute; inset: 0; animation: fxFlashAnim 0.65s ease-out forwards; }
+@keyframes fxFlashAnim { 0% { opacity: 0.92; } 100% { opacity: 0; } }
+.fx-flash { position: absolute; inset: 0; animation: fxFlashAnim 0.65s ease-out forwards; pointer-events: none; }
 @keyframes fxRingAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); } }
 .fx-ring { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; border-radius: 50%; border: 5px solid #ffd000; display: flex; align-items: center; justify-content: center; font-size: 30px; animation: fxRingAnim 0.7s ease-out forwards; }
-
 @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 14px) scale(0.75); } 20% { opacity: 1; transform: translate(-50%, -4px) scale(1.22); } 100% { opacity: 0; transform: translate(-50%, -52px) scale(0.95); } }
 .dmg-float { position: absolute; top: 48%; font-size: 20px; font-weight: 900; text-shadow: 0 2px 8px #000, 0 0 3px #000; animation: floatUp 1.3s ease-out forwards; white-space: nowrap; }
 
-/* プレイマット中央 */
 .pm-field-row { display: grid; grid-template-columns: 44px 1fr 44px; gap: 5px; align-items: stretch; margin: 6px 0; }
 .pm-pile { border: 2px solid rgba(255, 208, 0, 0.5); border-radius: 9px; background: repeating-linear-gradient(45deg, rgba(255,208,0,0.08) 0 4px, rgba(16,18,28,0.92) 4px 8px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 2px; font-size: 9px; font-weight: 900; color: #d6daea; }
 .pm-pile strong { font-size: 14px; color: #ffd000; line-height: 1.1; }
@@ -173,7 +190,6 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .ap-orb.lit { background: radial-gradient(circle, #fff, #00e5ff 60%, #1982c4); box-shadow: 0 0 7px #00e5ff; border-color: #fff; }
 .ex-mini-bar { flex: 1; max-width: 140px; }
 
-/* ポケカ風・縦型TCGカード */
 .hand-tray { display: flex; gap: 8px; overflow-x: auto; padding: 14px 6px 8px; margin: 4px -4px 0; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
 .hand-tray::-webkit-scrollbar { height: 5px; }
 .hand-tray::-webkit-scrollbar-thumb { background: rgba(255, 208, 0, 0.45); border-radius: 999px; }
@@ -204,7 +220,6 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .el-pat-arc   { background: radial-gradient(circle at 80% 20%, rgba(181,101,255,0.42), rgba(26,18,42,0.97) 75%); border-color: #b565ff; }
 .tcg-card.type-ult { background: linear-gradient(135deg, #5e4406, #4b1d70, #661736); border-color: #ffd000; box-shadow: 0 0 14px rgba(255, 208, 0, 0.7); }
 
-/* 豪華・大迫力カットイン */
 @keyframes cutinSlide { 0% { opacity: 0; transform: translateX(-100%) skewX(-8deg); } 16% { opacity: 1; transform: translateX(0%) skewX(-8deg); } 84% { opacity: 1; transform: translateX(0%) skewX(-8deg); } 100% { opacity: 0; transform: translateX(100%) skewX(-8deg); } }
 .battle-cutin { position: fixed; left: 50%; top: 31%; width: min(96vw, 460px); margin-left: calc(min(96vw, 460px) / -2); height: 132px; background: linear-gradient(115deg, #10121f 20%, #321d4f 68%, #151726 100%); border-top: 4px solid #ffd000; border-bottom: 4px solid #ffd000; z-index: 98; display: none; align-items: center; gap: 12px; padding: 8px 16px; pointer-events: none; overflow: hidden; }
 .battle-cutin.show { display: flex; animation: cutinSlide 1.45s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
@@ -215,7 +230,6 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .intent-banner { background: linear-gradient(135deg, rgba(255, 77, 121, 0.24), rgba(157, 78, 221, 0.26)); border: 2px solid #ff4d79; border-radius: 10px; padding: 5px 8px; margin: 4px 0; color: #fff; }
 .battle-log-box { background: rgba(0, 0, 0, 0.45); border-radius: 8px; padding: 4px 8px; font-size: 10.5px; line-height: 1.4; margin: 4px 0; min-height: 30px; }
 
-/* モーダル＆共通 */
 .modal-overlay { position: fixed; inset: 0; background: rgba(16, 17, 24, 0.84); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; padding: 14px; z-index: 95; }
 .modal-overlay.active { display: flex; }
 .modal-box { width: 100%; max-width: 440px; background: var(--surface); border: 3px solid var(--border); border-radius: var(--radius); padding: 15px; text-align: center; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.4); max-height: 90dvh; overflow-y: auto; }
