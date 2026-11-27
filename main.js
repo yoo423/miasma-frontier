@@ -77,6 +77,7 @@ function createDefaultSave() {
     monthlyPass: null,
     readNoticeIds: [],
     endgame: null,
+    eventProgress: {},
     arenaRating: 1000,
     arenaWins: 0,
     friends: [],
@@ -125,6 +126,7 @@ function loadSave() {
       monthlyPass: parsed.monthlyPass || null,
       readNoticeIds: parsed.readNoticeIds || [],
       endgame: parsed.endgame || null,
+      eventProgress: parsed.eventProgress || {},
       shopState: parsed.shopState || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
@@ -272,6 +274,7 @@ function switchView(viewId) {
   }
 
   if (viewId === "home") renderHome();
+  if (viewId === "event" && typeof renderEventView === "function") renderEventView();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "endgame" && typeof renderEndgameView === "function") renderEndgameView();
   if (viewId === "battle") {
@@ -340,6 +343,8 @@ function renderTopBar() {
 
 function renderHome() {
   renderTopBar();
+  if (typeof syncEventUnlockedCards === "function") syncEventUnlockedCards();
+  if (typeof renderHomeEventBanner === "function") renderHomeEventBanner();
   if (typeof window.MF_CARDS?.ensureDeckSlots === "function") window.MF_CARDS.ensureDeckSlots();
   if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
@@ -461,6 +466,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp
 
 window.addEventListener("DOMContentLoaded", () => {
   state = loadSave();
+  if (typeof syncEventUnlockedCards === "function") syncEventUnlockedCards();
   if (window.MF_CARDS?.ensureDeckSlots) window.MF_CARDS.ensureDeckSlots();
   updateStamina();
   applyTheme();
@@ -469,9 +475,6 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
 
-  if (typeof startOpeningSequence === "function") {
-    startOpeningSequence(false);
-  } else {
-    switchView(state.initialized ? "home" : "creator");
-  }
+  if (typeof startOpeningSequence === "function") startOpeningSequence(false);
+  else switchView(state.initialized ? "home" : "creator");
 });
