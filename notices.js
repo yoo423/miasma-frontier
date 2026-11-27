@@ -46,9 +46,9 @@ function showLoadingScreen(label = "作戦データを展開中……", onDone =
 
 // ---------- 🎬 オープニング＆タイトル画面 ----------
 const OPENING_SLIDES = [
-  { tag: "PROLOGUE I",  title: "百年前、大地は紫の霧に呑まれた", desc: "未知の結晶『アーク』の暴走により、地上は瘴霧ミアズマと霧獣の領域へと変貌した。" },
-  { tag: "PROLOGUE II", title: "天空の避難所・方舟都市リベルタ", desc: "空へ逃れた人類。だが都市を支える中央アーク炉の寿命は、もう長くない。" },
-  { tag: "PROLOGUE III",title: "霧を祓う者たち——第7クリアラー小隊", desc: "仲間との絆、6つの元素、そして戦術カードを手に、今ふたたび大地を取り戻す戦いが始まる。" }
+  { tag: "PROLOGUE I",   title: "百年前、大地は紫の霧に呑まれた", desc: "未知の結晶『アーク』の暴走により、地上は瘴霧ミアズマと霧獣の領域へと変貌した。" },
+  { tag: "PROLOGUE II",  title: "天空の避難所・方舟都市リベルタ", desc: "空へ逃れた人類。だが都市を支える中央アーク炉の寿命は、もう長くない。" },
+  { tag: "PROLOGUE III", title: "霧を祓う者たち——第7クリアラー小隊", desc: "仲間との絆、6つの元素、そして戦術カードを手に、今ふたたび大地を取り戻す戦いが始まる。" }
 ];
 
 let opSlideTimer = null;
@@ -57,13 +57,9 @@ function startOpeningSequence(forceCinematic = false) {
   const ov = document.getElementById("opening-overlay");
   if (!ov) return;
   ov.classList.add("active");
-
   const shouldPlayMovie = forceCinematic || !state?.seenOpening;
-  if (shouldPlayMovie) {
-    runOpeningSlides(0);
-  } else {
-    showTitleScreen();
-  }
+  if (shouldPlayMovie) runOpeningSlides(0);
+  else showTitleScreen();
 }
 
 function runOpeningSlides(idx) {
@@ -100,11 +96,9 @@ function showTitleScreen() {
   document.getElementById("op-cinematic-box").style.display = "none";
   const titleBox = document.getElementById("op-title-box");
   titleBox.style.display = "flex";
-
   const heroBox = document.getElementById("op-title-hero");
   if (heroBox && window.MF_SPRITES) {
-    const ch = window.MF_DATA.CHARACTERS.lunaria;
-    heroBox.innerHTML = window.MF_SPRITES.portraitHTML(ch, "hero");
+    heroBox.innerHTML = window.MF_SPRITES.portraitHTML(window.MF_DATA.CHARACTERS.lunaria, "hero");
   }
 }
 
@@ -119,9 +113,7 @@ function tapTitleToStart() {
 
   showLoadingScreen("前線キャンプへ接続中……", () => {
     switchView(state.initialized ? "home" : "creator");
-    if (state.initialized && typeof checkLoginBonusAutoOpen === "function") {
-      checkLoginBonusAutoOpen();
-    }
+    if (state.initialized && typeof checkLoginBonusAutoOpen === "function") checkLoginBonusAutoOpen();
   }, 780);
 }
 
@@ -130,36 +122,36 @@ let currentNoticeCat = "all";
 
 const ADMIN_NOTICES = [
   {
+    id: "n_2026_official_release",
+    cat: "important",
+    date: "2026/11/28",
+    tag: "正式リリース",
+    title: "🎉『ミアズマ・フロンティア』正式リリースのお知らせ！",
+    body: "お待たせいたしました！戦略カードバトルRPG『ミアズマ・フロンティア』を正式リリースいたしました！\n\n【正式リリース時の公開コンテンツ】\n・メインストーリー第1章＆第2章（全40話・没入演出付き）\n・戦術カード全102種＋毎月追加＆最大5枠・40枚デッキ編成\n・オンライン通信対応『同時プロット対人アリーナ』\n・エンドコンテンツ『無限の瘴霧タワー』『融光レイド』\n・プレイヤー同士で交流できる『💬 交流掲示板』＆『🤝 フレンド』\n\n【リリース記念キャンペーン】\n・開始から7日間『初心者応援ログボ』と通常ログボのW受取開催！\n・端末設定の支援コード欄に『FRONTIER2026』を入力で特別支援パック贈呈！\n・12月1日からは初の月次大型イベント『聖夜の白銀キャンプ』が開幕予定です！\n\nご意見や不具合のご報告はタブレットの『💌 意見箱』よりお気軽にお寄せください。今後とも『ミアズマ・フロンティア』をよろしくお願いいたします！"
+  },
+  {
+    id: "n_2026_board_open",
+    cat: "update",
+    date: "2026/11/28",
+    tag: "新機能",
+    title: "💬『プレイヤー交流掲示板』＆BGM12曲リズム刷新のお知らせ",
+    body: "タブレット2ページ目に『💬 掲示板』を新設しました！雑談・攻略＆デッキ相談・フレンド募集（コードワンタップ添付可）・オンライン対戦募集にぜひご活用ください。\nあわせて全BGMのリズム精度を刷新し、画面や強敵ごとに全12曲へ拡張しました。"
+  },
+  {
     id: "n_2026_endgame",
     cat: "event",
     date: "2026/11/27",
     tag: "イベント",
-    title: "新エンドコンテンツ『極限作戦』実装！",
-    body: "やり込みモード『🗼 無限の瘴霧タワー』および『☄️ 融光レイド・スコアアタック』を実装しました！\nタワーは登るほど毎日の掃討ボーナスが豪華になり、レイドでは5ターンの総ダメージで豪華報酬が獲得できます。タブレットの『🗼 極限作戦』から挑戦しましょう！"
-  },
-  {
-    id: "n_2026_pass",
-    cat: "update",
-    date: "2026/11/26",
-    tag: "アプデ",
-    title: "『フロンティア・マンスリーパス』＆複数日ウィークリー任務が登場",
-    body: "30日間毎日💎結晶石120・🎟️パック券1・⚡予備EN40が届く『フロンティア・マンスリーパス』を追加しました。累計30日受取で未所持優先SSR戦術カードが確定入手できます！また、ウィークリー任務も達成個数ボーナス付きへ刷新しました。"
-  },
-  {
-    id: "n_2026_ch2",
-    cat: "update",
-    date: "2026/11/25",
-    tag: "アプデ",
-    title: "第1章・第2章 全40話の長編ストーリー＆立ち絵拡充",
-    body: "『第1章：新緑の廃墟編（全20話）』および『第2章：雷鳴の峡谷編（全20話）』が公開中です！会話スピード切替・オート進行・BGM＆画面演出とあわせて、濃密な冒険をお楽しみください。"
+    title: "エンドコンテンツ『極限作戦』＆12月イベント予告",
+    body: "やり込みモード『🗼 無限の瘴霧タワー』および『☄️ 融光レイド・スコアアタック』を実装しました！\nまた、12月1日より月次イベント（1日・11日・21日の3回更新＆新カード追加）が順次開幕します。"
   },
   {
     id: "n_2026_backup",
     cat: "important",
     date: "2026/11/24",
     tag: "重要",
-    title: "データ引き継ぎコードの保管のお願い",
-    body: "端末の機種変更やブラウザのデータ消去に備え、タブレットの『⚙️ 端末設定』より『🔑 引き継ぎコード』を書き出して大切に保管していただくことをおすすめします。"
+    title: "データ引き継ぎコード保管のお願い",
+    body: "記録データはお使いのブラウザ内に保存されます。キャッシュ削除や機種変更に備え、タブレットの『⚙️ 端末設定』より『🔑 引き継ぎコード』を定期的に保管していただくことをおすすめします。"
   }
 ];
 
@@ -170,9 +162,7 @@ function getUnreadNoticeCount() {
 
 function updateNoticeBadge() {
   const cnt = getUnreadNoticeCount();
-  const b1 = document.getElementById("home-notice-badge");
-  const b2 = document.getElementById("tablet-notice-badge");
-  [b1, b2].forEach(el => {
+  [document.getElementById("home-notice-badge"), document.getElementById("tablet-notice-badge")].forEach(el => {
     if (!el) return;
     el.style.display = cnt > 0 ? "inline-block" : "none";
     el.textContent = cnt > 9 ? "9+" : `${cnt}`;
