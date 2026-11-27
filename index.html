@@ -92,7 +92,8 @@
         <div id="home-party-strip" class="party-strip"></div>
         <div id="home-reactions" class="reaction-banner"></div>
       </div>
-
+      
+      <div id="home-event-banner" style="display:none;"></div>
       <div class="home-play-row">
         <button class="btn-accent2" style="padding:13px; font-size:15px;" onclick="switchView('story')">📖 物語・開拓へ</button>
         <button class="btn-primary" style="padding:13px; font-size:15px;" onclick="switchView('battle')">⚔️ 討伐・育成</button>
@@ -108,6 +109,35 @@
         </button>
       </div>
     </main>
+    
+        <!-- 1-A1. 🎪 期間限定月次イベント -->
+    <section id="view-event" class="view">
+      <div id="ev-main-panel">
+        <div class="card" style="margin-bottom:8px;">
+          <div class="section-title"><span>🎪 期間限定イベント</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+          <div id="ev-hero-card" style="margin-bottom:8px;"></div>
+          <div id="ev-tabs-wrap" class="chip-grid cols-3">
+            <button id="ev-tab-story" class="select-chip selected" onclick="currentEventSubTab='story'; playSfx('tap'); renderEventView();">📖 物語</button>
+            <button id="ev-tab-quest" class="select-chip" onclick="currentEventSubTab='quest'; playSfx('tap'); renderEventView();">⚔️ 狩猟</button>
+            <button id="ev-tab-shop"  class="select-chip" onclick="currentEventSubTab='shop'; playSfx('tap'); renderEventView();">🎁 交換所</button>
+          </div>
+        </div>
+        <div id="ev-body"></div>
+      </div>
+
+      <div id="ev-novel-panel" class="card" style="display:none;">
+        <div class="top-row" style="margin-bottom:6px;">
+          <strong id="ev-novel-title" style="font-size:11.5px;">イベント物語</strong>
+          <button class="btn-xs" onclick="closeEventNovel()">戻る</button>
+        </div>
+        <div id="ev-novel-stage" class="novel-stage nbg-camp_dusk"></div>
+        <div class="novel-box" onclick="advanceEventNovel()">
+          <div id="ev-novel-speaker" class="novel-speaker">隊員</div>
+          <div id="ev-novel-text" class="novel-text"></div>
+        </div>
+        <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="advanceEventNovel()">次へ ▶</button>
+      </div>
+    </section>
 
     <!-- 1-A2. 🗼 エンドコンテンツ『極限作戦』（無限タワー＆融光レイド） -->
     <section id="view-endgame" class="view">
@@ -399,6 +429,7 @@
   <div id="modal-story-log" class="modal-overlay" onclick="closeStoryBacklog()"><div class="modal-box" onclick="event.stopPropagation()"><div class="top-row" style="margin-bottom:8px;"><strong style="font-size:15px;">📜 会話バックログ</strong><button class="btn-xs" onclick="closeStoryBacklog()">✕ 閉じる</button></div><div id="story-log-body" style="max-height:65dvh; overflow-y:auto;"></div></div></div>
 
   <!-- 📱 タブレットメニュー（お知らせ・スカウト・極限作戦を統合） -->
+  <button class="menu-btn btn-accent2" onclick="tabletGo('event')"><span class="m-ico">🎪</span><span>イベント</span></button>
   <div id="modal-tablet" class="modal-overlay" onclick="closeTabletMenu()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="top-row"><strong style="font-size:15px;">📱 第7小隊・作戦タブレット</strong><button class="btn-xs" onclick="closeTabletMenu()">✕ 閉じる</button></div>
@@ -471,6 +502,8 @@
   <script src="cards_data_1.js?v=380"></script>
   <script src="cards_data_2.js?v=380"></script>
   <script src="cards.js?v=380"></script>
+  <script src="events_data.js?v=410"></script>
+  <script src="events.js?v=410"></script>
   <script src="login_bonus.js?v=380"></script>
   <script src="growth_quests.js?v=380"></script>
   <script src="missions.js?v=380"></script>
@@ -478,7 +511,7 @@
   <script src="bonds.js?v=380"></script>
   <script src="bestiary.js?v=380"></script>
   <script src="inventory.js?v=380"></script>
-  <script src="gacha.js?v=380"></script>
+  <script src="gacha.js?v=410"></script>
   <script src="growth.js?v=380"></script>
   <script src="battle.js?v=380"></script>
   <script src="endgame.js?v=380"></script>
@@ -494,6 +527,6 @@
   <script src="story_ch4_b.js?v=400"></script>
   <script src="story.js?v=390"></script>
   <script src="camp.js?v=380"></script>
-  <script src="main.js?v=380"></script>
+  <script src="main.js?v=410"></script>
 </body>
 </html>
