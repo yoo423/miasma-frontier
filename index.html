@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=310" />
+  <link rel="stylesheet" href="style.css?v=320" />
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -58,7 +58,7 @@
 
       <div class="home-play-row">
         <button class="btn-accent2" style="padding:13px; font-size:15px;" onclick="switchView('story')">📖 物語・開拓へ</button>
-        <button class="btn-primary" style="padding:13px; font-size:15px;" onclick="switchView('battle')">⚔️ 討伐戦</button>
+        <button class="btn-primary" style="padding:13px; font-size:15px;" onclick="switchView('battle')">⚔️ 討伐・育成</button>
       </div>
 
       <div class="home-main-dock">
@@ -72,7 +72,7 @@
       </div>
     </main>
 
-    <!-- 1-B. 物語＆開拓マップ（速度切替・オート・演出付き） -->
+    <!-- 1-B. 物語＆開拓マップ -->
     <section id="view-story" class="view">
       <div class="card">
         <div class="section-title"><span>📖 物語 ＆ 霧の開拓マップ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -114,7 +114,7 @@
       </div>
     </section>
 
-    <!-- 1-B2. 🏆 オンライン＆同時プロット読み合いアリーナ -->
+    <!-- 1-B2. 🏆 対人アリーナ -->
     <section id="view-arena" class="view">
       <div id="arena-lobby-panel">
         <div class="card" style="margin-bottom:9px;">
@@ -131,7 +131,6 @@
           <div id="arena-rival-list"></div>
         </div>
       </div>
-
       <div id="arena-board-panel" class="playmat-board" style="display:none;">
         <div class="top-row" style="margin-bottom:6px;"><strong id="arena-turn-label" style="font-size:12px; color:#ffd000;">TURN 1</strong><button class="btn-xs" onclick="exitArenaMatch()">撤退</button></div>
         <div id="arena-handoff-box" class="card" style="display:none; text-align:center; padding:24px 14px;">
@@ -154,7 +153,7 @@
       </div>
     </section>
 
-    <!-- 1-B3. 🤝 フレンド機能 -->
+    <!-- 1-B3. 🤝 フレンド -->
     <section id="view-friends" class="view">
       <div class="card">
         <div class="section-title"><span>🤝 フレンド・招待コード</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -170,7 +169,7 @@
       <div class="card"><div class="section-title"><span id="fr-count-title">🤝 フレンド一覧</span></div><div id="fr-list"></div></div>
     </section>
 
-    <!-- 1-B4〜1-E. 任務・Wiki・調査ノート・カード図鑑 -->
+    <!-- 1-B4〜1-E. 任務・攻略ガイド・調査ノート・カード図鑑 -->
     <section id="view-missions" class="view">
       <div class="card">
         <div class="section-title"><span>📋 デイリー＆ウィークリー任務</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -199,20 +198,25 @@
       </div>
     </section>
 
-    <!-- 3. 討伐バトル -->
+    <!-- 3. 討伐戦＆育成素材クエスト -->
     <section id="view-battle" class="view">
-      <div id="btl-select-panel" class="card"><div class="section-title"><span>⚔️ 霧獣・融光種 討伐ターゲット</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="btl-enemy-list"></div></div>
+      <div id="btl-select-panel" class="card">
+        <div class="section-title"><span>⚔️ 討伐ターゲット ＆ 育成クエスト</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="chip-grid" style="margin-bottom:9px;">
+          <button id="btl-tab-hunt" class="select-chip selected" onclick="setBattleSubTab('hunt')">⚔️ 霧獣討伐</button>
+          <button id="btl-tab-growth" class="select-chip" onclick="setBattleSubTab('growth')">📘 育成クエスト</button>
+        </div>
+        <div id="btl-enemy-list"></div>
+        <div id="btl-growth-list" style="display:none;"></div>
+      </div>
+
       <div id="btl-arena-panel" class="playmat-board" style="display:none;">
         <div class="top-row">
           <div><span id="btl-turn-badge" class="rank-pill">TURN 1</span><strong id="btl-enemy-name" style="font-size:13px; margin-left:4px; color:#fff;">敵名</strong></div>
           <div style="display:flex; gap:4px;"><button id="btn-btl-speed" class="btn-xs" onclick="toggleBattleSpeed()">🐢 じっくり</button><button id="btn-btl-auto" class="btn-xs btn-primary" onclick="toggleBattleAuto()">🎮 手動</button><button class="btn-xs" onclick="exitBattleArena(false)">撤退</button></div>
         </div>
         <div id="btl-enemy-status" style="font-size:10.5px; font-weight:900; color:var(--miasma); margin-top:2px;"></div>
-        <div id="btl-stage" class="battle-stage stage-field">
-          <div id="btl-stage-emoji" class="stage-enemy-emoji">🐺</div>
-          <div id="btl-fx-layer" class="fx-layer"></div>
-          <div id="btl-float-layer" class="float-layer"></div>
-        </div>
+        <div id="btl-stage" class="battle-stage stage-field"><div id="btl-stage-emoji" class="stage-enemy-emoji">🐺</div><div id="btl-fx-layer" class="fx-layer"></div><div id="btl-float-layer" class="float-layer"></div></div>
         <div class="gauge-box"><div class="gauge-label"><span id="btl-hp-text">HP</span><span id="btl-stagger-text">体勢 0</span></div><div class="gauge-bar"><div id="btl-hp-fill" style="background:#ff595e; width:100%;"></div></div></div>
         <div class="gauge-bar" style="height:6px; margin-bottom:4px;"><div id="btl-stagger-fill" style="background:#ffd000; width:0%;"></div></div>
         <div id="btl-parts-row" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;"></div>
@@ -234,7 +238,7 @@
       </div>
     </section>
 
-    <!-- 4〜9. 隊員・スカウト・設定・配布箱・倉庫・キャンプ・クラフト・環境設定 -->
+    <!-- 4〜9. 隊員・スカウト・設定・配布箱・倉庫・キャンプ・クラフト・端末設定 -->
     <section id="view-squad" class="view">
       <div class="card"><div class="section-title"><span>🛡️ 4人パーティ編成（枠タップで入替）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="sq-party-editor" class="party-strip"></div><div id="sq-slot-picker" style="display:none; margin-top:8px;"></div></div>
       <div class="card"><div class="section-title"><span>📋 所属隊員（タップで詳細・強化）</span><button class="btn-xs btn-primary" onclick="openCharDetail('protagonist')">隊長カスタム</button></div><div id="sq-materials-bar" style="font-size:11px; margin-bottom:8px; background:var(--surface-sub); padding:6px 8px; border-radius:8px;"></div><div id="sq-roster-list" class="roster-grid"></div></div>
@@ -276,11 +280,22 @@
     <section id="view-camp" class="view"><div class="card"><div class="section-title"><span>🏭 前線キャンプ・自動生産ライン</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="camp-pending-box" style="background:var(--surface-sub); padding:10px; border-radius:12px; margin-bottom:10px;"></div><div style="font-size:12px; font-weight:900; margin-bottom:6px;">⚙️ 工場設備の強化</div><div id="camp-facility-list"></div></div><div class="card"><div class="section-title"><span>🐾 モンスター生態リンク</span></div><div id="camp-beast-grid" class="chip-grid"></div></div></section>
     <section id="view-craft" class="view"><div class="card"><div class="section-title"><span>🍳 タイミング調理ミニゲーム</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="craft-buff-status" style="font-size:11px; font-weight:900; color:var(--accent); margin-bottom:8px;"></div><div style="position:relative; height:22px; background:var(--surface-sub); border:2px solid var(--border); border-radius:999px; overflow:hidden; margin-bottom:8px;"><div style="position:absolute; left:38%; width:24%; height:100%; background:rgba(24,184,138,0.45);"></div><div id="cook-cursor" style="position:absolute; left:0%; top:0; width:6px; height:100%; background:#ff4d5a;"></div></div><button id="btn-cook-action" class="btn-primary" style="width:100%;" onclick="startCookingGame()">🍳 キャンプ飯を作る（無料）</button></div><div class="card"><div class="section-title"><span>🔨 武器鍛造・狩猟ガジェット作成</span></div><div id="craft-recipe-list"></div></div></section>
 
+    <!-- 端末設定＆データ引き継ぎ -->
     <section id="view-terminal" class="view">
       <div class="card">
         <div class="section-title"><span>⚙️ 端末設定</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="term-text-speed-label" style="font-size:12px; font-weight:900; margin-bottom:6px;">会話スピード：🐢 ゆっくり</div>
         <button class="btn-primary" style="width:100%;" onclick="cycleTextSpeed(); renderTerminalView();">💬 会話スピードを切り替える</button>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>🔑 データ引き継ぎ・バックアップ</span></div>
+        <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">引き継ぎコードを保管しておけば、機種変更や別ブラウザでも今のデータから続けられます。</p>
+        <button class="btn-primary" style="width:100%; margin-bottom:10px;" onclick="exportAccountBackupCode()">📋 自分の引き継ぎコードを書き出す</button>
+        <div style="font-size:11px; font-weight:900; margin-bottom:4px;">別端末のコードから復元する：</div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="term-backup-input" placeholder="MF-SAVE- から始まるコードを貼付" />
+          <button class="btn-accent2" style="white-space:nowrap;" onclick="importAccountBackupCode()">復元</button>
+        </div>
       </div>
       <div class="card">
         <div class="section-title"><span>🎁 支援コード入力</span></div>
@@ -290,13 +305,25 @@
     </section>
   </div>
 
-  <!-- モーダル群 -->
+  <!-- 📅 Wログインボーナスモーダル -->
+  <div id="modal-login-bonus" class="modal-overlay" onclick="closeLoginBonusModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="top-row" style="margin-bottom:8px;">
+        <strong style="font-size:15px;">📅 ログインボーナス</strong>
+        <button class="btn-xs" onclick="closeLoginBonusModal()">✕ 閉じる</button>
+      </div>
+      <div id="login-bonus-body"></div>
+    </div>
+  </div>
+
+  <!-- その他モーダル群 -->
   <div id="modal-story-log" class="modal-overlay" onclick="closeStoryBacklog()"><div class="modal-box" onclick="event.stopPropagation()"><div class="top-row" style="margin-bottom:8px;"><strong style="font-size:15px;">📜 会話バックログ</strong><button class="btn-xs" onclick="closeStoryBacklog()">✕ 閉じる</button></div><div id="story-log-body" style="max-height:65dvh; overflow-y:auto;"></div></div></div>
 
   <div id="modal-tablet" class="modal-overlay" onclick="closeTabletMenu()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="top-row"><strong style="font-size:15px;">📱 第7小隊・作戦タブレット</strong><button class="btn-xs" onclick="closeTabletMenu()">✕ 閉じる</button></div>
       <div class="tablet-grid">
+        <button class="menu-btn btn-accent2" onclick="tabletGo('login_bonus')"><span id="home-login-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📅</span><span>ログボ</span></button>
         <button class="menu-btn btn-accent2" onclick="tabletGo('missions')"><span id="home-mission-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📋</span><span>任務</span></button>
         <button class="menu-btn btn-primary" onclick="tabletGo('wiki')"><span class="menu-badge">コツ</span><span class="m-ico">📘</span><span>攻略ガイド</span></button>
         <button class="menu-btn" onclick="tabletGo('card_dex')"><span id="home-dex-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📚</span><span>カード図鑑</span></button>
@@ -352,26 +379,28 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="data.js?v=310"></script>
-  <script src="audio.js?v=310"></script>
-  <script src="sprites.js?v=310"></script>
-  <script src="wiki.js?v=310"></script>
-  <script src="cards_data_1.js?v=310"></script>
-  <script src="cards_data_2.js?v=310"></script>
-  <script src="cards.js?v=310"></script>
-  <script src="missions.js?v=310"></script>
-  <script src="bestiary.js?v=310"></script>
-  <script src="inventory.js?v=310"></script>
-  <script src="gacha.js?v=310"></script>
-  <script src="growth.js?v=310"></script>
-  <script src="battle.js?v=310"></script>
-  <script src="arena.js?v=310"></script>
-  <script src="friends.js?v=310"></script>
-  <script src="story_ch1_a.js?v=310"></script>
-  <script src="story_ch1_b.js?v=310"></script>
-  <script src="story_ch2.js?v=310"></script>
-  <script src="story.js?v=310"></script>
-  <script src="camp.js?v=310"></script>
-  <script src="main.js?v=310"></script>
+  <script src="data.js?v=320"></script>
+  <script src="audio.js?v=320"></script>
+  <script src="sprites.js?v=320"></script>
+  <script src="wiki.js?v=320"></script>
+  <script src="cards_data_1.js?v=320"></script>
+  <script src="cards_data_2.js?v=320"></script>
+  <script src="cards.js?v=320"></script>
+  <script src="login_bonus.js?v=320"></script>
+  <script src="growth_quests.js?v=320"></script>
+  <script src="missions.js?v=320"></script>
+  <script src="bestiary.js?v=320"></script>
+  <script src="inventory.js?v=320"></script>
+  <script src="gacha.js?v=320"></script>
+  <script src="growth.js?v=320"></script>
+  <script src="battle.js?v=320"></script>
+  <script src="arena.js?v=320"></script>
+  <script src="friends.js?v=320"></script>
+  <script src="story_ch1_a.js?v=320"></script>
+  <script src="story_ch1_b.js?v=320"></script>
+  <script src="story_ch2.js?v=320"></script>
+  <script src="story.js?v=320"></script>
+  <script src="camp.js?v=320"></script>
+  <script src="main.js?v=320"></script>
 </body>
 </html>
