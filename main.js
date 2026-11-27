@@ -32,7 +32,8 @@ function createDefaultSave() {
     ownedCards: {
       counter_stance: 1, aegis_wall: 1, shield_breaker: 1, shock_trap: 1,
       element_boost: 1, tactical_draw: 1, weak_scan: 1, repair_kit: 1,
-      hydro_splash: 1, camp_ration: 1
+      hydro_splash: 1, camp_ration: 1, ember_jab: 1, spark_jab: 1,
+      frost_shard: 1, arc_bolt: 1
     },
     claimedDexMilestones: [],
     tacticDeck: [
@@ -60,6 +61,7 @@ function loadSave() {
     if (!raw) return createDefaultSave();
     const parsed = JSON.parse(raw);
     const base = createDefaultSave();
+    const validDeck = Array.isArray(parsed.tacticDeck) && parsed.tacticDeck.length >= 8 && parsed.tacticDeck.length <= 28;
     return {
       ...base,
       ...parsed,
@@ -67,7 +69,7 @@ function loadSave() {
       party: parsed.party || base.party,
       ownedCards: { ...base.ownedCards, ...(parsed.ownedCards || {}) },
       claimedDexMilestones: parsed.claimedDexMilestones || [],
-      tacticDeck: (parsed.tacticDeck && parsed.tacticDeck.length === 8) ? parsed.tacticDeck : base.tacticDeck,
+      tacticDeck: validDeck ? parsed.tacticDeck : base.tacticDeck,
       charLevels: { ...base.charLevels, ...(parsed.charLevels || {}) },
       charRanks: { ...base.charRanks, ...(parsed.charRanks || {}) },
       charDupes: { ...base.charDupes, ...(parsed.charDupes || {}) },
@@ -130,10 +132,7 @@ function updateTabletBadge() {
   const dCnt = typeof getUnclaimedDexCount === "function" ? getUnclaimedDexCount() : 0;
 
   const dexBadge = document.getElementById("home-dex-badge");
-  if (dexBadge) {
-    dexBadge.style.display = dCnt > 0 ? "inline-block" : "none";
-    dexBadge.textContent = `${dCnt}件`;
-  }
+  if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
   const badge = document.getElementById("home-tablet-badge");
   if (badge) {
     const total = mCnt + bCnt + dCnt;
@@ -228,10 +227,8 @@ function renderHome() {
   const lines = ch.voiceLines;
   document.getElementById("home-speech").textContent = `「${lines[Math.floor(Math.random() * lines.length)]}」`;
   document.getElementById("home-tags").innerHTML = `
-    <span class="tag">${ch.rarity}</span>
-    <span class="tag">${elInfo.icon}${elInfo.name}</span>
-    <span class="tag">${wpInfo.icon}${wpInfo.name}</span>
-    <span class="tag">凸+${dupe}</span>
+    <span class="tag">${ch.rarity}</span><span class="tag">${elInfo.icon}${elInfo.name}</span>
+    <span class="tag">${wpInfo.icon}${wpInfo.name}</span><span class="tag">凸+${dupe}</span>
   `;
 
   document.getElementById("home-party-strip").innerHTML = state.party.map(id => {
@@ -304,10 +301,10 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.4.0（36種カード・図鑑・長編物語）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.5.0（全102種カード＆最大40枚デッキ）";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.4.0：カード36種増量＆カード図鑑・長編メインストーリー</strong><div style="font-size:11px; color:var(--muted);">ホーム顔被り解消、戦術カード全36種＆収集報酬付きカード図鑑、序章〜第4章の本格ストーリーを実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.5.0：全102種戦術カード＆最大40枚デッキ拡張</strong><div style="font-size:11px; color:var(--muted);">6属性×17種の全102カード追加、20〜40枚デッキ＆同名3枚制限、おまかせ40枚編成、属性絞り込み付きカード図鑑を実装。</div></div>`;
   }
 }
 
