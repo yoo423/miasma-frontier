@@ -3,11 +3,10 @@ const MAX_EN = 160;
 const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
-// ストーリー進行による機能解放ルール（RPGらしい段階解放）
 const FEATURE_UNLOCK_RULES = {
+  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『新緑の廃墟と最初の霧獣』クリア" },
   camp:    { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
   craft:   { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
-  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『新緑の廃墟と最初の霧獣』クリア" },
   arena:   { reqStory: "ch1_ep8", label: "第1章完結（第8話『モス・ベヒーモス』討伐）" }
 };
 
@@ -58,7 +57,10 @@ function createDefaultSave() {
     bondPoints: {},
     huntLog: {},
     missions: {},
+    arenaRating: 1000,
+    arenaWins: 0,
     friends: [],
+    friendGiftKey: "",
     materials: {},
     regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
     mailbox: [],
@@ -109,9 +111,7 @@ function isFeatureUnlocked(featureId) {
 
 function toggleDebugUnlockAll() {
   state.debugUnlockAll = !state.debugUnlockAll;
-  saveGame();
-  playSfx("switch");
-  renderTerminalView();
+  saveGame(); playSfx("switch"); renderTerminalView();
   showToast(state.debugUnlockAll ? "🔓 テスト用：すべての機能ロックを解除しました" : "🔒 ストーリー進行による機能解放モードに戻しました");
 }
 
@@ -172,10 +172,6 @@ function tabletGo(viewId) {
     return;
   }
   closeTabletMenu();
-  if (viewId === "arena" || viewId === "friends") {
-    showToast(`🚧『${viewId === "arena" ? "対人アリーナ" : "フレンド機能"}』は次回の Ver 2.8 で本実装します！`);
-    return;
-  }
   switchView(viewId);
 }
 
@@ -209,12 +205,14 @@ function switchView(viewId) {
 
   if (window.MF_AUDIO) {
     if (viewId === "story") window.MF_AUDIO.playBgm("story");
-    else if (viewId !== "battle") window.MF_AUDIO.playBgm("home");
+    else if (viewId !== "battle" && viewId !== "arena") window.MF_AUDIO.playBgm("home");
   }
 
   if (viewId === "home") renderHome();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "arena" && typeof renderArenaView === "function") renderArenaView();
+  if (viewId === "friends" && typeof renderFriendsView === "function") renderFriendsView();
   if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
@@ -365,12 +363,12 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.7.0（パック券ガチャ・任務・敵22種・段階解放）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.8.0（第2章・対人アリーナ・フレンド）";
   const dbgBtn = document.getElementById("btn-debug-unlock");
   if (dbgBtn) dbgBtn.textContent = state.debugUnlockAll ? "🔒 テスト全解放中（通常ロックに戻す）" : "🔓 テスト用：全機能のストーリーロックを解除";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.7.0：カードパック券・デイリー＆ウィークリー任務・敵22種実装</strong><div style="font-size:11px; color:var(--muted);">カードガチャ専用チケット、毎日/毎週任務、全22種の霧獣＆報酬増量、ストーリー進行による機能解放を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.8.0：長編第2章＆対人アリーナ＆フレンド機能実装</strong><div style="font-size:11px; color:var(--muted);">第2章（全8話）、同時プロット3すくみ対人＆2P＆模擬戦アリーナ、招待コード式フレンド＆応援ギフト機能を実装。</div></div>`;
   }
 }
 
