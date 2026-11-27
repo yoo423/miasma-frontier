@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=240" />
+  <link rel="stylesheet" href="style.css?v=250" />
   <script>
     window.addEventListener("error", function(e) {
       var box = document.getElementById("debug-error-box");
@@ -43,7 +43,7 @@
       </div>
     </header>
 
-    <!-- 1. 立ち絵メイン・ホーム画面（名前＆セリフを下部へ移動して顔被り解消） -->
+    <!-- 1. 立ち絵メイン・ホーム画面 -->
     <main id="view-home" class="view active">
       <div class="home-hero-stage">
         <div id="home-portrait" class="hero-art-layer"></div>
@@ -71,9 +71,9 @@
       </div>
 
       <div class="home-main-dock">
-        <button class="menu-btn" onclick="switchView('deck')"><span class="m-ico">🃏</span><span>デッキ</span></button>
+        <button class="menu-btn" onclick="switchView('deck')"><span class="menu-badge">40枚</span><span class="m-ico">🃏</span><span>デッキ</span></button>
         <button class="menu-btn" onclick="switchView('squad')"><span class="m-ico">🧑‍✈️</span><span>隊員</span></button>
-        <button class="menu-btn" onclick="switchView('gacha')"><span class="menu-badge">36種</span><span class="m-ico">🌠</span><span>スカウト</span></button>
+        <button class="menu-btn" onclick="switchView('gacha')"><span class="menu-badge">102種</span><span class="m-ico">🌠</span><span>スカウト</span></button>
         <button class="menu-btn btn-primary" onclick="openTabletMenu()">
           <span id="home-tablet-badge" class="menu-badge" style="display:none;">!</span>
           <span class="m-ico">📱</span><span>タブレット</span>
@@ -130,21 +130,22 @@
       </div>
     </section>
 
-    <!-- 1-E. カード図鑑（全36種コレクション） -->
+    <!-- 1-E. カード図鑑（全102種コレクション） -->
     <section id="view-card_dex" class="view">
       <div class="card">
-        <div class="section-title"><span>📚 カード図鑑（全36種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="section-title"><span>📚 カード図鑑（全102種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="dex-progress-bar" style="background:var(--surface-sub); padding:9px; border-radius:11px; margin-bottom:8px;"></div>
-        <div id="dex-filter-tabs" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+        <div id="dex-filter-tabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;"></div>
+        <div id="dex-el-tabs" style="display:flex; gap:4px; flex-wrap:wrap;"></div>
         <div id="dex-card-grid" class="dex-grid"></div>
       </div>
     </section>
 
-    <!-- 2. デッキ編成画面 -->
+    <!-- 2. 最大40枚デッキ編成画面 -->
     <section id="view-deck" class="view">
       <div class="card">
         <div class="section-title">
-          <span>🃏 マイデッキ編成（20枚）</span>
+          <span>🃏 マイデッキ編成（20〜40枚）</span>
           <div style="display:flex; gap:5px;">
             <button class="btn-xs btn-primary" onclick="switchView('card_dex')">📚 図鑑</button>
             <button class="btn-xs" onclick="switchView('home')">← 拠点へ</button>
@@ -153,10 +154,15 @@
         <div id="deck-char-cards"></div>
       </div>
       <div class="card">
-        <div class="section-title"><span id="deck-tactic-count">採用中の戦術カード（8 / 8枚）</span></div>
-        <div style="font-size:10px; color:var(--muted); margin-bottom:6px;">採用中の札をタップで外せます（未所持カードは図鑑で確認）：</div>
+        <div class="section-title"><span id="deck-tactic-count">合計 20 / 40枚</span></div>
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:6px; margin-bottom:8px;">
+          <button class="btn-xs btn-accent2" onclick="autoFillDeck40()">✨ おまかせ40枚編成</button>
+          <button class="btn-xs" onclick="resetDeckTo20()">⚖️ 基本20枚に戻す</button>
+        </div>
+        <div style="font-size:10px; color:var(--muted); margin-bottom:5px;">採用中の札をタップで1枚外せます（同名3枚まで）：</div>
         <div id="deck-current-tactics" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px;"></div>
-        <div style="font-size:12px; font-weight:900; margin-bottom:6px;">🎒 所持している戦術カード</div>
+        <div style="font-size:12px; font-weight:900; margin-bottom:5px;">🎒 所持している戦術カード</div>
+        <div id="deck-el-filters" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;"></div>
         <div id="deck-tactic-pool"></div>
       </div>
     </section>
@@ -245,7 +251,7 @@
     <!-- 5. スカウト -->
     <section id="view-gacha" class="view">
       <div class="card">
-        <div class="section-title"><span>🌠 軌道スカウト（隊員＆全36種カード）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="section-title"><span>🌠 軌道スカウト（隊員＆全102種カード）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="gacha-banner-tabs" class="chip-grid" style="margin-bottom:8px;"></div>
         <div id="gacha-banner-card" style="background:var(--surface-sub); border:2px solid var(--border); border-radius:14px; padding:10px;"></div>
         <div id="gacha-pity-text" style="font-size:11px; font-weight:900; color:var(--miasma); margin:8px 0;"></div>
@@ -418,18 +424,20 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="data.js?v=240"></script>
-  <script src="audio.js?v=240"></script>
-  <script src="sprites.js?v=240"></script>
-  <script src="wiki.js?v=240"></script>
-  <script src="cards.js?v=240"></script>
-  <script src="bestiary.js?v=240"></script>
-  <script src="inventory.js?v=240"></script>
-  <script src="gacha.js?v=240"></script>
-  <script src="growth.js?v=240"></script>
-  <script src="battle.js?v=240"></script>
-  <script src="story.js?v=240"></script>
-  <script src="camp.js?v=240"></script>
-  <script src="main.js?v=240"></script>
+  <script src="data.js?v=250"></script>
+  <script src="audio.js?v=250"></script>
+  <script src="sprites.js?v=250"></script>
+  <script src="wiki.js?v=250"></script>
+  <script src="cards_data_1.js?v=250"></script>
+  <script src="cards_data_2.js?v=250"></script>
+  <script src="cards.js?v=250"></script>
+  <script src="bestiary.js?v=250"></script>
+  <script src="inventory.js?v=250"></script>
+  <script src="gacha.js?v=250"></script>
+  <script src="growth.js?v=250"></script>
+  <script src="battle.js?v=250"></script>
+  <script src="story.js?v=250"></script>
+  <script src="camp.js?v=250"></script>
+  <script src="main.js?v=250"></script>
 </body>
 </html>
