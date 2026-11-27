@@ -7,11 +7,26 @@ function getGachaTabs() {
   return [
     ...(window.MF_DATA.BANNERS || []),
     {
-      id: "card_pack", shortName: "🃏 カード", tag: "デッキ強化パック",
-      title: "戦術・伝説カード特別パック", isCardBanner: true,
-      desc: "全20種の戦術・防御・伝説SSRカードが排出！被ったカードは自動でLv.UPして性能強化（最大Lv.5）！"
+      id: "card_pack", shortName: "🎟️ カード", tag: "パック券専用",
+      title: "全102種・戦術カード特別パック", isCardBanner: true,
+      desc: "結晶石は不要！討伐や任務で手に入る『🎟️ 戦術パック券』でガンガン引けます（10連は券8枚でお得＆SR以上確定！）。"
     }
   ];
+}
+
+function buyCardTicketsWithCredits(qty) {
+  const cost = qty * 2000;
+  if (state.credits < cost) {
+    showToast(`🪙 クレジット不足（必要：${cost.toLocaleString()}）`);
+    return;
+  }
+  state.credits -= cost;
+  state.cardTickets = (state.cardTickets || 0) + qty;
+  saveGame();
+  playSfx("gift");
+  renderTopBar();
+  renderGachaView();
+  showToast(`🎟️ 戦術パック券 ×${qty} を購入しました！`);
 }
 
 function renderGachaView() {
@@ -27,17 +42,22 @@ function renderGachaView() {
   `).join("");
 
   if (banner.isCardBanner) {
+    const tk = state.cardTickets || 0;
     document.getElementById("gacha-banner-card").innerHTML = `
-      <span class="rank-pill" style="background:#ffd13b;">${banner.tag}</span>
-      <h3 style="margin:6px 0 4px; font-size:16px;">🃏 ${escapeHtml(banner.title)}</h3>
-      <p style="font-size:11px; color:var(--muted); margin:0;">${escapeHtml(banner.desc)}</p>
-      <div style="font-size:11px; font-weight:900; color:var(--accent); margin-top:6px;">
-        目玉SSR：⏳クロノ・シンクロ / 🌟融光ノヴァ / ❄️零度結界 / 🌩️天雷ブレイカー
+      <div class="top-row">
+        <span class="rank-pill" style="background:#ffd13b;">${banner.tag}</span>
+        <strong style="font-size:12px;">所持：🎟️ ${tk}枚</strong>
+      </div>
+      <h3 style="margin:6px 0 4px; font-size:15px;">🃏 ${escapeHtml(banner.title)}</h3>
+      <p style="font-size:11px; color:var(--muted); margin:0 0 8px;">${escapeHtml(banner.desc)}</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+        <button class="btn-xs" onclick="buyCardTicketsWithCredits(1)">🪙2,000 → 🎟️券×1</button>
+        <button class="btn-xs btn-primary" onclick="buyCardTicketsWithCredits(5)">🪙10,000 → 🎟️券×5</button>
       </div>
     `;
-    document.getElementById("gacha-pity-text").textContent = "🃏 10連でSR以上の戦術カードが1枚確定！（被り＝自動カードLv.UP）";
-    document.getElementById("btn-gacha-1").innerHTML = `1枚引く<br><span style="font-size:11px;">💎 120</span>`;
-    document.getElementById("btn-gacha-10").innerHTML = `10連パック（SR以上確定）<br><span style="font-size:11px;">💎 1,000</span>`;
+    document.getElementById("gacha-pity-text").textContent = "🎟️ 討伐戦・デイリー任務・調査ノートでパック券が毎回手に入ります！";
+    document.getElementById("btn-gacha-1").innerHTML = `1枚引く<br><span style="font-size:11px;">🎟️ 券 ×1</span>`;
+    document.getElementById("btn-gacha-10").innerHTML = `10連（SR以上確定！）<br><span style="font-size:11px;">🎟️ 券 ×8（2枚お得）</span>`;
   } else {
     const feat = window.MF_DATA.CHARACTERS[banner.featuredSsr];
     document.getElementById("gacha-banner-card").innerHTML = `
@@ -61,10 +81,19 @@ function renderGachaView() {
 function executeScout(count) {
   const tabs = getGachaTabs();
   const banner = tabs.find(b => b.id === activeBannerId) || tabs[0];
-  const cost = banner.isCardBanner ? (count === 10 ? 1000 : 120) : count * 160;
 
-  if (state.gems < cost) { showToast(`💎 結晶石が足りません（必要：${cost.toLocaleString()}）`); return; }
-  state.gems -= cost;
+  if (banner.isCardBanner) {
+    const needTk = count === 10 ? 8 : 1;
+    if ((state.cardTickets || 0) < needTk) {
+      showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚 ／ 討伐や任務・クレジット交換で入手！）`);
+      return;
+    }
+    state.cardTickets -= needTk;
+  } else {
+    const cost = count * 160;
+    if (state.gems < cost) { showToast(`💎 結晶石が足りません（必要：${cost.toLocaleString()}）`); return; }
+    state.gems -= cost;
+  }
 
   const results = [];
   if (banner.isCardBanner) {
@@ -74,9 +103,9 @@ function executeScout(count) {
     for (let i = 0; i < count; i++) {
       let rar = "N";
       const roll = Math.random();
-      if (roll < 0.08) rar = "SSR";
-      else if (roll < 0.30) rar = "SR";
-      else if (roll < 0.65) rar = "R";
+      if (roll < 0.10) rar = "SSR";
+      else if (roll < 0.34) rar = "SR";
+      else if (roll < 0.68) rar = "R";
       if (count === 10 && i === 9 && !results.some(x => x.rarity === "SSR" || x.rarity === "SR")) rar = "SR";
 
       const list = byRar(rar);
@@ -124,6 +153,7 @@ function executeScout(count) {
     }
   }
 
+  if (typeof addMissionProgress === "function") addMissionProgress("scout", count);
   saveGame();
   renderTopBar();
   renderGachaView();
@@ -244,6 +274,4 @@ function showGachaResultGrid() {
   }).join("");
 }
 
-function closeGachaModal() {
-  document.getElementById("modal-gacha").classList.remove("active");
-}
+function closeGachaModal() { document.getElementById("modal-gacha").classList.remove("active"); }
