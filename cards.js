@@ -1,8 +1,39 @@
-window.MF_CARDS = {
-  TACTIC_CARDS: {
+window.MF_CARDS = window.MF_CARDS || {};
+
+const BASE_FALLBACK_CARDS = {
+  counter_stance: { id: "counter_stance", rarity: "R", name: "見切りカウンター", type: "guard", element: "arc", cost: 1, icon: "🪞", shield: 0.45, counterMult: 2.2, summary: "🛡️軽減＋🪞220%反撃", desc: "敵の攻撃を受け流し、受けた瞬間に攻撃力220%でカウンター反撃する。" },
+  aegis_wall: { id: "aegis_wall", rarity: "R", name: "イージス防壁", type: "guard", element: "arc", cost: 1, icon: "🛡️", shield: 0.95, summary: "🛡️強固バリア展開", desc: "小隊全体に厚い結晶バリアを張る。ボスの大技を耐える基本防御札。" },
+  shield_breaker: { id: "shield_breaker", rarity: "R", name: "アーマーブレイク", type: "break", element: "fire", cost: 1, icon: "🔨", power: 1.25, stagger: 36, guardBreakMult: 2.4, summary: "💥崩し / 装甲2.4倍", desc: "敵が『装甲硬化』または『チャージ中』なら威力2.4倍＆強制中断！" },
+  shock_trap: { id: "shock_trap", rarity: "R", name: "電磁ショック罠", type: "break", element: "volt", cost: 2, icon: "⚡", power: 1.55, stagger: 48, guardBreakMult: 2.1, summary: "💥雷崩し / 大体勢削り", desc: "高圧電撃で体勢ゲージを大きく削る。水属性の直後なら感電も発動。" },
+  element_boost: { id: "element_boost", rarity: "R", name: "元素オーバーロード", type: "buff", element: "fire", cost: 1, icon: "🔥", nextAtkMult: 1.65, summary: "🔥次撃 1.65倍", desc: "このターン次に発動する攻撃カードの威力を1.65倍に増幅する。" },
+  tactical_draw: { id: "tactical_draw", rarity: "N", name: "戦術リロード", type: "buff", element: "wind", cost: 0, icon: "🃏", draw: 2, apGain: 1, summary: "🃏2枚ドロー / AP+1", desc: "コスト0で山札から2枚引き、APも+1回復する万能の潤滑油カード。" },
+  weak_scan: { id: "weak_scan", rarity: "N", name: "弱点部位スキャン", type: "buff", element: "wind", cost: 1, icon: "🎯", shredTurns: 2, summary: "🎯2T防御DOWN", desc: "2ターン敵の防御力を下げ、破壊可能部位へのダメージを大幅に伸ばす。" },
+  repair_kit: { id: "repair_kit", rarity: "N", name: "救急ナノミスト", type: "heal", element: "water", cost: 1, icon: "💚", healRatio: 0.28, summary: "💚HP28%回復", desc: "小隊HPを28%回復する携帯ナノマシン。長期戦の要。" },
+  hydro_splash: { id: "hydro_splash", rarity: "N", name: "高圧ハイドロ弾", type: "attack", element: "water", cost: 1, icon: "💧", power: 1.15, stagger: 14, summary: "💧水115% / 反応起点", desc: "水属性を付着させる起点札。炎なら蒸発、氷なら凍結へ繋げられる。" },
+  camp_ration: { id: "camp_ration", rarity: "N", name: "特製スタミナ飯", type: "heal", element: "fire", cost: 1, icon: "🍖", healRatio: 0.18, nextAtkMult: 1.35, summary: "💚18%回復＋次撃1.35倍", desc: "HPを回復しつつ次の攻撃威力も上げる一石二鳥のキャンプ飯カード。" },
+  ember_jab: { id: "ember_jab", rarity: "N", name: "種火の連撃", type: "attack", element: "fire", cost: 0, icon: "🧨", power: 0.78, stagger: 10, exGain: 12, summary: "🔥0コス炎 / 反応起点", desc: "コスト0で炎属性を付着できる軽快な攻撃札。" },
+  spark_jab: { id: "spark_jab", rarity: "N", name: "スタン・スパーク", type: "attack", element: "volt", cost: 0, icon: "⚡", power: 0.75, stagger: 12, exGain: 16, summary: "⚡0コス雷 / EX+16%", desc: "コスト0で出せる雷の牽制札。" },
+  frost_shard: { id: "frost_shard", rarity: "N", name: "氷晶スロー", type: "attack", element: "ice", cost: 0, icon: "❄️", power: 0.75, stagger: 10, summary: "❄️0コス氷 / 凍結・融解起点", desc: "コスト0で氷属性を付着できる軽快な攻撃札。" },
+  arc_bolt: { id: "arc_bolt", rarity: "N", name: "アーク・ボルト", type: "attack", element: "arc", cost: 0, icon: "✨", power: 0.72, shield: 0.3, stagger: 12, summary: "✨0コス煌＋🛡️小防壁", desc: "コスト0で攻撃と小バリアを同時展開。" }
+};
+
+function mergeAllTacticCards() {
+  const merged = {
+    ...BASE_FALLBACK_CARDS,
     ...(window.MF_CARDS_PART1 || {}),
     ...(window.MF_CARDS_PART2 || {})
-  },
+  };
+  if (window.MF_EVENTS_DATA?.SEASONAL_CARDS && typeof getEventTodayStr === "function") {
+    const today = getEventTodayStr();
+    window.MF_EVENTS_DATA.SEASONAL_CARDS.forEach(c => {
+      if (today >= c.releaseDate) merged[c.id] = { ...c };
+    });
+  }
+  return merged;
+}
+
+Object.assign(window.MF_CARDS, {
+  TACTIC_CARDS: mergeAllTacticCards(),
 
   STARTER_OWNED_CARDS: {
     counter_stance: 1, aegis_wall: 1, shield_breaker: 1, shock_trap: 1,
@@ -30,7 +61,12 @@ window.MF_CARDS = {
     { count: 102, gems: 2400, label: "102種達成ボーナス！" }
   ],
 
-  // 👑 限定ピックアップSSR 7名の完全専用カード（通常キャラとは別格の固有性能）
+  ensurePool() {
+    const fresh = mergeAllTacticCards();
+    this.TACTIC_CARDS = Object.assign(this.TACTIC_CARDS || {}, fresh);
+    return this.TACTIC_CARDS;
+  },
+
   LIMITED_CHAR_CARDS: {
     mikoto: [
       { id: "mikoto_c1", name: "氷符・白狐連弾", type: "attack", element: "ice", cost: 0, icon: "❄️", power: 1.45, stagger: 20, exGain: 22, draw: 1, summary: "👑0コス氷145%＋1ドロー", desc: "コスト0で高火力の氷結晶を放ちながら手札を1枚補充。凍結・融解の最強起点。" },
@@ -104,9 +140,9 @@ window.MF_CARDS = {
     return state.ownedCards[cardId] || 0;
   },
 
-  // 既存の戦術カードもレアリティごとに強化＆成長幅で差別化
   getLeveledTacticCard(tid) {
-    const base = this.TACTIC_CARDS[tid];
+    const pool = this.ensurePool();
+    const base = pool[tid];
     if (!base) return null;
     const lv = Math.max(1, this.getCardLevel(tid));
     const baseBoost = { N: 1.0, R: 1.04, SR: 1.12, SSR: 1.24 }[base.rarity] || 1.0;
@@ -123,20 +159,14 @@ window.MF_CARDS = {
     };
   },
 
-  // 隊員ごとの固有カード3枚（限定SSR専用 ＋ 全キャラの武器種＆レアリティ差別化）
   getCharCards(charId) {
     const ch = getCharProfile(charId);
     const treeLv = typeof getSkillTreeStage === "function" ? getSkillTreeStage(charId) : 0;
     const treeMult = 1 + treeLv * 0.1;
 
-    // 👑 限定ピックアップSSRは完全専用の超強力カードセットを返す
     if (ch.limited && this.LIMITED_CHAR_CARDS[charId]) {
       return this.LIMITED_CHAR_CARDS[charId].map(c => ({
-        ...c,
-        charId,
-        ownerName: `👑${ch.name}`,
-        rarity: "SSR",
-        isLimitedCard: true,
+        ...c, charId, ownerName: `👑${ch.name}`, rarity: "SSR", isLimitedCard: true,
         power: c.power ? Number((c.power * treeMult).toFixed(2)) : undefined,
         shield: c.shield ? Number((c.shield * treeMult).toFixed(2)) : undefined,
         healRatio: c.healRatio ? Number(Math.min(0.85, c.healRatio * (1 + treeLv * 0.06)).toFixed(2)) : undefined,
@@ -144,18 +174,15 @@ window.MF_CARDS = {
       }));
     }
 
-    // 恒常SSR・SR・R・Nは「レアリティ差 × 8武器種の個性」でしっかり差別化
     const el = ch.element;
     const wp = ch.weapon || "sword";
     const sk = ch.skills || { normal: "通常攻撃", active: "固有戦技", ult: "必殺連携" };
     const rarMult = { N: 1.0, R: 1.1, SR: 1.22, SSR: 1.38 }[ch.rarity] || 1.0;
     const mult = rarMult * treeMult;
     const shortName = (txt, fb) => (txt ? txt.split("：")[0] : fb);
-
     const isHealer = wp === "staff" || charId === "fiona" || charId === "medibot";
     const isShielder = charId === "chloe" || charId === "ran" || charId === "guardko" || charId === "rikka";
 
-    // 武器種別の追加特性（同じレア度でも武器ごとに明確な役割を持たせる）
     const c1Power = Number(((wp === "greatsword" ? 1.42 : wp === "dual" ? 1.05 : 1.2) * mult).toFixed(2));
     const c1Cost = wp === "dual" ? 0 : 1;
     const c1Draw = (wp === "assault" || wp === "staff") ? 1 : 0;
@@ -171,9 +198,7 @@ window.MF_CARDS = {
     const c2Ap = wp === "dual" ? 1 : 0;
     const c2Summary = isShielder
       ? `🛡️大防壁＋${Math.round(c2Power * 100)}%＋🪞反撃`
-      : (isHealer
-          ? `💚${Math.round(c2Heal * 100)}%回復＋${Math.round(c2Power * 100)}%`
-          : `🔥${Math.round(c2Power * 100)}%${c2Ap ? "＋AP+1" : (wp === "greatsword" ? " / 重撃" : "")}`);
+      : (isHealer ? `💚${Math.round(c2Heal * 100)}%回復＋${Math.round(c2Power * 100)}%` : `🔥${Math.round(c2Power * 100)}%${c2Ap ? "＋AP+1" : ""}`);
 
     const c3Power = Number(((wp === "hammer" ? 1.45 : 1.15) * mult).toFixed(2));
     const c3Stag = wp === "hammer" ? 50 : (wp === "greatsword" ? 42 : 36);
@@ -191,7 +216,6 @@ window.MF_CARDS = {
     const sk = ch.skills || { ult: "必殺連携" };
     const treeLv = typeof getSkillTreeStage === "function" ? getSkillTreeStage(charId) : 0;
 
-    // 👑 限定SSRの超絶EX必殺札
     if (ch.limited && this.LIMITED_ULT_BONUS[charId]) {
       const b = this.LIMITED_ULT_BONUS[charId];
       const pwr = Number((b.power + treeLv * 0.35).toFixed(2));
@@ -221,6 +245,7 @@ window.MF_CARDS = {
   },
 
   buildActiveDeck() {
+    this.ensurePool();
     const slot = this.ensureDeckSlots();
     const charCards = [];
     (state.party || []).forEach(id => charCards.push(...this.getCharCards(id)));
@@ -228,7 +253,7 @@ window.MF_CARDS = {
     const tacticIds = (valid ? slot.cards : [...this.DEFAULT_TACTIC_DECK]).slice(0, this.MAX_TACTIC_SIZE);
     return [...charCards, ...tacticIds.map(tid => this.getLeveledTacticCard(tid)).filter(Boolean)];
   }
-};
+});
 
 let deckElFilter = "ALL";
 let dexRarityFilter = "ALL";
@@ -254,7 +279,7 @@ function renameCurrentDeck() {
 
 function openCardDetailModal(card) {
   if (!card) return;
-  const el = window.MF_DATA.ELEMENTS[card.element] || window.MF_DATA.ELEMENTS.arc;
+  const el = (window.MF_DATA?.ELEMENTS?.[card.element]) || { icon: "✨", name: "煌" };
   const typeLabel = { attack: "⚔️ 攻撃", break: "💥 崩し", guard: "🛡️ 防御・反撃", buff: "✨ 戦術・支援", heal: "💚 回復", ult: "🌟 EX必殺" }[card.type] || "";
   const tipMap = {
     break: "💡 コツ：敵の予兆が『🛡️装甲硬化』か『⚡チャージ中』の時に出すと特効＋行動キャンセル！",
@@ -264,10 +289,10 @@ function openCardDetailModal(card) {
     heal: "💡 コツ：ピンチの立て直しや長期戦のボス攻略で安定感が上がります！",
     ult: "💡 コツ：コスト0の切り札！元素反応やバフの後に3枚目として置くと超絶ダメージ！"
   };
-  document.getElementById("cdm-title").textContent = `${card.icon} ${card.name}`;
+  document.getElementById("cdm-title").textContent = `${card.icon || "🃏"} ${card.name}`;
   document.getElementById("cdm-meta").innerHTML = `
     <span class="tag">${card.isLimitedCard ? "👑限定SSR" : (card.rarity || "R")}</span>
-    <span class="tag">AP ${card.cost}</span>
+    <span class="tag">AP ${card.cost ?? 1}</span>
     <span class="tag">${el.icon}${el.name}</span><span class="tag">${typeLabel}</span>
     ${card.cardLv ? `<span class="tag" style="background:#ffd13b;">Lv.${card.cardLv}</span>` : ""}
   `;
@@ -278,7 +303,10 @@ function openCardDetailModal(card) {
   playSfx("tap");
 }
 function closeCardDetailModal() { document.getElementById("modal-card-detail").classList.remove("active"); }
-function openTacticCardDetail(tid) { openCardDetailModal(window.MF_CARDS.getLeveledTacticCard(tid) || window.MF_CARDS.TACTIC_CARDS[tid]); }
+function openTacticCardDetail(tid) {
+  const pool = window.MF_CARDS.ensurePool();
+  openCardDetailModal(window.MF_CARDS.getLeveledTacticCard(tid) || pool[tid]);
+}
 function openCharCardDetail(charId, cardIdx) {
   const list = window.MF_CARDS.getCharCards(charId);
   if (list[cardIdx]) openCardDetailModal(list[cardIdx]);
@@ -286,6 +314,7 @@ function openCharCardDetail(charId, cardIdx) {
 
 function renderDeckView() {
   renderTopBar();
+  const pool = window.MF_CARDS.ensurePool();
   state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
   const activeSlot = window.MF_CARDS.ensureDeckSlots();
 
@@ -302,7 +331,7 @@ function renderDeckView() {
 
   document.getElementById("deck-char-cards").innerHTML = state.party.map(id => {
     const ch = getCharProfile(id);
-    const el = window.MF_DATA.ELEMENTS[ch.element];
+    const el = window.MF_DATA.ELEMENTS[ch.element] || { icon: "✨", name: "煌" };
     const cards = window.MF_CARDS.getCharCards(id);
     const limBadge = ch.limited ? `<span class="tag" style="background:#ffd13b; color:#121318;">👑限定SSR</span>` : "";
     const borderCol = ch.limited ? "border-color:#ffd000;" : "";
@@ -330,22 +359,22 @@ function renderDeckView() {
   const grouped = {};
   activeSlot.cards.forEach(tid => { grouped[tid] = (grouped[tid] || 0) + 1; });
   document.getElementById("deck-current-tactics").innerHTML = Object.entries(grouped).map(([tid, cnt]) => {
-    const c = window.MF_CARDS.TACTIC_CARDS[tid];
+    const c = pool[tid];
     return c ? `<button class="btn-xs" style="background:var(--surface-sub);" onclick="removeTacticCardById('${tid}')">${c.icon}${escapeHtml(c.name)} ×${cnt} ✕</button>` : "";
   }).join("");
 
-  const elButtons = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS).map(e => ({ id: e.id, label: `${e.icon}${e.name}` }))];
+  const elButtons = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS || {}).map(e => ({ id: e.id, label: `${e.icon}${e.name}` }))];
   document.getElementById("deck-el-filters").innerHTML = elButtons.map(b => `
     <button class="btn-xs ${deckElFilter === b.id ? "btn-primary" : ""}" onclick="deckElFilter='${b.id}'; playSfx('tap'); renderDeckView();">${b.label}</button>
   `).join("");
 
   const rarOrd = { SSR: 0, SR: 1, R: 2, N: 3 };
-  const ownedList = Object.values(window.MF_CARDS.TACTIC_CARDS)
+  const ownedList = Object.values(pool)
     .filter(c => window.MF_CARDS.getCardLevel(c.id) > 0 && (deckElFilter === "ALL" || c.element === deckElFilter))
     .sort((a, b) => (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9));
 
   document.getElementById("deck-tactic-pool").innerHTML = ownedList.map(c => {
-    const el = window.MF_DATA.ELEMENTS[c.element];
+    const el = window.MF_DATA.ELEMENTS[c.element] || { icon: "✨", name: "煌" };
     const lv = window.MF_CARDS.getCardLevel(c.id);
     const inDeck = activeSlot.cards.filter(id => id === c.id).length;
     const canAdd = activeSlot.cards.length < window.MF_CARDS.MAX_TACTIC_SIZE && inDeck < window.MF_CARDS.MAX_COPIES;
@@ -381,9 +410,10 @@ function removeTacticCardById(tid) {
 }
 
 function autoFillDeck40() {
+  const pool = window.MF_CARDS.ensurePool();
   const slot = window.MF_CARDS.ensureDeckSlots();
   const rarScore = { SSR: 40, SR: 30, R: 20, N: 10 };
-  const owned = Object.values(window.MF_CARDS.TACTIC_CARDS)
+  const owned = Object.values(pool)
     .filter(c => window.MF_CARDS.getCardLevel(c.id) > 0)
     .sort((a, b) => (rarScore[b.rarity] + window.MF_CARDS.getCardLevel(b.id) * 2) - (rarScore[a.rarity] + window.MF_CARDS.getCardLevel(a.id) * 2));
 
@@ -408,7 +438,8 @@ function resetDeckTo20() {
 }
 
 function getOwnedCardCount() {
-  return Object.keys(window.MF_CARDS.TACTIC_CARDS).filter(id => window.MF_CARDS.getCardLevel(id) > 0).length;
+  const pool = window.MF_CARDS.ensurePool();
+  return Object.keys(pool).filter(id => window.MF_CARDS.getCardLevel(id) > 0).length;
 }
 function getUnclaimedDexCount() {
   const owned = getOwnedCardCount();
@@ -416,12 +447,20 @@ function getUnclaimedDexCount() {
   return window.MF_CARDS.DEX_MILESTONES.filter(m => owned >= m.count && !claimed.includes(m.count)).length;
 }
 
+function resetDexFilters() {
+  dexRarityFilter = "ALL";
+  dexElFilter = "ALL";
+  playSfx("tap");
+  renderCardDexView();
+}
+
 function renderCardDexView() {
   renderTopBar();
-  const all = Object.values(window.MF_CARDS.TACTIC_CARDS);
+  const pool = window.MF_CARDS.ensurePool();
+  const all = Object.values(pool);
   const ownedCnt = getOwnedCardCount();
   const claimed = state.claimedDexMilestones || [];
-  const pct = Math.round((ownedCnt / all.length) * 100);
+  const pct = Math.min(100, Math.round((ownedCnt / Math.max(1, all.length)) * 100));
 
   document.getElementById("dex-progress-bar").innerHTML = `
     <div class="top-row" style="margin-bottom:4px;">
@@ -444,7 +483,7 @@ function renderCardDexView() {
     <button class="btn-xs ${dexRarityFilter === r ? "btn-primary" : ""}" onclick="dexRarityFilter='${r}'; playSfx('tap'); renderCardDexView();">${r === "ALL" ? "全レア" : r}</button>
   `).join("");
 
-  const elBtns = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS).map(e => ({ id: e.id, label: e.icon }))];
+  const elBtns = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA?.ELEMENTS || {}).map(e => ({ id: e.id, label: e.icon }))];
   document.getElementById("dex-el-tabs").innerHTML = elBtns.map(b => `
     <button class="btn-xs ${dexElFilter === b.id ? "btn-accent2" : ""}" onclick="dexElFilter='${b.id}'; playSfx('tap'); renderCardDexView();">${b.label}</button>
   `).join("");
@@ -454,10 +493,21 @@ function renderCardDexView() {
     .filter(c => (dexRarityFilter === "ALL" || c.rarity === dexRarityFilter) && (dexElFilter === "ALL" || c.element === dexElFilter))
     .sort((a, b) => (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9));
 
-  document.getElementById("dex-card-grid").innerHTML = filtered.map(c => {
+  const gridEl = document.getElementById("dex-card-grid");
+  if (filtered.length === 0) {
+    gridEl.innerHTML = `
+      <div class="card" style="grid-column:1 / -1; text-align:center; padding:16px; background:var(--surface-sub);">
+        <div style="font-size:12px; font-weight:900; margin-bottom:8px;">該当するカードがありません</div>
+        <button class="btn-xs btn-primary" onclick="resetDexFilters()">全条件リセットして表示</button>
+      </div>
+    `;
+    return;
+  }
+
+  gridEl.innerHTML = filtered.map(c => {
     const lv = window.MF_CARDS.getCardLevel(c.id);
     const owned = lv > 0;
-    const el = window.MF_DATA.ELEMENTS[c.element];
+    const el = (window.MF_DATA?.ELEMENTS?.[c.element]) || { icon: "✨", name: "煌" };
     if (!owned) {
       return `
         <div class="dex-card locked" onclick="openTacticCardDetail('${c.id}')">
@@ -490,3 +540,4 @@ function claimDexMilestone(targetCount) {
   if (typeof updateTabletBadge === "function") updateTabletBadge();
   renderCardDexView();
   showToast(`🎉 ${m.label}受取！💎結晶石+${m.gems}！`);
+}
