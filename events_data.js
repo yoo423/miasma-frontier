@@ -17,7 +17,24 @@ window.MF_EVENTS_DATA = {
 
     // 2027年2月：限定PU（シルフィ）＋ 中旬復刻PU（セレスティア）
     { id: "pu_202702_sylphy",  start: "2027-02-01", end: "2027-02-28", shortName: "🐺 シルフィPU",    tag: "2月限定PU", title: "嵐を駆ける孤狼・限定招集", featuredSsr: "sylphy",   isLimitedBanner: true, desc: "2月限定SSR『シルフィ』ピックアップ！終了後は復刻招集でのみ再登場します。" },
-    { id: "rep_202702_celestia",start:"2027-02-11", end: "2027-02-20", shortName: "⚡ セレス復刻",    tag: "中旬復刻PU", title: "【復刻】紫電の精密狙撃・特別招集", featuredSsr: "celestia", isLimitedBanner: true, isRerun: true, desc: "1月限定SSR『セレスティア』が2月中旬限定で復刻登場！" }
+    { id: "rep_202702_celestia",start:"2027-02-11", end: "2027-02-20", shortName: "⚡ セレス復刻",    tag: "中旬復刻PU", title: "【復刻】紫電の精密狙撃・特別招集", featuredSsr: "celestia", isLimitedBanner: true, isRerun: true, desc: "1月限定SSR『セレスティア』が2月中旬限定で復刻登場！" },
+
+        // 2027年3月：限定PU（セリーナ）＋ 中旬復刻PU（シルフィ）
+    { id: "pu_202703_serina",  start: "2027-03-01", end: "2027-03-31", shortName: "🌸 セリーナPU", tag: "3月限定PU", title: "桜風の歌姫・限定招集", featuredSsr: "serina", isLimitedBanner: true, desc: "3月限定SSR『セリーナ』ピックアップ！風拡散＆回復の万能歌姫。" },
+    { id: "rep_202703_sylphy", start: "2027-03-11", end: "2027-03-20", shortName: "🐺 シルフィ復刻", tag: "中旬復刻PU", title: "【復刻】嵐を駆ける孤狼・特別招集", featuredSsr: "sylphy", isLimitedBanner: true, isRerun: true, desc: "2月限定SSR『シルフィ』が3月中旬限定で復刻登場！" },
+
+    // 2027年4月：限定PU（リリィ）＋ 中旬復刻PU（セリーナ）
+    { id: "pu_202704_lily",    start: "2027-04-01", end: "2027-04-30", shortName: "🤍 リリィPU",   tag: "4月限定PU", title: "純白の結晶守護姫・限定招集", featuredSsr: "lily",   isLimitedBanner: true, desc: "4月限定SSR『リリィ』ピックアップ！鉄壁バリア＆煌属性アタッカー。" },
+    { id: "rep_202704_serina", start: "2027-04-11", end: "2027-04-20", shortName: "🌸 セリーナ復刻", tag: "中旬復刻PU", title: "【復刻】桜風の歌姫・特別招集", featuredSsr: "serina", isLimitedBanner: true, isRerun: true, desc: "3月限定SSR『セリーナ』が4月中旬限定で復刻登場！" },
+
+    // 2027年5月：限定PU（マリナ）＋ 中旬復刻PU（リリィ）
+    { id: "pu_202705_marina",  start: "2027-05-01", end: "2027-05-31", shortName: "🐚 マリナPU",   tag: "5月限定PU", title: "蒼海のマーメイド狙撃・限定招集", featuredSsr: "marina", isLimitedBanner: true, desc: "5月限定SSR『マリナ』ピックアップ！部位破壊＆水反応の切り札。" },
+    { id: "rep_202705_lily",   start: "2027-05-11", end: "2027-05-20", shortName: "🤍 リリィ復刻", tag: "中旬復刻PU", title: "【復刻】純白の結晶守護姫・特別招集", featuredSsr: "lily",   isLimitedBanner: true, isRerun: true, desc: "4月限定SSR『リリィ』が5月中旬限定で復刻登場！" },
+
+    // 2027年6月：限定PU（イリス）＋ 中旬復刻PU（マリナ）
+    { id: "pu_202706_iris",    start: "2027-06-01", end: "2027-06-30", shortName: "🌹 イリスPU",   tag: "6月限定PU", title: "真紅の双剣乙女・限定招集", featuredSsr: "iris",   isLimitedBanner: true, desc: "6月限定SSR『イリス』ピックアップ！超高速連撃＆EX爆速炎アタッカー。" },
+    { id: "rep_202706_marina", start: "2027-06-11", end: "2027-06-20", shortName: "🐚 マリナ復刻", tag: "中旬復刻PU", title: "【復刻】蒼海のマーメイド狙撃・特別招集", featuredSsr: "marina", isLimitedBanner: true, isRerun: true, desc: "5月限定SSR『マリナ』が6月中旬限定で復刻登場！" }
+
   ],
 
   // 各月の3回更新（1日・11日・21日）ごとに自動解放される新戦術カード（全18枚）
