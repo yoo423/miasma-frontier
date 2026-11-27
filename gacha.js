@@ -5,10 +5,10 @@ let spotlightIdx = 0;
 
 function getGachaTabs() {
   if (typeof syncEventUnlockedCards === "function") syncEventUnlockedCards();
+  if (typeof window.MF_CARDS?.ensurePool === "function") window.MF_CARDS.ensurePool();
   const today = typeof getEventTodayStr === "function" ? getEventTodayStr() : new Date().toISOString().slice(0, 10);
   const sched = (window.MF_EVENTS_DATA?.GACHA_SCHEDULES || []).filter(b => today >= b.start && today <= b.end);
 
-  // スケジュール範囲外でも必ず1人限定PUが表示されるフォールバック
   const activeTimed = sched.length > 0 ? sched : [{
     id: "pu_default_mikoto", start: "2026-11-01", end: "2099-12-31",
     shortName: "❄️ ミコトPU", tag: "限定ピックアップ",
@@ -73,7 +73,7 @@ function renderGachaView() {
     document.getElementById("btn-gacha-1").innerHTML = `1枚引く<br><span style="font-size:11px;">🎟️ 券 ×1</span>`;
     document.getElementById("btn-gacha-10").innerHTML = `10連（SR以上確定！）<br><span style="font-size:11px;">🎟️ 券 ×8（2枚お得）</span>`;
   } else {
-    const feat = window.MF_DATA.CHARACTERS[banner.featuredSsr];
+    const feat = window.MF_DATA.CHARACTERS[banner.featuredSsr] || window.MF_DATA.CHARACTERS.lunaria;
     const periodTxt = banner.start && banner.end ? `開催期間：${banner.start} 〜 ${banner.end}` : "常設開催";
     const limNote = banner.isLimitedBanner ? "※限定隊員は本招集・復刻招集でのみ排出" : "※恒常SSR（ルナリア・ヴァレリア・クロエ）が対象";
     document.getElementById("gacha-banner-card").innerHTML = `
@@ -101,6 +101,7 @@ function renderGachaView() {
 function executeScout(count) {
   const tabs = getGachaTabs();
   const banner = tabs.find(b => b.id === activeBannerId) || tabs[0];
+  const results = [];
 
   if (banner.isCardBanner) {
     const needTk = count === 10 ? 8 : 1;
@@ -108,24 +109,26 @@ function executeScout(count) {
       showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚）`);
       return;
     }
-    state.cardTickets -= needTk;
-  } else {
-    const cost = count * 160;
-    if (state.gems < cost) { showToast(`💎 結晶石が足りません（必要：${cost.toLocaleString()}）`); return; }
-    state.gems -= cost;
-  }
 
-  const results = [];
-  if (banner.isCardBanner) {
+    const poolObj = window.MF_CARDS.ensurePool();
+    const pool = Object.values(poolObj);
+    if (!pool.length) {
+      showToast("⚠️ カードデータ読込中。もう一度お試しください");
+      return;
+    }
+
     state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
-    const pool = Object.values(window.MF_CARDS.TACTIC_CARDS);
-    const byRar = r => pool.filter(c => c.rarity === r);
+    const byRar = r => {
+      const arr = pool.filter(c => c.rarity === r);
+      return arr.length > 0 ? arr : pool;
+    };
+
     for (let i = 0; i < count; i++) {
       let rar = "N";
       const roll = Math.random();
-      if (roll < 0.10) rar = "SSR";
-      else if (roll < 0.34) rar = "SR";
-      else if (roll < 0.68) rar = "R";
+      if (roll < 0.12) rar = "SSR";
+      else if (roll < 0.38) rar = "SR";
+      else if (roll < 0.72) rar = "R";
       if (count === 10 && i === 9 && !results.some(x => x.rarity === "SSR" || x.rarity === "SR")) rar = "SR";
 
       const list = byRar(rar);
@@ -134,12 +137,20 @@ function executeScout(count) {
       const isNew = prevLv === 0;
       const newLv = Math.min(5, prevLv + 1);
       state.ownedCards[picked.id] = newLv;
-      results.push({ isCard: true, card: picked, rarity: picked.rarity, isNew, newLv });
+      results.push({ isCard: true, card: picked, rarity: picked.rarity || rar, isNew, newLv });
     }
+
+    state.cardTickets -= needTk;
   } else {
+    const cost = count * 160;
+    if (state.gems < cost) { showToast(`💎 結晶石が足りません（必要：${cost.toLocaleString()}）`); return; }
+
     const chars = Object.values(window.MF_DATA.CHARACTERS).filter(c => !c.isProtagonist);
     const standardSsrPool = chars.filter(c => c.rarity === "SSR" && !c.limited);
-    const byRar = r => chars.filter(c => c.rarity === r && !c.limited);
+    const byRar = r => {
+      const arr = chars.filter(c => c.rarity === r && !c.limited);
+      return arr.length > 0 ? arr : chars;
+    };
 
     for (let i = 0; i < count; i++) {
       state.pityCount = (state.pityCount || 0) + 1;
@@ -154,13 +165,11 @@ function executeScout(count) {
       if (rar === "SSR") {
         state.pityCount = 0;
         if (banner.id === "standard_all") {
-          // 恒常招集は絶対に限定キャラを出さない
           picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
         } else {
-          // 限定PU・復刻PU：50%（またはすり抜け後100%）でPU対象、外れた場合は恒常SSRのみ
           const winPu = state.pityGuaranteed || Math.random() < 0.5;
           if (winPu) {
-            picked = window.MF_DATA.CHARACTERS[banner.featuredSsr];
+            picked = window.MF_DATA.CHARACTERS[banner.featuredSsr] || window.MF_DATA.CHARACTERS.mikoto;
             state.pityGuaranteed = false;
           } else {
             picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
@@ -180,6 +189,8 @@ function executeScout(count) {
       }
       results.push({ isCard: false, char: picked, rarity: picked.rarity, isNew, dupe: state.charDupes[picked.id] || 0 });
     }
+
+    state.gems -= cost;
   }
 
   if (typeof addMissionProgress === "function") addMissionProgress("scout", count);
@@ -216,15 +227,15 @@ function openGachaAnimation(results) {
     gachaTimers.push(setTimeout(() => {
       beam.className = "sky-beam beam-gold"; orb.className = "pod-orb pod-gold";
       lbl.textContent = "⚡ 高エネルギー反応！黄金昇格！！"; playSfx("switch");
-    }, 600));
+    }, 550));
   }
   if (hasSSR) {
     gachaTimers.push(setTimeout(() => {
       beam.className = "sky-beam beam-rainbow"; orb.className = "pod-orb pod-rainbow";
       orb.textContent = "👑"; lbl.textContent = "🌈 虹色突破！！SSR確定！！"; playSfx("gift");
-    }, 1200));
+    }, 1100));
   }
-  gachaTimers.push(setTimeout(() => startSpotlightReveal(), hasSSR ? 1950 : (hasSR ? 1300 : 850)));
+  gachaTimers.push(setTimeout(() => showGachaResultGrid(), hasSSR ? 1800 : (hasSR ? 1150 : 750)));
 }
 
 function startSpotlightReveal() {
@@ -243,7 +254,7 @@ function renderSpotlightCard() {
 
   if (item.isCard) {
     const c = item.card;
-    const el = window.MF_DATA.ELEMENTS[c.element];
+    const el = (window.MF_DATA?.ELEMENTS?.[c.element]) || { icon: "✨", name: "煌" };
     document.getElementById("spotlight-card-body").innerHTML = `
       <div class="spotlight-frame rarity-${c.rarity}">
         <span class="rank-pill">${c.rarity} CARD</span>
@@ -256,7 +267,7 @@ function renderSpotlightCard() {
     `;
   } else {
     const ch = item.char;
-    const el = window.MF_DATA.ELEMENTS[ch.element];
+    const el = (window.MF_DATA?.ELEMENTS?.[ch.element]) || { icon: "✨", name: "煌" };
     document.getElementById("spotlight-card-body").innerHTML = `
       <div class="spotlight-frame rarity-${ch.rarity}">
         <span class="rank-pill">${ch.rarity}</span>
