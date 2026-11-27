@@ -316,6 +316,7 @@ function switchView(viewId) {
   if (viewId === "friends" && typeof renderFriendsView === "function") renderFriendsView();
   if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
   if (viewId === "feedback" && typeof renderFeedbackView === "function") renderFeedbackView();
+  if (viewId === "board" && typeof renderBoardView === "function") renderBoardView();
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
