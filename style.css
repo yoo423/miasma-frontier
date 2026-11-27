@@ -79,7 +79,7 @@ body.theme-tactical .home-hero-stage { background: radial-gradient(circle at 50%
 .hero-speech-text { font-size: 11.5px; font-weight: 800; line-height: 1.4; color: #f4f5fa; cursor: pointer; }
 
 .portrait-img-hero    { width: 100%; height: 100%; object-fit: contain; object-position: center top; display: block; }
-.portrait-img-contain { width: 100%; height: 100%; object-fit: contain; object-position: center top; display: block; background: transparent; }
+.portrait-img-contain { width: 100%; height: 100%; object-fit: contain; display: block; background: transparent; }
 .portrait-img-face { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; transform: scale(1.85); transform-origin: 50% 14%; display: block; }
 .portrait-img-face-zoom { width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; transform: scale(1.75); transform-origin: 50% 15%; display: block; background: #f6f4ee; }
 .portrait-frame { width: 126px; height: 164px; border-radius: 14px; border: 2.5px solid var(--border); background: #f6f4ee; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -110,52 +110,39 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #24212c; color: #fff; border: 2px solid #ffd000; padding: 9px 16px; border-radius: 999px; font-size: 12px; font-weight: 800; z-index: 110; opacity: 0; pointer-events: none; transition: opacity 0.2s; white-space: nowrap; }
 .toast.show { opacity: 1; }
 
-/* ===== 商業RPG級ノベルステージ（立ち絵顔見切れ完全修正＋背景7種） ===== */
+/* 没入ノベル演出（背景ムード・画面揺れ・フラッシュ） */
 .dex-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
 .dex-card { border: 2.5px solid var(--border); border-radius: 13px; padding: 8px; text-align: center; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); }
 .dex-card.locked { background: var(--surface-sub); opacity: 0.7; }
-.novel-loc-bar { font-size: 11px; font-weight: 900; background: #1c1e2b; color: #ffd13b; padding: 5px 10px; border-radius: 8px; margin-bottom: 6px; border-left: 4px solid var(--accent); }
+.novel-loc-bar { font-size: 11px; font-weight: 900; background: #24212c; color: #ffd13b; padding: 4px 9px; border-radius: 8px; margin-bottom: 6px; }
+.novel-stage { width: 100%; height: 268px; border-radius: 14px; border: 2.5px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: background 0.5s ease; }
+.nbg-ark_night     { background: linear-gradient(180deg, #1b2238 0%, #313d63 60%, #e7e5ee 100%); }
+.nbg-pod           { background: linear-gradient(180deg, #252836 0%, #44385c 55%, #d6d4e0 100%); }
+.nbg-verde_morning { background: linear-gradient(180deg, #b8e4f5 0%, #dff5e6 55%, #f6f4ee 100%); }
+.nbg-forest_mist   { background: linear-gradient(180deg, #2d423a 0%, #5a4b75 60%, #e8e5ef 100%); }
+.nbg-ruins_fog     { background: linear-gradient(180deg, #362e4a 0%, #61557a 58%, #ece9f2 100%); }
+.nbg-camp_dusk     { background: linear-gradient(180deg, #542d4a 0%, #d4714a 52%, #f7e6cf 100%); }
+.nbg-camp_night    { background: linear-gradient(180deg, #11182c 0%, #243354 62%, #d8d5e3 100%); }
+.nbg-danger        { background: linear-gradient(180deg, #4f1323 0%, #8a233b 55%, #f0d7dc 100%); }
+.narrator-atmosphere { font-size: 26px; letter-spacing: 12px; color: rgba(255, 255, 255, 0.72); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5); }
 
-.novel-stage {
-  position: relative; width: 100%; height: 295px; border-radius: 14px;
-  border: 2.5px solid var(--border); overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  padding: 12px 10px 6px; margin-bottom: 8px; transition: background 0.45s ease;
-}
-.novel-bg-ark     { background: linear-gradient(180deg, #16213e 0%, #2a3a5e 55%, #e8ecf5 100%); }
-.novel-bg-field   { background: linear-gradient(180deg, #7ec8e3 0%, #c8e6c9 62%, #f4f1e6 100%); }
-.novel-bg-sunset  { background: linear-gradient(180deg, #2c1e3d 0%, #c0584c 52%, #f4c078 100%); }
-.novel-bg-mist    { background: linear-gradient(180deg, #251938 0%, #553b7a 58%, #d7cde8 100%); }
-.novel-bg-ruins   { background: linear-gradient(180deg, #1b242c 0%, #374a57 58%, #dce4ea 100%); }
-.novel-bg-radiant { background: linear-gradient(180deg, #3b1c47 0%, #996d1d 55%, #fff2b2 100%); }
+@keyframes novelShakeAnim { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-7px, 4px); } 45% { transform: translate(7px, -4px); } 75% { transform: translate(-4px, 2px); } }
+.novel-shake { animation: novelShakeAnim 0.4s ease; }
+@keyframes novelFlashAnim { 0% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+.novel-flash { animation: novelFlashAnim 0.55s ease; }
+@keyframes novelRedAnim { 0% { box-shadow: inset 0 0 60px #ff2e4c; } 100% { box-shadow: none; } }
+.novel-redflash { animation: novelRedAnim 0.65s ease; }
 
-@keyframes charEnter { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
-.novel-char-wrap {
-  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  animation: charEnter 0.25s ease-out;
-}
-.novel-char-wrap img {
-  width: auto !important; height: auto !important;
-  max-width: 92% !important; max-height: 98% !important;
-  object-fit: contain !important; object-position: center top !important;
-  transform: none !important;
-  border-radius: 12px; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3));
-}
-.novel-narration-emblem { color: #ffd13b; font-size: 13px; font-weight: 900; letter-spacing: 0.2em; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85); }
-.novel-stage.novel-shake { animation: stageShake 0.36s ease; }
-
-.novel-box { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 11px 13px; transition: background 0.25s; }
-.novel-box.is-narration { background: #191b26; color: #f4f5fa; border-color: #ffd000; }
+.novel-box { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 10px 12px; cursor: pointer; }
 .novel-speaker { display: inline-block; background: var(--accent); color: #121318; font-size: 11px; font-weight: 900; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--border); margin-bottom: 6px; }
-.novel-text { font-size: 13px; line-height: 1.65; font-weight: 800; min-height: 70px; }
-
+.novel-text { font-size: 13px; line-height: 1.65; font-weight: 800; min-height: 66px; }
 .nodes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
 .node-card { background: var(--surface-sub); border: 2.5px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; cursor: pointer; box-shadow: 0 3px 0 var(--shadow); }
 .node-card.node-boss { grid-column: 1 / -1; border-color: #ff4d79; background: linear-gradient(135deg, rgba(255, 77, 121, 0.2), rgba(139, 70, 232, 0.2)); }
 .node-card.node-radiant { border-color: #ffd000; background: rgba(255, 208, 0, 0.16); }
 .node-card.node-camp { border-color: #18b88a; background: rgba(24, 184, 138, 0.14); }
 
-/* ===== RPG × 戦術プレイマット ===== */
+/* RPG × 戦術プレイマット・豪華演出 */
 .playmat-board { background: radial-gradient(circle at 50% 42%, rgba(157, 78, 221, 0.18), transparent 62%), repeating-linear-gradient(0deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, rgba(255, 208, 0, 0.04) 0 1px, transparent 1px 22px), linear-gradient(180deg, #161a26 0%, #111520 55%, #181c2b 100%); border: 3px solid #ffd000; border-radius: 16px; padding: 10px 9px 12px; box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.7), 0 6px 0 rgba(0, 0, 0, 0.45); }
 .battle-stage { position: relative; height: 106px; border-radius: 11px; border: 2px solid rgba(255, 208, 0, 0.65); margin: 5px 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .stage-field { background: radial-gradient(circle at 50% 35%, #2d4c3b 0%, #131e18 78%); }
@@ -169,8 +156,8 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .battle-stage.shake { animation: stageShake 0.34s ease; }
 
 .fx-layer, .float-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
-@keyframes fxFlashAnim { 0% { opacity: 0.92; } 100% { opacity: 0; } }
-.fx-flash { position: absolute; inset: 0; animation: fxFlashAnim 0.65s ease-out forwards; pointer-events: none; }
+@keyframes fxFlashAnim { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+.fx-flash { position: absolute; inset: 0; animation: fxFlashAnim 0.65s ease-out forwards; }
 @keyframes fxRingAnim { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.1); } }
 .fx-ring { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; border-radius: 50%; border: 5px solid #ffd000; display: flex; align-items: center; justify-content: center; font-size: 30px; animation: fxRingAnim 0.7s ease-out forwards; }
 @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 14px) scale(0.75); } 20% { opacity: 1; transform: translate(-50%, -4px) scale(1.22); } 100% { opacity: 0; transform: translate(-50%, -52px) scale(0.95); } }
@@ -255,7 +242,6 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .gauge-bar { height: 9px; background: rgba(0, 0, 0, 0.4); border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
 .gauge-bar > div { height: 100%; transition: width 0.25s ease; }
 .battle-popup { background: var(--surface-sub); border: 2px solid var(--border); border-radius: 10px; padding: 5px 8px; text-align: center; font-size: 10.5px; font-weight: 900; color: var(--accent); margin: 4px 0; }
-.history-item { border-left: 4px solid var(--accent); background: var(--surface-sub); padding: 8px 10px; border-radius: 0 10px 10px 0; margin-bottom: 8px; }
 .roster-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .roster-tile { background: var(--surface-sub); border: 2px solid var(--border); border-radius: 14px; padding: 8px; text-align: center; cursor: pointer; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
