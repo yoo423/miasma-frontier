@@ -9,15 +9,16 @@ const DAILY_MISSIONS = [
   { id: "d_camp1",  title: "キャンプ回収か料理を1回行う", type: "camp",   target: 1, reward: { credits: 3500, books: 6 } }
 ];
 
+// 1日では完了できない複数日プレイ型の本格ウィークリー任務（全6種）
 const WEEKLY_MISSIONS = [
-  { id: "w_btl10",   title: "霧獣を累計10体討伐する",      type: "battle", target: 10, reward: { gems: 320, tickets: 5 } },
-  { id: "w_btl20",   title: "霧獣を累計20体討伐する",      type: "battle", target: 20, reward: { gems: 480, tickets: 8 } },
-  { id: "w_part5",   title: "部位破壊を累計5回達成する",   type: "part",   target: 5,  reward: { cores: 10, tickets: 5 } },
-  { id: "w_scout10", title: "スカウトを累計10回引く",      type: "scout",  target: 10, reward: { gems: 320, books: 25 } },
-  { id: "w_camp5",   title: "キャンプ回収か料理を5回行う", type: "camp",   target: 5,  reward: { credits: 18000, tickets: 4 } }
+  { id: "w_days3",  title: "今週3日間ログインする",                 type: "login_days", target: 3,  reward: { gems: 200, tickets: 3 } },
+  { id: "w_days5",  title: "今週5日間ログインする",                 type: "login_days", target: 5,  reward: { gems: 320, tickets: 5 } },
+  { id: "w_daily3", title: "デイリー任務を4個以上達成（計3日分）",  type: "daily_days", target: 3,  reward: { gems: 320, books: 30 } },
+  { id: "w_camp3",  title: "異なる3日間でキャンプ回収か料理を行う", type: "camp_days",  target: 3,  reward: { credits: 25000, tickets: 4 } },
+  { id: "w_btl30",  title: "霧獣を累計30体討伐する",                type: "battle",     target: 30, reward: { gems: 360, tickets: 6 } },
+  { id: "w_part10", title: "部位破壊を累計10回達成する",            type: "part",       target: 10, reward: { cores: 14, tickets: 5 } }
 ];
 
-// 達成個数マイルストーン（アーク結晶石がザクザク手に入る！）
 const DAILY_MILESTONES = [
   { count: 2, reward: { gems: 100 },            label: "2個達成" },
   { count: 4, reward: { gems: 160 },            label: "4個達成" },
@@ -27,7 +28,7 @@ const DAILY_MILESTONES = [
 const WEEKLY_MILESTONES = [
   { count: 2, reward: { gems: 240 },            label: "2個達成" },
   { count: 4, reward: { gems: 480 },            label: "4個達成" },
-  { count: 5, reward: { gems: 800, tickets: 5 }, label: "全5個達成" }
+  { count: 6, reward: { gems: 960, tickets: 6 }, label: "全6個達成" }
 ];
 
 function getTodayKey() {
@@ -55,20 +56,52 @@ function syncMissions() {
   }
   if (state.missions.weeklyKey !== week) {
     state.missions.weeklyKey = week;
-    state.missions.weeklyProg = { battle: 0, part: 0, scout: 0, camp: 0 };
+    state.missions.weeklyProg = { battle: 0, part: 0, scout: 0, camp: 0, login_days: 0, daily_days: 0, camp_days: 0 };
+    state.missions.weeklyLoginDates = [];
+    state.missions.weeklyCampDates = [];
+    state.missions.weeklyDailyCompDates = [];
     state.missions.weeklyClaimed = [];
     state.missions.weeklyMsClaimed = [];
   }
+
   state.missions.dailyMsClaimed = state.missions.dailyMsClaimed || [];
   state.missions.weeklyMsClaimed = state.missions.weeklyMsClaimed || [];
+  state.missions.weeklyLoginDates = state.missions.weeklyLoginDates || [];
+  state.missions.weeklyCampDates = state.missions.weeklyCampDates || [];
+  state.missions.weeklyDailyCompDates = state.missions.weeklyDailyCompDates || [];
+
+  // 今週のログイン日数を日付ベースで記録（1日に何度開いても+1日のみ）
+  if (!state.missions.weeklyLoginDates.includes(today)) {
+    state.missions.weeklyLoginDates.push(today);
+  }
+  state.missions.weeklyProg.login_days = state.missions.weeklyLoginDates.length;
+
+  // 本日のデイリー任務を4個以上達成していれば、今週の達成日数に1日分を加算
+  if (countCompletedMissions(true) >= 4 && !state.missions.weeklyDailyCompDates.includes(today)) {
+    state.missions.weeklyDailyCompDates.push(today);
+  }
+  state.missions.weeklyProg.daily_days = state.missions.weeklyDailyCompDates.length;
+  state.missions.weeklyProg.camp_days = state.missions.weeklyCampDates.length;
+
   updateMissionBadges();
 }
 
 function addMissionProgress(type, amount = 1) {
   if (!state || amount <= 0) return;
   syncMissions();
+  const today = getTodayKey();
   state.missions.dailyProg[type] = (state.missions.dailyProg[type] || 0) + amount;
   state.missions.weeklyProg[type] = (state.missions.weeklyProg[type] || 0) + amount;
+
+  if (type === "camp" && !state.missions.weeklyCampDates.includes(today)) {
+    state.missions.weeklyCampDates.push(today);
+    state.missions.weeklyProg.camp_days = state.missions.weeklyCampDates.length;
+  }
+  if (countCompletedMissions(true) >= 4 && !state.missions.weeklyDailyCompDates.includes(today)) {
+    state.missions.weeklyDailyCompDates.push(today);
+    state.missions.weeklyProg.daily_days = state.missions.weeklyDailyCompDates.length;
+  }
+
   saveGame();
   updateMissionBadges();
 }
@@ -141,9 +174,8 @@ function renderMissionView() {
 
   document.getElementById("ms-reset-note").textContent = isDaily
     ? `📅 デイリー任務（毎日0時更新：${state.missions.dailyKey}）`
-    : `🗓️ ウィークリー任務（毎週更新：${state.missions.weeklyKey}）`;
+    : `🗓️ ウィークリー任務（複数日プレイで達成・毎週更新：${state.missions.weeklyKey}）`;
 
-  // 達成個数マイルストーン（アーク結晶石ボーナスボックス）
   const milestoneHtml = `
     <div class="card" style="padding:10px; margin-bottom:10px; background:linear-gradient(135deg, rgba(255,208,0,0.14), rgba(139,70,232,0.12)); border-color:#ffd000;">
       <div class="top-row" style="margin-bottom:4px;">
