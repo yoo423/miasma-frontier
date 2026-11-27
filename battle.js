@@ -113,6 +113,15 @@ function startBattle(enemyId, opts = null) {
   const baseTemplate = (window.MF_DATA.ENEMIES || []).find(e => e.id === enemyId);
   if (!baseTemplate) return;
 
+  const launch = () => launchBattleCore(baseTemplate, opts);
+  if (typeof showLoadingScreen === "function") {
+    showLoadingScreen(`${baseTemplate.name} 戦域へ出撃中…`, 560, launch);
+  } else {
+    launch();
+  }
+}
+
+function launchBattleCore(baseTemplate, opts) {
   const hpMult = opts?.hpMult || 1.0;
   const atkMultEn = opts?.atkMult || 1.0;
   const template = {
@@ -168,7 +177,6 @@ function startBattle(enemyId, opts = null) {
     resolving: false, usedAuto: false, finished: false
   };
 
-  // バトル開始時に1回だけ敵グラフィックをセット（チラつき防止）
   const stageVisual = document.getElementById("btl-stage-emoji");
   if (stageVisual) {
     stageVisual.className = "stage-enemy-wrap";
@@ -185,6 +193,13 @@ function startBattle(enemyId, opts = null) {
 
 function exitBattleArena(didWin = false) {
   const ctx = btl?.ctx || null;
+  const stats = btl ? {
+    turn: btl.turn,
+    damageDealt: Math.max(0, btl.maxHp - btl.hp),
+    brokenParts: btl.parts.filter(p => p.broken).length,
+    maxHp: btl.maxHp
+  } : null;
+
   battleAutoMode = false;
   btl = null;
   document.getElementById("modal-battle-result").classList.remove("active");
@@ -192,7 +207,9 @@ function exitBattleArena(didWin = false) {
   document.getElementById("btl-arena-panel").style.display = "none";
   document.getElementById("btl-select-panel").style.display = "block";
 
-  if (didWin && typeof ctx?.onWin === "function") ctx.onWin();
+  if (didWin && typeof ctx?.onWin === "function") ctx.onWin(stats);
+  if (typeof ctx?.onEnd === "function") ctx.onEnd(didWin, stats);
+
   if (ctx?.returnView === "battle") {
     if (window.MF_AUDIO) window.MF_AUDIO.playBgm("home");
     if (typeof setBattleSubTab === "function") setBattleSubTab(currentBattleSubTab || "hunt");
@@ -344,15 +361,8 @@ function executeTurnQueue() {
   setTimeout(runNext, getStepDelay(450));
 }
 
-function getLvGapOutMult() {
-  if (!btl || btl.lvGap <= 0) return 1.0;
-  return Math.max(0.06, 1 - btl.lvGap * 0.12);
-}
-
-function getLvGapInMult() {
-  if (!btl || btl.lvGap <= 0) return 1.0;
-  return 1 + btl.lvGap * 0.28;
-}
+function getLvGapOutMult() { return !btl || btl.lvGap <= 0 ? 1.0 : Math.max(0.06, 1 - btl.lvGap * 0.12); }
+function getLvGapInMult()  { return !btl || btl.lvGap <= 0 ? 1.0 : 1 + btl.lvGap * 0.28; }
 
 function resolveSingleCard(card, isThirdChain) {
   const member = btl.members.find(m => m.id === card.charId) || btl.members[0];
@@ -523,6 +533,24 @@ function finishBattle(isWin) {
   const body = document.getElementById("btl-result-modal-body");
 
   if (!isWin) {
+    if (btl.ctx?.isRaid) {
+      playSfx("gift");
+      const dmg = Math.max(0, btl.maxHp - btl.hp);
+      const bp = btl.parts.filter(p => p.broken).length;
+      const sc = dmg + bp * 18000;
+      body.innerHTML = `
+        <div style="font-size:48px; margin-bottom:4px;">☄️</div>
+        <h3 style="margin:0 0 6px; color:#ffd000; font-size:20px;">レイド作戦終了！</h3>
+        <div style="background:var(--surface-sub); border-radius:10px; padding:10px; font-size:12px; font-weight:900; margin-bottom:12px;">
+          与ダメージ：${dmg.toLocaleString()} ／ 部位破壊：${bp}回<br>
+          <span style="font-size:16px; color:var(--accent);">獲得スコア：${sc.toLocaleString()} pt</span>
+        </div>
+        <button class="btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="exitBattleArena(false)">スコアを記録して戻る</button>
+      `;
+      modal.classList.add("active");
+      return;
+    }
+
     playSfx("lose");
     const lvAdvice = btl.lvGap > 0
       ? `小隊の平均Lvが足りません（現在 Lv.${btl.avgLv} ／ 基準 Lv.${btl.minReqLv}）！まずは初級クエストで隊員を育成＆昇格しよう！`
@@ -671,4 +699,5 @@ function renderBattleHUD() {
   }).join("");
 
   attachHandSwipeHandlers();
-}
+      }
+    
