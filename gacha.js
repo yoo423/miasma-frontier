@@ -98,6 +98,58 @@ function renderGachaView() {
   }
 }
 
+// 📊 正式リリース必須：提供割合・排出ラインナップ確認モーダル
+function openGachaRatesModal() {
+  const tabs = getGachaTabs();
+  const banner = tabs.find(b => b.id === activeBannerId) || tabs[0];
+  const body = document.getElementById("gacha-rates-body");
+  if (!body) return;
+
+  if (banner.isCardBanner) {
+    const pool = Object.values(window.MF_CARDS.ensurePool());
+    const cnt = r => pool.filter(c => c.rarity === r).length;
+    body.innerHTML = `
+      <div class="rate-box">
+        <strong>🃏 ${escapeHtml(banner.title)}</strong>
+        <div class="rate-row"><span>👑 SSR 戦術カード（${cnt("SSR")}種）</span><strong>12.0%</strong></div>
+        <div class="rate-row"><span>⭐ SR 戦術カード（${cnt("SR")}種）</span><strong>26.0%</strong></div>
+        <div class="rate-row"><span>🔹 R 戦術カード（${cnt("R")}種）</span><strong>34.0%</strong></div>
+        <div class="rate-row"><span>▫️ N 戦術カード（${cnt("N")}種）</span><strong>28.0%</strong></div>
+      </div>
+      <p style="font-size:11px; color:var(--muted); text-align:left; line-height:1.5; margin:8px 0 0;">
+        ・10連招集（券×8）では10枚目にSR以上が確定します。<br>
+        ・同名カードを獲得すると自動でカードLvが上昇します（最大Lv.5）。
+      </p>
+    `;
+  } else {
+    const feat = window.MF_DATA.CHARACTERS[banner.featuredSsr];
+    const chars = Object.values(window.MF_DATA.CHARACTERS).filter(c => !c.isProtagonist);
+    const stdSsr = chars.filter(c => c.rarity === "SSR" && !c.limited).map(c => c.name).join(" / ");
+    const srList = chars.filter(c => c.rarity === "SR" && !c.limited).map(c => c.name).join(" / ");
+    body.innerHTML = `
+      <div class="rate-box">
+        <strong>🌠 ${escapeHtml(banner.title)}</strong>
+        <div class="rate-row"><span>👑 SSR 隊員（65連〜確率UP / 80連確定）</span><strong>3.5%（65連〜14%）</strong></div>
+        <div class="rate-row"><span>⭐ SR 隊員（10連時1枠確定）</span><strong>15.0%</strong></div>
+        <div class="rate-row"><span>🔹 R 隊員</span><strong>40.0%</strong></div>
+        <div class="rate-row"><span>▫️ N 隊員</span><strong>41.5%</strong></div>
+      </div>
+      <div style="text-align:left; font-size:11px; line-height:1.55; margin-top:8px;">
+        ${banner.id !== "standard_all" ? `<div><strong>★ ピックアップ対象（SSR出現時50%、すり抜け後次回100%）：</strong><br>${escapeHtml(feat?.name || "")}</div>` : ""}
+        <div style="margin-top:5px;"><strong>■ 恒常SSRラインナップ：</strong><br>${escapeHtml(stdSsr)}</div>
+        <div style="margin-top:5px;"><strong>■ SRラインナップ：</strong><br>${escapeHtml(srList)}</div>
+        <div style="margin-top:6px; color:var(--muted);">※限定ピックアップ隊員は恒常招集・すり抜け枠には含まれず、対象PUまたは復刻PUでのみ排出されます。</div>
+      </div>
+    `;
+  }
+  playSfx("tap");
+  document.getElementById("modal-gacha-rates").classList.add("active");
+}
+
+function closeGachaRatesModal() {
+  document.getElementById("modal-gacha-rates").classList.remove("active");
+}
+
 function executeScout(count) {
   const tabs = getGachaTabs();
   const banner = tabs.find(b => b.id === activeBannerId) || tabs[0];
@@ -105,23 +157,12 @@ function executeScout(count) {
 
   if (banner.isCardBanner) {
     const needTk = count === 10 ? 8 : 1;
-    if ((state.cardTickets || 0) < needTk) {
-      showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚）`);
-      return;
-    }
-
-    const poolObj = window.MF_CARDS.ensurePool();
-    const pool = Object.values(poolObj);
-    if (!pool.length) {
-      showToast("⚠️ カードデータ読込中。もう一度お試しください");
-      return;
-    }
+    if ((state.cardTickets || 0) < needTk) { showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚）`); return; }
+    const pool = Object.values(window.MF_CARDS.ensurePool());
+    if (!pool.length) { showToast("⚠️ カードデータ読込中。もう一度お試しください"); return; }
 
     state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
-    const byRar = r => {
-      const arr = pool.filter(c => c.rarity === r);
-      return arr.length > 0 ? arr : pool;
-    };
+    const byRar = r => { const a = pool.filter(c => c.rarity === r); return a.length ? a : pool; };
 
     for (let i = 0; i < count; i++) {
       let rar = "N";
@@ -139,18 +180,13 @@ function executeScout(count) {
       state.ownedCards[picked.id] = newLv;
       results.push({ isCard: true, card: picked, rarity: picked.rarity || rar, isNew, newLv });
     }
-
     state.cardTickets -= needTk;
   } else {
     const cost = count * 160;
     if (state.gems < cost) { showToast(`💎 結晶石が足りません（必要：${cost.toLocaleString()}）`); return; }
-
     const chars = Object.values(window.MF_DATA.CHARACTERS).filter(c => !c.isProtagonist);
     const standardSsrPool = chars.filter(c => c.rarity === "SSR" && !c.limited);
-    const byRar = r => {
-      const arr = chars.filter(c => c.rarity === r && !c.limited);
-      return arr.length > 0 ? arr : chars;
-    };
+    const byRar = r => { const a = chars.filter(c => c.rarity === r && !c.limited); return a.length ? a : chars; };
 
     for (let i = 0; i < count; i++) {
       state.pityCount = (state.pityCount || 0) + 1;
@@ -168,13 +204,8 @@ function executeScout(count) {
           picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
         } else {
           const winPu = state.pityGuaranteed || Math.random() < 0.5;
-          if (winPu) {
-            picked = window.MF_DATA.CHARACTERS[banner.featuredSsr] || window.MF_DATA.CHARACTERS.mikoto;
-            state.pityGuaranteed = false;
-          } else {
-            picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
-            state.pityGuaranteed = true;
-          }
+          if (winPu) { picked = window.MF_DATA.CHARACTERS[banner.featuredSsr] || window.MF_DATA.CHARACTERS.mikoto; state.pityGuaranteed = false; }
+          else { picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria; state.pityGuaranteed = true; }
         }
       } else {
         const list = byRar(rar);
@@ -189,16 +220,12 @@ function executeScout(count) {
       }
       results.push({ isCard: false, char: picked, rarity: picked.rarity, isNew, dupe: state.charDupes[picked.id] || 0 });
     }
-
     state.gems -= cost;
   }
 
   if (typeof addMissionProgress === "function") addMissionProgress("scout", count);
-  saveGame();
-  renderTopBar();
-  renderGachaView();
-  currentPullResults = results;
-  spotlightIdx = 0;
+  saveGame(); renderTopBar(); renderGachaView();
+  currentPullResults = results; spotlightIdx = 0;
   openGachaAnimation(results);
 }
 
@@ -242,8 +269,7 @@ function startSpotlightReveal() {
   gachaTimers.forEach(t => clearTimeout(t));
   document.getElementById("gacha-modal-stage").style.display = "none";
   document.getElementById("gacha-modal-spotlight").style.display = "block";
-  spotlightIdx = 0;
-  renderSpotlightCard();
+  spotlightIdx = 0; renderSpotlightCard();
 }
 
 function renderSpotlightCard() {
