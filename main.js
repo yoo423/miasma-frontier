@@ -14,9 +14,15 @@ let state = null;
 let showcaseCharId = "protagonist";
 
 function createDefaultSave() {
+  const defTactics = [
+    "counter_stance", "aegis_wall", "shield_breaker", "shock_trap",
+    "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
+  ];
   return {
     initialized: false,
     playerName: "ユウ",
+    activeTitle: "第7小隊・新任隊長",
+    unlockedTitles: ["第7小隊・新任隊長"],
     styleId: "m_cool",
     protagonistWeapon: "sword",
     protagonistElement: "arc",
@@ -27,6 +33,7 @@ function createDefaultSave() {
     cardTickets: 10,
     expBooks: 30,
     cores: 6,
+    bondGifts: 2,
     activityPt: 0,
     en: 160,
     reserveEn: 0,
@@ -45,16 +52,24 @@ function createDefaultSave() {
       frost_shard: 1, arc_bolt: 1
     },
     claimedDexMilestones: [],
-    tacticDeck: [
-      "counter_stance", "aegis_wall", "shield_breaker", "shock_trap",
-      "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
+    tacticDeck: [...defTactics],
+    deckSlots: [
+      { name: "バランス主力", cards: [...defTactics] },
+      { name: "対ボス攻略",   cards: [...defTactics] },
+      { name: "元素コンボ",   cards: [...defTactics] },
+      { name: "対人読み合い", cards: [...defTactics] },
+      { name: "自由デッキ5",  cards: [...defTactics] }
     ],
+    activeDeckIdx: 0,
     charLevels: { protagonist: 1, momo: 1, mint: 1, aoi: 1 },
     charRanks: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     charDupes: { protagonist: 0, momo: 0, mint: 0, aoi: 0 },
     skillTrees: {},
     clearedStories: [],
+    clearedBondStories: [],
     bondPoints: {},
+    bondTalkDate: "",
+    shopState: null,
     huntLog: {},
     missions: {},
     loginBonus: null,
@@ -80,6 +95,12 @@ function loadSave() {
     return {
       ...base,
       ...parsed,
+      activeTitle: parsed.activeTitle || base.activeTitle,
+      unlockedTitles: parsed.unlockedTitles || base.unlockedTitles,
+      bondGifts: typeof parsed.bondGifts === "number" ? parsed.bondGifts : base.bondGifts,
+      clearedBondStories: parsed.clearedBondStories || [],
+      deckSlots: Array.isArray(parsed.deckSlots) && parsed.deckSlots.length === 5 ? parsed.deckSlots : null,
+      activeDeckIdx: typeof parsed.activeDeckIdx === "number" ? parsed.activeDeckIdx : 0,
       textSpeed: parsed.textSpeed || base.textSpeed,
       cardTickets: typeof parsed.cardTickets === "number" ? parsed.cardTickets : base.cardTickets,
       ownedChars: parsed.ownedChars || base.ownedChars,
@@ -96,6 +117,7 @@ function loadSave() {
       huntLog: parsed.huntLog || {},
       missions: parsed.missions || {},
       loginBonus: parsed.loginBonus || null,
+      shopState: parsed.shopState || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
@@ -105,48 +127,34 @@ function loadSave() {
 
 function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-// ---------- 🔑 アカウント・データ引き継ぎ（書き出し＆復元） ----------
 function exportAccountBackupCode() {
   try {
     saveGame();
-    const json = JSON.stringify(state);
-    const code = "MF-SAVE-" + btoa(unescape(encodeURIComponent(json)));
+    const code = "MF-SAVE-" + btoa(unescape(encodeURIComponent(JSON.stringify(state))));
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(code).then(() => {
         playSfx("gift");
-        showToast("🔑 引き継ぎコードをコピーしました！メモ帳等に大切に保管してください");
+        showToast("🔑 引き継ぎコードをコピーしました！大切に保管してください");
       }).catch(() => prompt("この引き継ぎコードをコピーして保管してください：", code));
     } else {
       prompt("この引き継ぎコードをコピーして保管してください：", code);
     }
-  } catch (e) {
-    showToast("⚠️ 引き継ぎコードの生成に失敗しました");
-  }
+  } catch (e) { showToast("⚠️ 引き継ぎコードの生成に失敗しました"); }
 }
 
 function importAccountBackupCode() {
   const input = document.getElementById("term-backup-input");
   const raw = (input?.value || "").trim();
-  if (!raw.startsWith("MF-SAVE-")) {
-    showToast("⚠️ 『MF-SAVE-』から始まる正しい引き継ぎコードを入力してください");
-    return;
-  }
+  if (!raw.startsWith("MF-SAVE-")) { showToast("⚠️ 『MF-SAVE-』から始まる正しい引き継ぎコードを入力してください"); return; }
   try {
-    const json = decodeURIComponent(escape(atob(raw.replace(/^MF-SAVE-/, ""))));
-    const parsed = JSON.parse(json);
-    if (!parsed || !parsed.playerName || !Array.isArray(parsed.ownedChars)) {
-      throw new Error("invalid");
-    }
-    if (!confirm(`『${parsed.playerName}（開拓Lv.${parsed.playerRank || 1}）』の記録データを復元しますか？現在の端末データは上書きされます。`)) {
-      return;
-    }
+    const parsed = JSON.parse(decodeURIComponent(escape(atob(raw.replace(/^MF-SAVE-/, "")))));
+    if (!parsed || !parsed.playerName || !Array.isArray(parsed.ownedChars)) throw new Error("invalid");
+    if (!confirm(`『${parsed.playerName}（開拓Lv.${parsed.playerRank || 1}）』の記録データを復元しますか？現在の端末データは上書きされます。`)) return;
     localStorage.setItem(SAVE_KEY, JSON.stringify(parsed));
     playSfx("gift");
     alert("✅ データの引き継ぎが完了しました！再読み込みします。");
     location.reload();
-  } catch (e) {
-    showToast("⚠️ 引き継ぎコードが壊れているか無効です");
-  }
+  } catch (e) { showToast("⚠️ 引き継ぎコードが壊れているか無効です"); }
 }
 
 function isFeatureUnlocked(featureId) {
@@ -262,6 +270,8 @@ function switchView(viewId) {
     if (typeof setBattleSubTab === "function") setBattleSubTab(typeof currentBattleSubTab !== "undefined" ? currentBattleSubTab : "hunt");
     else if (typeof renderBattleView === "function") renderBattleView();
   }
+  if (viewId === "bonds" && typeof renderBondsView === "function") renderBondsView();
+  if (viewId === "shop" && typeof renderShopView === "function") renderShopView();
   if (viewId === "arena" && typeof renderArenaView === "function") renderArenaView();
   if (viewId === "friends" && typeof renderFriendsView === "function") renderFriendsView();
   if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
@@ -308,6 +318,8 @@ function detectActiveReactions() {
 function renderTopBar() {
   document.getElementById("tb-name").textContent = state.playerName;
   document.getElementById("tb-rank").textContent = `開拓Lv.${state.playerRank}`;
+  const tEl = document.getElementById("tb-title");
+  if (tEl) tEl.textContent = `🏅 ${state.activeTitle || "第7小隊・新任隊長"}`;
   document.getElementById("tb-en").textContent = `${state.en}/${MAX_EN}`;
   document.getElementById("tb-reserve").textContent = `予備+${state.reserveEn}`;
   document.getElementById("tb-credits").textContent = state.credits.toLocaleString();
@@ -320,6 +332,7 @@ function renderTopBar() {
 
 function renderHome() {
   renderTopBar();
+  if (typeof window.MF_CARDS?.ensureDeckSlots === "function") window.MF_CARDS.ensureDeckSlots();
   if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
@@ -439,6 +452,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp
 
 window.addEventListener("DOMContentLoaded", () => {
   state = loadSave();
+  if (window.MF_CARDS?.ensureDeckSlots) window.MF_CARDS.ensureDeckSlots();
   updateStamina();
   applyTheme();
   if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
