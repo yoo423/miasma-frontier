@@ -4,10 +4,10 @@ const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 const FEATURE_UNLOCK_RULES = {
-  friends: { reqAny: ["ch1_ep3", "ch1_ep2"], label: "第1章・第三話『紫の牙、最初の試練』踏破" },
-  camp:    { reqAny: ["ch1_ep4", "ch1_ep3"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  craft:   { reqAny: ["ch1_ep4", "ch1_ep3"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  arena:   { reqAny: ["ch1_ep20", "ch1_ep10", "ch1_ep8"], label: "第1章踏破" }
+  friends: { reqAny: ["ch1_ep3"], label: "第1章・第三話『紫の牙、最初の試練』踏破" },
+  camp:    { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  craft:   { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  arena:   { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" }
 };
 
 let state = null;
@@ -57,6 +57,7 @@ function createDefaultSave() {
     bondPoints: {},
     huntLog: {},
     missions: {},
+    loginBonus: null,
     arenaRating: 1000,
     arenaWins: 0,
     friends: [],
@@ -94,6 +95,7 @@ function loadSave() {
       bondPoints: parsed.bondPoints || {},
       huntLog: parsed.huntLog || {},
       missions: parsed.missions || {},
+      loginBonus: parsed.loginBonus || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
@@ -102,6 +104,50 @@ function loadSave() {
 }
 
 function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+
+// ---------- 🔑 アカウント・データ引き継ぎ（書き出し＆復元） ----------
+function exportAccountBackupCode() {
+  try {
+    saveGame();
+    const json = JSON.stringify(state);
+    const code = "MF-SAVE-" + btoa(unescape(encodeURIComponent(json)));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        playSfx("gift");
+        showToast("🔑 引き継ぎコードをコピーしました！メモ帳等に大切に保管してください");
+      }).catch(() => prompt("この引き継ぎコードをコピーして保管してください：", code));
+    } else {
+      prompt("この引き継ぎコードをコピーして保管してください：", code);
+    }
+  } catch (e) {
+    showToast("⚠️ 引き継ぎコードの生成に失敗しました");
+  }
+}
+
+function importAccountBackupCode() {
+  const input = document.getElementById("term-backup-input");
+  const raw = (input?.value || "").trim();
+  if (!raw.startsWith("MF-SAVE-")) {
+    showToast("⚠️ 『MF-SAVE-』から始まる正しい引き継ぎコードを入力してください");
+    return;
+  }
+  try {
+    const json = decodeURIComponent(escape(atob(raw.replace(/^MF-SAVE-/, ""))));
+    const parsed = JSON.parse(json);
+    if (!parsed || !parsed.playerName || !Array.isArray(parsed.ownedChars)) {
+      throw new Error("invalid");
+    }
+    if (!confirm(`『${parsed.playerName}（開拓Lv.${parsed.playerRank || 1}）』の記録データを復元しますか？現在の端末データは上書きされます。`)) {
+      return;
+    }
+    localStorage.setItem(SAVE_KEY, JSON.stringify(parsed));
+    playSfx("gift");
+    alert("✅ データの引き継ぎが完了しました！再読み込みします。");
+    location.reload();
+  } catch (e) {
+    showToast("⚠️ 引き継ぎコードが壊れているか無効です");
+  }
+}
 
 function isFeatureUnlocked(featureId) {
   const rule = FEATURE_UNLOCK_RULES[featureId];
@@ -146,6 +192,7 @@ function openTabletMenu() {
   if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
   updateTabletLocks();
   updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
@@ -160,6 +207,11 @@ function updateTabletLocks() {
 }
 
 function tabletGo(viewId) {
+  if (viewId === "login_bonus") {
+    closeTabletMenu();
+    if (typeof openLoginBonusModal === "function") openLoginBonusModal();
+    return;
+  }
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
@@ -175,12 +227,13 @@ function updateTabletBadge() {
   const bCnt = typeof getUnclaimedBestiaryCount === "function" ? getUnclaimedBestiaryCount() : 0;
   const dCnt = typeof getUnclaimedDexCount === "function" ? getUnclaimedDexCount() : 0;
   const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
+  const lbCnt = typeof getLoginBonusStatus === "function" ? getLoginBonusStatus().unclaimedCount : 0;
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
   const badge = document.getElementById("home-tablet-badge");
   if (badge) {
-    const total = mCnt + bCnt + dCnt + msCnt;
+    const total = mCnt + bCnt + dCnt + msCnt + lbCnt;
     badge.style.display = total > 0 ? "inline-block" : "none";
     badge.textContent = total > 9 ? "9+" : String(total);
   }
@@ -205,7 +258,10 @@ function switchView(viewId) {
 
   if (viewId === "home") renderHome();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
-  if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "battle") {
+    if (typeof setBattleSubTab === "function") setBattleSubTab(typeof currentBattleSubTab !== "undefined" ? currentBattleSubTab : "hunt");
+    else if (typeof renderBattleView === "function") renderBattleView();
+  }
   if (viewId === "arena" && typeof renderArenaView === "function") renderArenaView();
   if (viewId === "friends" && typeof renderFriendsView === "function") renderFriendsView();
   if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
@@ -267,6 +323,7 @@ function renderHome() {
   if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
   updateTabletBadge();
 
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
@@ -352,9 +409,11 @@ function refreshCreatorSelections() {
 function confirmProtagonist() {
   const rawName = document.getElementById("cr-name-input").value.trim();
   if (!rawName) { showToast("隊長の名前を入力してください"); return; }
+  const firstSetup = !state.initialized;
   state.initialized = true; state.playerName = rawName.slice(0, 12);
   state.styleId = tempStyleId; state.protagonistWeapon = tempWeaponId; state.protagonistElement = tempElementId;
   saveGame(); playSfx("gift"); switchView("home");
+  if (firstSetup && typeof checkLoginBonusAutoOpen === "function") checkLoginBonusAutoOpen();
 }
 
 function renderTerminalView() {
@@ -387,4 +446,5 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
   switchView(state.initialized ? "home" : "creator");
+  if (state.initialized && typeof checkLoginBonusAutoOpen === "function") checkLoginBonusAutoOpen();
 });
