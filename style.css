@@ -305,3 +305,8 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .nbg-caldera     { background: linear-gradient(180deg, #3b120e 0%, #992e1c 54%, #f2d5c4 100%); }
 .nbg-aqua_city   { background: linear-gradient(180deg, #0b1c36 0%, #144d6e 54%, #cceef5 100%); }
 .nbg-spire_sky   { background: linear-gradient(180deg, #271342 0%, #6c3ba8 50%, #f5e9ff 100%); }
+/* ホーム画面・期間限定イベントバナー */
+.event-home-banner {
+  border: 2.5px solid #ffd000; border-radius: 14px; padding: 8px 11px;
+  cursor: pointer; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}
