@@ -4,7 +4,6 @@ window.MF_CARDS = {
     ...(window.MF_CARDS_PART2 || {})
   },
 
-  // 初期から所持している戦術カード（14種）
   STARTER_OWNED_CARDS: {
     counter_stance: 1, aegis_wall: 1, shield_breaker: 1, shock_trap: 1,
     element_boost: 1, tactical_draw: 1, weak_scan: 1, repair_kit: 1,
@@ -17,9 +16,10 @@ window.MF_CARDS = {
     "element_boost", "tactical_draw", "repair_kit", "hydro_splash"
   ],
 
-  MIN_TACTIC_SIZE: 8,   // 合計20枚〜
-  MAX_TACTIC_SIZE: 28,  // 合計40枚まで
-  MAX_COPIES: 3,        // 同名3枚まで採用可能
+  MIN_TACTIC_SIZE: 8,
+  MAX_TACTIC_SIZE: 28,
+  MAX_COPIES: 3,
+  MAX_DECK_SLOTS: 5,
 
   DEX_MILESTONES: [
     { count: 15,  gems: 320,  label: "15種収集ボーナス" },
@@ -29,6 +29,27 @@ window.MF_CARDS = {
     { count: 80,  gems: 1280, label: "80種収集ボーナス" },
     { count: 102, gems: 2400, label: "全102種コンプリート！" }
   ],
+
+  ensureDeckSlots() {
+    if (!Array.isArray(state.deckSlots) || state.deckSlots.length < this.MAX_DECK_SLOTS) {
+      const firstCards = (Array.isArray(state.tacticDeck) && state.tacticDeck.length >= this.MIN_TACTIC_SIZE)
+        ? [...state.tacticDeck] : [...this.DEFAULT_TACTIC_DECK];
+      state.deckSlots = [
+        { name: "バランス主力", cards: firstCards },
+        { name: "対ボス攻略",   cards: [...this.DEFAULT_TACTIC_DECK] },
+        { name: "元素コンボ",   cards: [...this.DEFAULT_TACTIC_DECK] },
+        { name: "対人読み合い", cards: [...this.DEFAULT_TACTIC_DECK] },
+        { name: "自由デッキ5",  cards: [...this.DEFAULT_TACTIC_DECK] }
+      ];
+      state.activeDeckIdx = 0;
+    }
+    if (typeof state.activeDeckIdx !== "number" || state.activeDeckIdx < 0 || state.activeDeckIdx >= this.MAX_DECK_SLOTS) {
+      state.activeDeckIdx = 0;
+    }
+    // 常に state.tacticDeck と現在選択中スロットを完全同期
+    state.tacticDeck = state.deckSlots[state.activeDeckIdx].cards;
+    return state.deckSlots[state.activeDeckIdx];
+  },
 
   getCardLevel(cardId) {
     state.ownedCards = state.ownedCards || { ...this.STARTER_OWNED_CARDS };
@@ -77,10 +98,11 @@ window.MF_CARDS = {
   },
 
   buildActiveDeck() {
+    const slot = this.ensureDeckSlots();
     const charCards = [];
     (state.party || []).forEach(id => charCards.push(...this.getCharCards(id)));
-    const valid = Array.isArray(state.tacticDeck) && state.tacticDeck.length >= this.MIN_TACTIC_SIZE;
-    const tacticIds = (valid ? state.tacticDeck : [...this.DEFAULT_TACTIC_DECK]).slice(0, this.MAX_TACTIC_SIZE);
+    const valid = Array.isArray(slot.cards) && slot.cards.length >= this.MIN_TACTIC_SIZE;
+    const tacticIds = (valid ? slot.cards : [...this.DEFAULT_TACTIC_DECK]).slice(0, this.MAX_TACTIC_SIZE);
     return [...charCards, ...tacticIds.map(tid => this.getLeveledTacticCard(tid)).filter(Boolean)];
   }
 };
@@ -89,7 +111,28 @@ let deckElFilter = "ALL";
 let dexRarityFilter = "ALL";
 let dexElFilter = "ALL";
 
-// ---------- カード詳細モーダル ----------
+function switchDeckSlot(idx) {
+  window.MF_CARDS.ensureDeckSlots();
+  if (idx < 0 || idx >= window.MF_CARDS.MAX_DECK_SLOTS) return;
+  state.activeDeckIdx = idx;
+  state.tacticDeck = state.deckSlots[idx].cards;
+  saveGame();
+  playSfx("switch");
+  renderDeckView();
+  showToast(`🃏 デッキ『${state.deckSlots[idx].name}』に切り替えました`);
+}
+
+function renameCurrentDeck() {
+  const slot = window.MF_CARDS.ensureDeckSlots();
+  const next = prompt("このデッキの名前を入力してください（最大12文字）：", slot.name);
+  if (!next || !next.trim()) return;
+  slot.name = next.trim().slice(0, 12);
+  saveGame();
+  playSfx("tap");
+  renderDeckView();
+  showToast(`✏️ デッキ名を『${slot.name}』に変更しました`);
+}
+
 function openCardDetailModal(card) {
   if (!card) return;
   const el = window.MF_DATA.ELEMENTS[card.element] || window.MF_DATA.ELEMENTS.arc;
@@ -117,13 +160,23 @@ function openCardDetailModal(card) {
 function closeCardDetailModal() { document.getElementById("modal-card-detail").classList.remove("active"); }
 function openTacticCardDetail(tid) { openCardDetailModal(window.MF_CARDS.getLeveledTacticCard(tid) || window.MF_CARDS.TACTIC_CARDS[tid]); }
 
-// ---------- 最大40枚デッキ編成画面 ----------
+// ---------- 最大40枚・5スロット保存対応デッキ編成画面 ----------
 function renderDeckView() {
   renderTopBar();
   state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
-  if (!Array.isArray(state.tacticDeck) || state.tacticDeck.length === 0) {
-    state.tacticDeck = [...window.MF_CARDS.DEFAULT_TACTIC_DECK];
+  const activeSlot = window.MF_CARDS.ensureDeckSlots();
+
+  // 5つのデッキスロット切替タブ
+  const slotBar = document.getElementById("deck-slot-tabs");
+  if (slotBar) {
+    slotBar.innerHTML = state.deckSlots.map((sl, i) => `
+      <button class="btn-xs ${i === state.activeDeckIdx ? "btn-primary" : ""}" style="flex:1; min-width:58px;" onclick="switchDeckSlot(${i})">
+        #${i + 1} ${escapeHtml(sl.name.slice(0, 5))}
+      </button>
+    `).join("");
   }
+  const slotTitle = document.getElementById("deck-active-name");
+  if (slotTitle) slotTitle.textContent = `選択中：#${state.activeDeckIdx + 1}『${activeSlot.name}』`;
 
   document.getElementById("deck-char-cards").innerHTML = state.party.map(id => {
     const ch = getCharProfile(id);
@@ -140,20 +193,18 @@ function renderDeckView() {
     `;
   }).join("");
 
-  const tLen = state.tacticDeck.length;
+  const tLen = activeSlot.cards.length;
   const totalDeck = 12 + tLen;
-  const validNote = tLen < 8 ? " ⚠️あと" + (8 - tLen) + "枚必要" : " ✅出撃OK";
+  const validNote = tLen < 8 ? ` ⚠️あと${8 - tLen}枚必要` : " ✅出撃OK";
   document.getElementById("deck-tactic-count").textContent = `合計 ${totalDeck} / 40枚（戦術 ${tLen}/28枚）${validNote}`;
 
-  // 採用中の戦術カードをまとめて表示（タップで1枚外す）
   const grouped = {};
-  state.tacticDeck.forEach(tid => { grouped[tid] = (grouped[tid] || 0) + 1; });
+  activeSlot.cards.forEach(tid => { grouped[tid] = (grouped[tid] || 0) + 1; });
   document.getElementById("deck-current-tactics").innerHTML = Object.entries(grouped).map(([tid, cnt]) => {
     const c = window.MF_CARDS.TACTIC_CARDS[tid];
     return c ? `<button class="btn-xs" style="background:var(--surface-sub);" onclick="removeTacticCardById('${tid}')">${c.icon}${escapeHtml(c.name)} ×${cnt} ✕</button>` : "";
   }).join("");
 
-  // 属性フィルタボタン
   const elButtons = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS).map(e => ({ id: e.id, label: `${e.icon}${e.name}` }))];
   document.getElementById("deck-el-filters").innerHTML = elButtons.map(b => `
     <button class="btn-xs ${deckElFilter === b.id ? "btn-primary" : ""}" onclick="deckElFilter='${b.id}'; playSfx('tap'); renderDeckView();">${b.label}</button>
@@ -167,8 +218,8 @@ function renderDeckView() {
   document.getElementById("deck-tactic-pool").innerHTML = ownedList.map(c => {
     const el = window.MF_DATA.ELEMENTS[c.element];
     const lv = window.MF_CARDS.getCardLevel(c.id);
-    const inDeck = state.tacticDeck.filter(id => id === c.id).length;
-    const canAdd = state.tacticDeck.length < window.MF_CARDS.MAX_TACTIC_SIZE && inDeck < window.MF_CARDS.MAX_COPIES;
+    const inDeck = activeSlot.cards.filter(id => id === c.id).length;
+    const canAdd = activeSlot.cards.length < window.MF_CARDS.MAX_TACTIC_SIZE && inDeck < window.MF_CARDS.MAX_COPIES;
     return `
       <div class="card" style="padding:8px; margin-bottom:6px;">
         <div class="top-row">
@@ -185,19 +236,25 @@ function renderDeckView() {
 }
 
 function addTacticCard(tid) {
-  if (state.tacticDeck.length >= window.MF_CARDS.MAX_TACTIC_SIZE) { showToast("戦術枠は最大28枚（合計40枚）までです"); return; }
-  if (state.tacticDeck.filter(id => id === tid).length >= window.MF_CARDS.MAX_COPIES) { showToast("同名カードは3枚までです"); return; }
-  state.tacticDeck.push(tid); saveGame(); playSfx("tap"); renderDeckView();
+  const slot = window.MF_CARDS.ensureDeckSlots();
+  if (slot.cards.length >= window.MF_CARDS.MAX_TACTIC_SIZE) { showToast("戦術枠は最大28枚（合計40枚）までです"); return; }
+  if (slot.cards.filter(id => id === tid).length >= window.MF_CARDS.MAX_COPIES) { showToast("同名カードは3枚までです"); return; }
+  slot.cards.push(tid);
+  state.tacticDeck = slot.cards;
+  saveGame(); playSfx("tap"); renderDeckView();
 }
 
 function removeTacticCardById(tid) {
-  const idx = state.tacticDeck.lastIndexOf(tid);
+  const slot = window.MF_CARDS.ensureDeckSlots();
+  const idx = slot.cards.lastIndexOf(tid);
   if (idx < 0) return;
-  state.tacticDeck.splice(idx, 1); saveGame(); playSfx("tap"); renderDeckView();
+  slot.cards.splice(idx, 1);
+  state.tacticDeck = slot.cards;
+  saveGame(); playSfx("tap"); renderDeckView();
 }
 
-// 所持カードからレア度＆バランス優先で一瞬で40枚（戦術28枚）組む
 function autoFillDeck40() {
+  const slot = window.MF_CARDS.ensureDeckSlots();
   const rarScore = { SSR: 40, SR: 30, R: 20, N: 10 };
   const owned = Object.values(window.MF_CARDS.TACTIC_CARDS)
     .filter(c => window.MF_CARDS.getCardLevel(c.id) > 0)
@@ -211,22 +268,24 @@ function autoFillDeck40() {
     }
     if (next.length >= window.MF_CARDS.MAX_TACTIC_SIZE) break;
   }
-  state.tacticDeck = next;
+  slot.cards = next;
+  state.tacticDeck = slot.cards;
   saveGame(); playSfx("gift"); renderDeckView();
-  showToast(`✨ 所持カードで合計 ${12 + next.length}枚デッキを自動編成しました！`);
+  showToast(`✨『${slot.name}』を合計 ${12 + next.length}枚で自動編成しました！`);
 }
 
 function resetDeckTo20() {
-  state.tacticDeck = [...window.MF_CARDS.DEFAULT_TACTIC_DECK];
+  const slot = window.MF_CARDS.ensureDeckSlots();
+  slot.cards = [...window.MF_CARDS.DEFAULT_TACTIC_DECK];
+  state.tacticDeck = slot.cards;
   saveGame(); playSfx("switch"); renderDeckView();
-  showToast("⚖️ 基本の20枚デッキに戻しました");
+  showToast(`⚖️『${slot.name}』を基本20枚に戻しました`);
 }
 
 // ---------- 全102種カード図鑑 ----------
 function getOwnedCardCount() {
   return Object.keys(window.MF_CARDS.TACTIC_CARDS).filter(id => window.MF_CARDS.getCardLevel(id) > 0).length;
 }
-
 function getUnclaimedDexCount() {
   const owned = getOwnedCardCount();
   const claimed = state.claimedDexMilestones || [];
