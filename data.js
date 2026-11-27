@@ -1,5 +1,5 @@
 window.MF_DATA = {
-  APP_VERSION: "1.6.0",
+  APP_VERSION: "2.7.0",
 
   ELEMENTS: {
     fire:  { id: "fire",  name: "炎", icon: "🔥", color: "#ff595e", desc: "高火力・燃焼スリップ" },
@@ -89,35 +89,53 @@ window.MF_DATA = {
     scanner: { id: "scanner", name: "スキャナーくん", rarity: "N", trait: "高高度観測バルーンロボ", element: "wind", weapon: "sniper", image: "assets/scanner.jpg", emoji: "🎈", campSkill: "周囲の霧マップ索敵範囲拡大", skills: { normal: "エアショット：圧縮空気弾による遠距離攻撃", active: "ターゲットロック：ボスの部位を照らし拡散を発生", ult: "ストーム・ビーコン：上空から風圧の衝撃波を落とす" }, voiceLines: ["プシューッ！上空カラ敵ノ位置ヲマーキング完了！"] }
   },
 
+  // 全22種の霧獣・精鋭・エリア主・融光種（報酬を大幅増量＆戦術パック券ドロップ付き）
   ENEMIES: [
-    { id: "wolf_pack", name: "ミアズマ・ウルフ群", rank: "平原・通常", emoji: "🐺", recPower: 100, maxHp: 900, maxStagger: 60, atk: 65, parts: [], rewards: { credits: 1200, books: 4, cores: 1, gems: 40, rankExp: 35, activityPt: 10 } },
-    { id: "forest_boar", name: "苔むした大猪・ブル", rank: "平原・通常", emoji: "🐗", recPower: 140, maxHp: 1300, maxStagger: 75, atk: 85, parts: [{ name: "硬質の大牙", hpRatio: 0.4, drop: "大猪の鋭牙" }], rewards: { credits: 1600, books: 5, cores: 1, gems: 50, rankExp: 45, activityPt: 12 } },
-    { id: "crystal_beetle", name: "結晶甲虫・重装種", rank: "平原・精鋭", emoji: "🪲", recPower: 220, maxHp: 2100, maxStagger: 90, atk: 115, parts: [{ name: "高純度結晶殻", hpRatio: 0.45, drop: "純度結晶殻" }], rewards: { credits: 2600, books: 8, cores: 2, gems: 80, rankExp: 65, activityPt: 20 } },
-    { id: "moss_behemoth", name: "主霧獣『モス・ベヒーモス』", rank: "第1エリア主", emoji: "🦏", recPower: 360, maxHp: 4200, maxStagger: 120, atk: 175, parts: [{ name: "結晶の巨角", hpRatio: 0.35, drop: "ベヒーモスの結晶角" }, { name: "背中の苔殻", hpRatio: 0.40, drop: "古代樹の重甲殻" }], rewards: { credits: 5200, books: 15, cores: 4, gems: 160, rankExp: 120, activityPt: 35 } },
-    { id: "radiant_behemoth", name: "【融光種】煌角のベヒーモス", rank: "変異・融光種", emoji: "🌟", isRadiant: true, recPower: 540, maxHp: 6800, maxStagger: 145, atk: 245, parts: [{ name: "融光結晶角", hpRatio: 0.35, drop: "融光の煌角" }, { name: "過飽和の核殻", hpRatio: 0.35, drop: "融光アーク結晶" }], rewards: { credits: 8500, books: 24, cores: 6, gems: 220, rankExp: 180, activityPt: 50 } },
-    { id: "spark_raptor", name: "紫電の疾走竜・ラプトル", rank: "峡谷・通常", emoji: "🦖", recPower: 420, maxHp: 4600, maxStagger: 110, atk: 200, parts: [{ name: "帯電トサカ", hpRatio: 0.4, drop: "紫電のトサカ" }], rewards: { credits: 5800, books: 17, cores: 4, gems: 100, rankExp: 130, activityPt: 30 } },
-    { id: "thunder_wyvern", name: "主霧獣『サンダー・ワイバーン』", rank: "第2エリア主", emoji: "🐉", recPower: 680, maxHp: 8500, maxStagger: 150, atk: 290, parts: [{ name: "右雷翼", hpRatio: 0.32, drop: "紫電の飛竜翼" }, { name: "蓄電の尾針", hpRatio: 0.28, drop: "高圧雷撃コア" }], rewards: { credits: 9500, books: 28, cores: 7, gems: 240, rankExp: 200, activityPt: 50 } },
-    { id: "radiant_wyvern", name: "【融光種】天雷のオーバーワイバーン", rank: "変異・融光種", emoji: "⚡", isRadiant: true, recPower: 920, maxHp: 12500, maxStagger: 175, atk: 380, parts: [{ name: "融光雷翼", hpRatio: 0.32, drop: "融光の天雷翼" }, { name: "暴走プラズマ核", hpRatio: 0.30, drop: "融光アーク結晶" }], rewards: { credits: 14000, books: 38, cores: 10, gems: 300, rankExp: 280, activityPt: 70 } },
-    { id: "frost_spider", name: "氷晶の機巧蜘蛛・アラクネ", rank: "雪原・精鋭", emoji: "🕷️", recPower: 820, maxHp: 10500, maxStagger: 155, atk: 340, parts: [{ name: "冷凍噴射口", hpRatio: 0.38, drop: "極低温ノズル" }], rewards: { credits: 11500, books: 32, cores: 8, gems: 180, rankExp: 240, activityPt: 55 } },
-    { id: "glacial_mammoth", name: "主霧獣『グレイシャル・マンモス』", rank: "第3エリア主", emoji: "🦣", recPower: 1100, maxHp: 15000, maxStagger: 180, atk: 430, parts: [{ name: "氷結の双牙", hpRatio: 0.35, drop: "永久凍土の巨牙" }, { name: "背中の冷却炉殻", hpRatio: 0.40, drop: "暴走冷却炉パーツ" }], rewards: { credits: 16000, books: 45, cores: 12, gems: 320, rankExp: 320, activityPt: 80 } },
-    { id: "magma_salamander", name: "主霧獣『マグマ・サラマンダー』", rank: "第4エリア主", emoji: "🦎", recPower: 1550, maxHp: 22000, maxStagger: 210, atk: 560, parts: [{ name: "灼熱の溶岩顎", hpRatio: 0.35, drop: "紅蓮の溶岩顎" }, { name: "業火の尾先", hpRatio: 0.35, drop: "マグマ結晶核" }], rewards: { credits: 23000, books: 60, cores: 16, gems: 400, rankExp: 450, activityPt: 100 } },
-    { id: "abyss_kraken", name: "主霧獣『アビス・クラーケン』", rank: "第5エリア主", emoji: "🦑", recPower: 2100, maxHp: 31000, maxStagger: 240, atk: 710, parts: [{ name: "深海の大触手", hpRatio: 0.35, drop: "深淵の触手繊維" }, { name: "頭部の発光核", hpRatio: 0.35, drop: "ネオン深海核" }], rewards: { credits: 32000, books: 80, cores: 22, gems: 500, rankExp: 600, activityPt: 130 } },
-    { id: "radiant_zero", name: "【融光種】原初の災厄・ゼロ", rank: "最終・融光主", emoji: "👁️", isRadiant: true, recPower: 2800, maxHp: 45000, maxStagger: 300, atk: 920, parts: [{ name: "天蓋の制御輪", hpRatio: 0.30, drop: "天蓋の制御リング" }, { name: "原初のミアズマ核", hpRatio: 0.35, drop: "原初の融光神核" }], rewards: { credits: 50000, books: 120, cores: 35, gems: 800, rankExp: 900, activityPt: 200 } }
+    // 第1エリア：ヴェルデ平原（6種）
+    { id: "wolf_pack", name: "ミアズマ・ウルフ群", rank: "平原・通常", emoji: "🐺", recPower: 100, maxHp: 900, maxStagger: 60, atk: 65, parts: [], rewards: { credits: 1800, books: 6, cores: 1, gems: 60, tickets: 1, rankExp: 40, activityPt: 12 } },
+    { id: "spore_slime", name: "瘴霧胞子・マッシュ", rank: "平原・通常", emoji: "🍄", recPower: 120, maxHp: 1100, maxStagger: 65, atk: 75, parts: [{ name: "発光胞子笠", hpRatio: 0.4, drop: "発光胞子エキス" }], rewards: { credits: 2100, books: 7, cores: 1, gems: 70, tickets: 1, rankExp: 45, activityPt: 14 } },
+    { id: "forest_boar", name: "苔むした大猪・ブル", rank: "平原・通常", emoji: "🐗", recPower: 140, maxHp: 1350, maxStagger: 75, atk: 85, parts: [{ name: "硬質の大牙", hpRatio: 0.4, drop: "大猪の鋭牙" }], rewards: { credits: 2500, books: 8, cores: 2, gems: 80, tickets: 1, rankExp: 55, activityPt: 16 } },
+    { id: "crystal_beetle", name: "結晶甲虫・重装種", rank: "平原・精鋭", emoji: "🪲", recPower: 220, maxHp: 2100, maxStagger: 90, atk: 115, parts: [{ name: "高純度結晶殻", hpRatio: 0.45, drop: "純度結晶殻" }], rewards: { credits: 3800, books: 12, cores: 3, gems: 120, tickets: 2, rankExp: 80, activityPt: 24 } },
+    { id: "moss_behemoth", name: "主霧獣『モス・ベヒーモス』", rank: "第1エリア主", emoji: "🦏", recPower: 360, maxHp: 4200, maxStagger: 120, atk: 175, parts: [{ name: "結晶の巨角", hpRatio: 0.35, drop: "ベヒーモスの結晶角" }, { name: "背中の苔殻", hpRatio: 0.40, drop: "古代樹の重甲殻" }], rewards: { credits: 7500, books: 22, cores: 5, gems: 220, tickets: 3, rankExp: 140, activityPt: 40 } },
+    { id: "radiant_behemoth", name: "【融光種】煌角のベヒーモス", rank: "変異・融光種", emoji: "🌟", isRadiant: true, recPower: 540, maxHp: 6800, maxStagger: 145, atk: 245, parts: [{ name: "融光結晶角", hpRatio: 0.35, drop: "融光の煌角" }, { name: "過飽和の核殻", hpRatio: 0.35, drop: "融光アーク結晶" }], rewards: { credits: 12500, books: 34, cores: 8, gems: 320, tickets: 4, rankExp: 210, activityPt: 60 } },
+
+    // 第2エリア：ヴォルト・キャニオン（4種）
+    { id: "spark_raptor", name: "紫電の疾走竜・ラプトル", rank: "峡谷・通常", emoji: "🦖", recPower: 420, maxHp: 4600, maxStagger: 110, atk: 200, parts: [{ name: "帯電トサカ", hpRatio: 0.4, drop: "紫電のトサカ" }], rewards: { credits: 8200, books: 24, cores: 5, gems: 150, tickets: 2, rankExp: 150, activityPt: 35 } },
+    { id: "volt_scarab", name: "蓄電巨甲虫・スカラベ", rank: "峡谷・精鋭", emoji: "🦂", recPower: 550, maxHp: 6200, maxStagger: 130, atk: 240, parts: [{ name: "高圧蓄電鋏", hpRatio: 0.42, drop: "蓄電スカラベ鋏" }], rewards: { credits: 10500, books: 30, cores: 6, gems: 190, tickets: 2, rankExp: 185, activityPt: 42 } },
+    { id: "thunder_wyvern", name: "主霧獣『サンダー・ワイバーン』", rank: "第2エリア主", emoji: "🐉", recPower: 680, maxHp: 8500, maxStagger: 150, atk: 290, parts: [{ name: "右雷翼", hpRatio: 0.32, drop: "紫電の飛竜翼" }, { name: "蓄電の尾針", hpRatio: 0.28, drop: "高圧雷撃コア" }], rewards: { credits: 14000, books: 40, cores: 9, gems: 320, tickets: 3, rankExp: 240, activityPt: 60 } },
+    { id: "radiant_wyvern", name: "【融光種】天雷のオーバーワイバーン", rank: "変異・融光種", emoji: "⚡", isRadiant: true, recPower: 920, maxHp: 12500, maxStagger: 175, atk: 380, parts: [{ name: "融光雷翼", hpRatio: 0.32, drop: "融光の天雷翼" }, { name: "暴走プラズマ核", hpRatio: 0.30, drop: "融光アーク結晶" }], rewards: { credits: 20000, books: 54, cores: 13, gems: 420, tickets: 4, rankExp: 320, activityPt: 85 } },
+
+    // 第3エリア：フロスト・ヘイヴン（4種）
+    { id: "blizzard_hound", name: "氷狼・ブリザードハウンド", rank: "雪原・通常", emoji: "🦊", recPower: 760, maxHp: 8900, maxStagger: 140, atk: 315, parts: [{ name: "氷結の尾房", hpRatio: 0.4, drop: "極寒の銀毛" }], rewards: { credits: 14500, books: 40, cores: 9, gems: 210, tickets: 2, rankExp: 245, activityPt: 55 } },
+    { id: "frost_spider", name: "氷晶の機巧蜘蛛・アラクネ", rank: "雪原・精鋭", emoji: "🕷️", recPower: 860, maxHp: 10800, maxStagger: 155, atk: 350, parts: [{ name: "冷凍噴射口", hpRatio: 0.38, drop: "極低温ノズル" }], rewards: { credits: 17500, books: 48, cores: 11, gems: 260, tickets: 2, rankExp: 280, activityPt: 65 } },
+    { id: "glacial_mammoth", name: "主霧獣『グレイシャル・マンモス』", rank: "第3エリア主", emoji: "🦣", recPower: 1100, maxHp: 15000, maxStagger: 180, atk: 430, parts: [{ name: "氷結の双牙", hpRatio: 0.35, drop: "永久凍土の巨牙" }, { name: "背中の冷却炉殻", hpRatio: 0.40, drop: "暴走冷却炉パーツ" }], rewards: { credits: 24000, books: 64, cores: 15, gems: 420, tickets: 3, rankExp: 360, activityPt: 95 } },
+    { id: "radiant_mammoth", name: "【融光種】絶対零度の帝王マンモス", rank: "変異・融光種", emoji: "❄️", isRadiant: true, recPower: 1380, maxHp: 20500, maxStagger: 205, atk: 510, parts: [{ name: "融光氷牙", hpRatio: 0.33, drop: "融光の極氷牙" }, { name: "零度結晶炉", hpRatio: 0.35, drop: "融光アーク結晶" }], rewards: { credits: 31000, books: 80, cores: 19, gems: 520, tickets: 4, rankExp: 440, activityPt: 115 } },
+
+    // 第4エリア：イグニス・カルデラ（3種）
+    { id: "lava_golem", name: "溶鉱炉の巨兵・ゴーレム", rank: "溶岩・精鋭", emoji: "🗿", recPower: 1320, maxHp: 18500, maxStagger: 195, atk: 490, parts: [{ name: "灼熱炉心", hpRatio: 0.4, drop: "赤熱ゴーレム核" }], rewards: { credits: 27000, books: 72, cores: 16, gems: 340, tickets: 2, rankExp: 410, activityPt: 95 } },
+    { id: "magma_salamander", name: "主霧獣『マグマ・サラマンダー』", rank: "第4エリア主", emoji: "🦎", recPower: 1550, maxHp: 22000, maxStagger: 210, atk: 560, parts: [{ name: "灼熱の溶岩顎", hpRatio: 0.35, drop: "紅蓮の溶岩顎" }, { name: "業火の尾先", hpRatio: 0.35, drop: "マグマ結晶核" }], rewards: { credits: 34000, books: 86, cores: 20, gems: 520, tickets: 3, rankExp: 520, activityPt: 120 } },
+    { id: "radiant_salamander", name: "【融光種】紅蓮業火の炎帝竜", rank: "変異・融光種", emoji: "🔥", isRadiant: true, recPower: 1850, maxHp: 28000, maxStagger: 235, atk: 650, parts: [{ name: "融光炎顎", hpRatio: 0.32, drop: "融光の業火顎" }, { name: "太陽核結晶", hpRatio: 0.34, drop: "融光アーク結晶" }], rewards: { credits: 42000, books: 105, cores: 25, gems: 640, tickets: 4, rankExp: 620, activityPt: 145 } },
+
+    // 第5エリア：アクア・メトロポリス（3種）
+    { id: "neon_angler", name: "水没街の提灯魚・アングラー", rank: "水没・精鋭", emoji: "🐡", recPower: 1820, maxHp: 26500, maxStagger: 225, atk: 630, parts: [{ name: "ネオン発光提灯", hpRatio: 0.4, drop: "深海ネオン球" }], rewards: { credits: 38000, books: 95, cores: 22, gems: 420, tickets: 2, rankExp: 580, activityPt: 130 } },
+    { id: "abyss_kraken", name: "主霧獣『アビス・クラーケン』", rank: "第5エリア主", emoji: "🦑", recPower: 2100, maxHp: 31000, maxStagger: 240, atk: 710, parts: [{ name: "深海の大触手", hpRatio: 0.35, drop: "深淵の触手繊維" }, { name: "頭部の発光核", hpRatio: 0.35, drop:  "ネオン深海核" }], rewards: { credits: 48000, books: 115, cores: 28, gems: 640, tickets: 3, rankExp: 700, activityPt: 160 } },
+    { id: "radiant_kraken", name: "【融光種】深淵ネオン・リヴァイアサン", rank: "変異・融光種", emoji: "🐙", isRadiant: true, recPower: 2450, maxHp: 38000, maxStagger: 270, atk: 810, parts: [{ name: "融光深海冠", hpRatio: 0.32, drop: "融光の深淵冠" }, { name: "過飽和ネオン核", hpRatio: 0.34, drop: "融光アーク結晶" }], rewards: { credits: 58000, books: 140, cores: 34, gems: 780, tickets: 4, rankExp: 840, activityPt: 190 } },
+
+    // 第6エリア：アーク・スパイア（2種）
+    { id: "spire_seraph", name: "天蓋の古代守護機・セラフ", rank: "天蓋・精鋭", emoji: "👼", recPower: 2500, maxHp: 39000, maxStagger: 275, atk: 830, parts: [{ name: "アーク光翼", hpRatio: 0.36, drop: "古代セラフ光翼" }], rewards: { credits: 60000, books: 145, cores: 35, gems: 680, tickets: 3, rankExp: 860, activityPt: 195 } },
+    { id: "radiant_zero", name: "【融光種】原初の災厄・ゼロ", rank: "最終・融光主", emoji: "👁️", isRadiant: true, recPower: 2800, maxHp: 45000, maxStagger: 300, atk: 920, parts: [{ name: "天蓋の制御輪", hpRatio: 0.30, drop: "天蓋の制御リング" }, { name: "原初のミアズマ核", hpRatio: 0.35, drop: "原初の融光神核" }], rewards: { credits: 75000, books: 180, cores: 45, gems: 1000, tickets: 5, rankExp: 1100, activityPt: 260 } }
   ],
 
   REGIONS: [
     { id: "verde", name: "第1エリア：新緑の廃墟『ヴェルデ平原』", bg: "#213829", reqRank: 1, normalId: "wolf_pack", eliteId: "crystal_beetle", bossId: "moss_behemoth", radiantId: "radiant_behemoth", rareDrop: "アーク結晶鉱" },
-    { id: "volt", name: "第2エリア：雷鳴の峡谷『ヴォルト・キャニオン』", bg: "#2b2538", reqRank: 3, normalId: "spark_raptor", eliteId: "crystal_beetle", bossId: "thunder_wyvern", radiantId: "radiant_wyvern", rareDrop: "雷撃結晶" },
-    { id: "frost", name: "第3エリア：白銀の研究所『フロスト・ヘイヴン』", bg: "#1f303d", reqRank: 6, normalId: "frost_spider", eliteId: "frost_spider", bossId: "glacial_mammoth", radiantId: "radiant_wyvern", rareDrop: "永久氷晶" },
-    { id: "ignis", name: "第4エリア：灼熱の溶鉱炉跡『イグニス・カルデラ』", bg: "#38211f", reqRank: 10, normalId: "frost_spider", eliteId: "magma_salamander", bossId: "magma_salamander", radiantId: "radiant_zero", rareDrop: "溶岩精錬鉄" },
-    { id: "aqua", name: "第5エリア：水没ネオン街『アクア・メトロポリス』", bg: "#192d38", reqRank: 15, normalId: "abyss_kraken", eliteId: "abyss_kraken", bossId: "abyss_kraken", radiantId: "radiant_zero", rareDrop: "深海発光コア" },
-    { id: "spire", name: "第6エリア：天蓋の塔『アーク・スパイア』", bg: "#291b36", reqRank: 20, normalId: "abyss_kraken", eliteId: "radiant_zero", bossId: "radiant_zero", radiantId: "radiant_zero", rareDrop: "原初の天蓋結晶" }
+    { id: "volt", name: "第2エリア：雷鳴の峡谷『ヴォルト・キャニオン』", bg: "#2b2538", reqRank: 3, normalId: "spark_raptor", eliteId: "volt_scarab", bossId: "thunder_wyvern", radiantId: "radiant_wyvern", rareDrop: "雷撃結晶" },
+    { id: "frost", name: "第3エリア：白銀の研究所『フロスト・ヘイヴン』", bg: "#1f303d", reqRank: 6, normalId: "blizzard_hound", eliteId: "frost_spider", bossId: "glacial_mammoth", radiantId: "radiant_mammoth", rareDrop: "永久氷晶" },
+    { id: "ignis", name: "第4エリア：灼熱の溶鉱炉跡『イグニス・カルデラ』", bg: "#38211f", reqRank: 10, normalId: "lava_golem", eliteId: "lava_golem", bossId: "magma_salamander", radiantId: "radiant_salamander", rareDrop: "溶岩精錬鉄" },
+    { id: "aqua", name: "第5エリア：水没ネオン街『アクア・メトロポリス』", bg: "#192d38", reqRank: 15, normalId: "neon_angler", eliteId: "neon_angler", bossId: "abyss_kraken", radiantId: "radiant_kraken", rareDrop: "深海発光コア" },
+    { id: "spire", name: "第6エリア：天蓋の塔『アーク・スパイア』", bg: "#291b36", reqRank: 20, normalId: "spire_seraph", eliteId: "spire_seraph", bossId: "radiant_zero", radiantId: "radiant_zero", rareDrop: "原初の天蓋結晶" }
   ],
 
-  BUILTIN_MAILS: [
-    { id: "mail_launch_gift", date: "2026-11-26", title: "方舟都市司令部・開拓支援パック", body: "第7クリアラー小隊の地上降下を記念して、スカウト用結晶石と初期育成物資をお届けします！", rewards: { gems: 1600, credits: 10000, books: 20, cores: 5 } },
-    { id: "mail_ver16_update", date: "2026-11-26", title: "Step 5 前線キャンプ＆クラフト実装記念", body: "自動化工場ライン・モンスター生態リンク・武器鍛造・タイミング調理ミニゲームの実装記念プレゼント！", rewards: { gems: 1600, credits: 12000, en: 60 } }
-  ],
+  BUILTIN_MAILS: [],
 
   CRAFT_RECIPES: [
     { id: "wp_behemoth", cat: "weapon", icon: "🗡️", name: "結晶角の大剣・改", req: { "ベヒーモスの結晶角": 1, "アーク結晶鉱": 2 }, credits: 2500, desc: "装備すると小隊全体の攻撃力 +12%（永続パッシブ）" },
@@ -128,7 +146,6 @@ window.MF_DATA = {
   ],
 
   SERIAL_CODES: {
-    "FRONTIER2026": { label: "リリース記念パック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 },
-    "MIASMA777":    { label: "第7小隊応援ギフト", gems: 1600, credits: 5000,  en: 40, books: 15, cores: 3 }
+    "FRONTIER2026": { label: "開発テストパック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 }
   }
 };
