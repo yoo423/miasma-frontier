@@ -12,20 +12,9 @@
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=310" />
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script>
-    window.addEventListener("error", function(e) {
-      var box = document.getElementById("debug-error-box");
-      if (!box) return;
-      box.style.display = "block";
-      var file = (e.filename || "").split("/").pop();
-      box.innerHTML += "<div>⚠️ " + file + " (" + e.lineno + "行目): " + e.message + "</div>";
-    });
-  </script>
 </head>
 <body>
   <div class="app-shell">
-    <div id="debug-error-box" style="display:none; background:#ff4d5a; color:#fff; padding:8px 10px; border-radius:10px; font-size:11px; font-weight:800; line-height:1.4;"></div>
-
     <header class="top-bar">
       <div class="top-row">
         <div class="player-badge">
@@ -33,7 +22,7 @@
           <span id="tb-rank" class="rank-pill">開拓Lv.1</span>
         </div>
         <div style="display:flex; gap:5px;">
-          <button id="btn-theme" class="btn-xs" onclick="toggleUiTheme()">🏕️ 拠点UI</button>
+          <button id="btn-theme" class="btn-xs" onclick="toggleUiTheme()">🏕️ 拠点</button>
           <button id="btn-sound" class="btn-xs" onclick="toggleSound()">🔊</button>
         </div>
       </div>
@@ -83,7 +72,7 @@
       </div>
     </main>
 
-    <!-- 1-B. 商業級ノベル物語＆開拓マップ -->
+    <!-- 1-B. 物語＆開拓マップ（速度切替・オート・演出付き） -->
     <section id="view-story" class="view">
       <div class="card">
         <div class="section-title"><span>📖 物語 ＆ 霧の開拓マップ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -94,18 +83,22 @@
       </div>
       <div id="story-chapters-panel"><div id="story-chapter-list"></div></div>
       <div id="story-novel-panel" class="card" style="display:none;">
-        <div class="top-row" style="margin-bottom:5px;">
-          <strong id="novel-chapter-title" style="font-size:11.5px;">第1章</strong>
-          <div style="display:flex; gap:5px;">
-            <button class="btn-xs" onclick="openStoryBacklog()">📜 ログ</button>
-            <button class="btn-xs" onclick="closeNovelStage()">中断</button>
+        <div id="novel-stage-wrap">
+          <div class="top-row" style="margin-bottom:5px; flex-wrap:wrap;">
+            <strong id="novel-chapter-title" style="font-size:11px;">第一話</strong>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button id="btn-novel-speed" class="btn-xs" onclick="cycleTextSpeed()">🐢 ゆっくり</button>
+              <button id="btn-novel-auto" class="btn-xs" onclick="toggleStoryAuto()">▶ オート</button>
+              <button class="btn-xs" onclick="openStoryBacklog()">📜 ログ</button>
+              <button class="btn-xs" onclick="closeNovelStage()">戻る</button>
+            </div>
           </div>
-        </div>
-        <div id="novel-location-bar" class="novel-loc-bar">📍 場所</div>
-        <div id="novel-stage-portrait" class="novel-stage novel-bg-field" onclick="advanceNovelScene()"></div>
-        <div id="novel-box" class="novel-box" onclick="advanceNovelScene()">
-          <div id="novel-speaker-name" class="novel-speaker">発言者</div>
-          <div id="novel-dialogue-text" class="novel-text"></div>
+          <div id="novel-location-bar" class="novel-loc-bar">📍 場所</div>
+          <div id="novel-stage-portrait" class="novel-stage nbg-verde_morning"></div>
+          <div class="novel-box" onclick="advanceNovelScene()">
+            <div id="novel-speaker-name" class="novel-speaker">発言者</div>
+            <div id="novel-dialogue-text" class="novel-text"></div>
+          </div>
         </div>
         <div id="novel-choices" style="display:none; flex-direction:column; gap:6px; margin-top:8px;"></div>
         <button id="btn-novel-next" class="btn-primary" style="width:100%; margin-top:8px;" onclick="advanceNovelScene()">次へ ▶</button>
@@ -128,13 +121,13 @@
           <div class="section-title"><span>🏆 同時プロット読み合いアリーナ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
           <div id="arena-status-bar" style="background:var(--surface-sub); padding:8px; border-radius:10px; margin-bottom:9px;"></div>
           <div style="background:rgba(24,184,138,0.12); border:2px solid var(--accent); border-radius:12px; padding:9px; margin-bottom:9px;">
-            <strong style="font-size:12.5px;">🌐 オンライン通信対戦（離れた友達と対戦！）</strong>
-            <div id="online-status-text" style="font-size:11px; color:var(--accent); font-weight:800; margin:4px 0 7px;">部屋を作って4桁番号を教えるだけで即対戦！</div>
-            <button class="btn-primary" style="width:100%; margin-bottom:6px;" onclick="hostOnlineRoom()">📡 対戦ルームを作る（ホスト）</button>
-            <div style="display:flex; gap:6px;"><input type="text" id="online-room-input" maxlength="4" placeholder="4桁の部屋番号" /><button class="btn-accent2" style="white-space:nowrap;" onclick="joinOnlineRoom()">参加する</button></div>
+            <strong style="font-size:12.5px;">🌐 オンライン通信対戦</strong>
+            <div id="online-status-text" style="font-size:11px; color:var(--accent); font-weight:800; margin:4px 0 7px;">4桁の部屋番号を共有してリアルタイム対戦！</div>
+            <button class="btn-primary" style="width:100%; margin-bottom:6px;" onclick="hostOnlineRoom()">📡 対戦ルームを作る</button>
+            <div style="display:flex; gap:6px;"><input type="text" id="online-room-input" maxlength="4" placeholder="4桁の部屋番号" /><button class="btn-accent2" style="white-space:nowrap;" onclick="joinOnlineRoom()">参加</button></div>
           </div>
-          <button style="width:100%; padding:10px; margin-bottom:8px;" onclick="startArenaMatch('local2p')">👥 1台2人・読み合い対戦（交互に端末を渡して対戦）</button>
-          <div style="font-size:12px; font-weight:900; margin:6px 0;">🤖 ランク模擬戦（レート＆🎟️パック券獲得）</div>
+          <button style="width:100%; padding:10px; margin-bottom:8px;" onclick="startArenaMatch('local2p')">👥 1台2人・読み合い対戦</button>
+          <div style="font-size:12px; font-weight:900; margin:6px 0;">🤖 ランク模擬戦</div>
           <div id="arena-rival-list"></div>
         </div>
       </div>
@@ -142,16 +135,17 @@
       <div id="arena-board-panel" class="playmat-board" style="display:none;">
         <div class="top-row" style="margin-bottom:6px;"><strong id="arena-turn-label" style="font-size:12px; color:#ffd000;">TURN 1</strong><button class="btn-xs" onclick="exitArenaMatch()">撤退</button></div>
         <div id="arena-handoff-box" class="card" style="display:none; text-align:center; padding:24px 14px;">
-          <div style="font-size:46px; margin-bottom:8px;">🔄</div><h3 style="margin:0 0 6px;">プレイヤー1の伏せセット完了！</h3>
+          <div style="font-size:46px; margin-bottom:8px;">🔄</div>
+          <h3 style="margin:0 0 6px;">プレイヤー1の伏せセット完了</h3>
           <p style="font-size:12px; color:var(--muted); margin:0 0 14px;">手札が見えないよう端末をプレイヤー2へ渡してください。</p>
-          <button class="btn-accent2" style="width:100%; padding:12px;" onclick="proceedFromHandoff()">プレイヤー2の選択を始める ▶</button>
+          <button class="btn-accent2" style="width:100%; padding:12px;" onclick="proceedFromHandoff()">プレイヤー2の選択へ ▶</button>
         </div>
         <div id="arena-main-box">
           <div class="gauge-box"><div class="gauge-label"><span id="arena-p2-label" style="color:#ff8fa3;">相手HP</span></div><div class="gauge-bar"><div id="arena-p2-fill" style="background:#ff595e; width:100%;"></div></div></div>
-          <div style="font-size:10px; color:#ffd000; font-weight:900; margin:4px 0 2px;">▲ 相手の伏せスロット（同時公開）</div>
+          <div style="font-size:10px; color:#ffd000; font-weight:900; margin:4px 0 2px;">▲ 相手の伏せスロット</div>
           <div id="arena-p2-slots" class="pm-chain-zones"></div>
           <div id="arena-log" class="battle-log-box" style="margin:7px 0;"></div>
-          <div style="font-size:10px; color:#00e5ff; font-weight:900; margin:2px 0;">▼ 自分の伏せスロット（タップで戻す）</div>
+          <div style="font-size:10px; color:#00e5ff; font-weight:900; margin:2px 0;">▼ 自分の伏せスロット</div>
           <div id="arena-p1-slots" class="pm-chain-zones"></div>
           <div class="gauge-box" style="margin-top:6px;"><div class="gauge-label"><span id="arena-p1-label" style="color:#6fffe9;">自分HP</span></div><div class="gauge-bar"><div id="arena-p1-fill" style="background:#18b88a; width:100%;"></div></div></div>
           <div class="top-row" style="margin:6px 0;"><span id="arena-ap-label" style="font-size:11px; font-weight:900; color:#ffd000;">AP 4/4</span><button id="btn-arena-confirm" class="btn-accent2" onclick="confirmPvpPlot()">🎴 伏せ決定・オープン！</button></div>
@@ -165,12 +159,12 @@
       <div class="card">
         <div class="section-title"><span>🤝 フレンド・招待コード</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div style="background:var(--surface-sub); padding:9px; border-radius:10px; margin-bottom:8px;">
-          <div style="font-size:10.5px; font-weight:900; margin-bottom:3px;">あなたのフレンドコード（小隊＆デッキ入り）：</div>
+          <div style="font-size:10.5px; font-weight:900; margin-bottom:3px;">あなたのフレンドコード：</div>
           <div id="fr-my-code" style="font-size:10px; word-break:break-all; background:var(--surface); padding:5px; border-radius:6px; max-height:46px; overflow:hidden; margin-bottom:6px;"></div>
-          <button class="btn-primary" style="width:100%;" onclick="copyMyFriendCode()">📋 自分のコードをコピーして友達に送る</button>
+          <button class="btn-primary" style="width:100%;" onclick="copyMyFriendCode()">📋 自分のコードをコピー</button>
         </div>
-        <div style="font-size:11.5px; font-weight:900; margin-bottom:4px;">友達のコードを入力して登録：</div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;"><input type="text" id="fr-code-input" placeholder="MF- から始まるコードを貼付" /><button class="btn-accent2" style="white-space:nowrap;" onclick="addFriendByInput()">登録</button></div>
+        <div style="font-size:11.5px; font-weight:900; margin-bottom:4px;">友達のコードを登録：</div>
+        <div style="display:flex; gap:6px; margin-bottom:8px;"><input type="text" id="fr-code-input" placeholder="MF- から始まるコード" /><button class="btn-accent2" style="white-space:nowrap;" onclick="addFriendByInput()">登録</button></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"><button class="btn-xs" onclick="addPresetFriends()">✨ 公認フレンドを追加</button><button id="btn-fr-gift" class="btn-xs btn-primary" onclick="claimDailyFriendGift()">🎁 応援ギフト受取</button></div>
       </div>
       <div class="card"><div class="section-title"><span id="fr-count-title">🤝 フレンド一覧</span></div><div id="fr-list"></div></div>
@@ -187,8 +181,8 @@
       </div>
     </section>
 
-    <section id="view-wiki" class="view"><div class="card"><div class="section-title"><span>📘 攻略Wiki（戦術＆コンボガイド）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="wiki-tabs" class="chip-grid" style="margin-bottom:10px;"></div><div id="wiki-body"></div></div></section>
-    <section id="view-bestiary" class="view"><div class="card"><div class="section-title"><span>📓 霧獣調査ノート（全22種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="bestiary-summary" style="font-size:11px; background:var(--surface-sub); padding:7px 9px; border-radius:9px; margin-bottom:8px;"></div><div id="bestiary-list"></div></div></section>
+    <section id="view-wiki" class="view"><div class="card"><div class="section-title"><span>📘 攻略ガイド</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="wiki-tabs" class="chip-grid" style="margin-bottom:10px;"></div><div id="wiki-body"></div></div></section>
+    <section id="view-bestiary" class="view"><div class="card"><div class="section-title"><span>📓 霧獣調査ノート</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="bestiary-summary" style="font-size:11px; background:var(--surface-sub); padding:7px 9px; border-radius:9px; margin-bottom:8px;"></div><div id="bestiary-list"></div></div></section>
     <section id="view-card_dex" class="view"><div class="card"><div class="section-title"><span>📚 カード図鑑（全102種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="dex-progress-bar" style="background:var(--surface-sub); padding:9px; border-radius:11px; margin-bottom:8px;"></div><div id="dex-filter-tabs" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:5px;"></div><div id="dex-el-tabs" style="display:flex; gap:4px; flex-wrap:wrap;"></div><div id="dex-card-grid" class="dex-grid"></div></div></section>
 
     <!-- 2. デッキ編成 -->
@@ -240,7 +234,7 @@
       </div>
     </section>
 
-    <!-- 4〜9. 隊員・スカウト・設定・配布箱・倉庫・キャンプ・クラフト・システム -->
+    <!-- 4〜9. 隊員・スカウト・設定・配布箱・倉庫・キャンプ・クラフト・環境設定 -->
     <section id="view-squad" class="view">
       <div class="card"><div class="section-title"><span>🛡️ 4人パーティ編成（枠タップで入替）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="sq-party-editor" class="party-strip"></div><div id="sq-slot-picker" style="display:none; margin-top:8px;"></div></div>
       <div class="card"><div class="section-title"><span>📋 所属隊員（タップで詳細・強化）</span><button class="btn-xs btn-primary" onclick="openCharDetail('protagonist')">隊長カスタム</button></div><div id="sq-materials-bar" style="font-size:11px; margin-bottom:8px; background:var(--surface-sub); padding:6px 8px; border-radius:8px;"></div><div id="sq-roster-list" class="roster-grid"></div></div>
@@ -284,15 +278,15 @@
 
     <section id="view-terminal" class="view">
       <div class="card">
-        <div class="section-title"><span>⚙️ システム・アップデート</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
-        <div id="term-version" style="font-size:12px; font-weight:900; margin-bottom:6px;"></div>
-        <button class="btn-primary" style="width:100%; margin-bottom:8px;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
-        <button id="btn-debug-unlock" style="width:100%;" onclick="toggleDebugUnlockAll()">🔓 テスト用：全機能のストーリーロックを解除</button>
-        <div id="term-update-status" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
+        <div class="section-title"><span>⚙️ 端末設定</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div id="term-text-speed-label" style="font-size:12px; font-weight:900; margin-bottom:6px;">会話スピード：🐢 ゆっくり</div>
+        <button class="btn-primary" style="width:100%;" onclick="cycleTextSpeed(); renderTerminalView();">💬 会話スピードを切り替える</button>
       </div>
-      <div class="card"><div class="section-title"><span>📜 更新履歴</span></div><div id="term-history-list"></div></div>
-      <div class="card"><div class="section-title"><span>🎁 シリアルコード入力</span></div><div style="display:flex; gap:6px;"><input type="text" id="term-code-input" placeholder="コードを入力" /><button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button></div></div>
-      <div class="card"><div class="section-title"><span>⚠️ データ管理</span></div><button style="width:100%;" onclick="resetAllSaveData()">セーブデータを初期化する</button></div>
+      <div class="card">
+        <div class="section-title"><span>🎁 支援コード入力</span></div>
+        <div style="display:flex; gap:6px;"><input type="text" id="term-code-input" placeholder="コードを入力" /><button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button></div>
+      </div>
+      <div class="card"><div class="section-title"><span>⚠️ 記録管理</span></div><button style="width:100%;" onclick="resetAllSaveData()">記録データを初期化する</button></div>
     </section>
   </div>
 
@@ -304,17 +298,17 @@
       <div class="top-row"><strong style="font-size:15px;">📱 第7小隊・作戦タブレット</strong><button class="btn-xs" onclick="closeTabletMenu()">✕ 閉じる</button></div>
       <div class="tablet-grid">
         <button class="menu-btn btn-accent2" onclick="tabletGo('missions')"><span id="home-mission-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📋</span><span>任務</span></button>
-        <button class="menu-btn btn-primary" onclick="tabletGo('wiki')"><span class="menu-badge">コツ</span><span class="m-ico">📘</span><span>攻略Wiki</span></button>
+        <button class="menu-btn btn-primary" onclick="tabletGo('wiki')"><span class="menu-badge">コツ</span><span class="m-ico">📘</span><span>攻略ガイド</span></button>
         <button class="menu-btn" onclick="tabletGo('card_dex')"><span id="home-dex-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📚</span><span>カード図鑑</span></button>
         <button class="menu-btn" onclick="tabletGo('bestiary')"><span id="home-bestiary-badge" class="menu-badge" style="display:none;">NEW</span><span class="m-ico">📓</span><span>調査ノート</span></button>
         <button class="menu-btn" onclick="tabletGo('camp')"><span id="tb-lock-camp" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🏭</span><span>キャンプ</span></button>
         <button class="menu-btn" onclick="tabletGo('craft')"><span id="tb-lock-craft" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🔨</span><span>クラフト</span></button>
-        <button class="menu-btn" onclick="tabletGo('arena')"><span id="tb-lock-arena" class="menu-badge" style="display:none;">🔒1章</span><span class="m-ico">🏆</span><span>対人戦</span></button>
+        <button class="menu-btn" onclick="tabletGo('arena')"><span id="tb-lock-arena" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🏆</span><span>対人戦</span></button>
         <button class="menu-btn" onclick="tabletGo('friends')"><span id="tb-lock-friends" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🤝</span><span>フレンド</span></button>
         <button class="menu-btn" onclick="tabletGo('bag')"><span class="m-ico">🎒</span><span>倉庫</span></button>
         <button class="menu-btn" onclick="tabletGo('mail')"><span id="home-mail-badge" class="menu-badge" style="display:none;">NEW</span><span class="m-ico">🎁</span><span>配布箱</span></button>
         <button class="menu-btn" onclick="tabletGo('creator')"><span class="m-ico">🪪</span><span>隊長設定</span></button>
-        <button class="menu-btn" onclick="tabletGo('terminal')"><span class="m-ico">⚙️</span><span>システム</span></button>
+        <button class="menu-btn" onclick="tabletGo('terminal')"><span class="m-ico">⚙️</span><span>端末設定</span></button>
       </div>
     </div>
   </div>
@@ -373,8 +367,8 @@
   <script src="battle.js?v=310"></script>
   <script src="arena.js?v=310"></script>
   <script src="friends.js?v=310"></script>
-  <script src="story_ch1_p1.js?v=310"></script>
-  <script src="story_ch1.js?v=310"></script>
+  <script src="story_ch1_a.js?v=310"></script>
+  <script src="story_ch1_b.js?v=310"></script>
   <script src="story_ch2.js?v=310"></script>
   <script src="story.js?v=310"></script>
   <script src="camp.js?v=310"></script>
