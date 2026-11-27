@@ -31,10 +31,10 @@ function generateDailyShopItems(dateKey, refreshCount = 0) {
   if (cR1) items.push({ uid: "s_r1", kind: "card", cardId: cR1.id, icon: cR1.icon, name: `【R】${cR1.name}`, desc: cR1.summary, price: 3200, tag: "日替R" });
 
   items.push(
-    { uid: "s_tk",   kind: "tickets", qty: 3,  icon: "🎟️", name: "戦術パック券 ×3",       desc: "カードスカウト用の割引パック券セット", price: 5000, tag: "お得" },
-    { uid: "s_book", kind: "books",   qty: 25, icon: "📘", name: "作戦記録 ×25",          desc: "隊員のレベルを一気に引き上げる教本", price: 4500, tag: "育成" },
-    { uid: "s_core", kind: "cores",   qty: 5,  icon: "💠", name: "元素コア ×5",           desc: "昇格試練・スキルツリー解放用の結晶コア", price: 6000, tag: "育成" },
-    { uid: "s_gift", kind: "gift",    qty: 2,  icon: "💐", name: "アーク花のブーケ ×2",   desc: "隊員に贈ると絆ポイント+2（絆話解放用）", price: 3000, tag: "絆ギフト" }
+    { uid: "s_tk",   kind: "tickets", qty: 3,  icon: "🎟️", name: "戦術パック券 ×3",     desc: "カードスカウト用の割引パック券セット", price: 5000, tag: "お得" },
+    { uid: "s_book", kind: "books",   qty: 25, icon: "📘", name: "作戦記録 ×25",        desc: "隊員のレベルを一気に引き上げる教本", price: 4500, tag: "育成" },
+    { uid: "s_core", kind: "cores",   qty: 5,  icon: "💠", name: "元素コア ×5",         desc: "昇格試練・スキルツリー解放用の結晶コア", price: 6000, tag: "育成" },
+    { uid: "s_gift", kind: "gift",    qty: 2,  icon: "💐", name: "アーク花のブーケ ×2", desc: "隊員に贈ると絆ポイント+2（絆話解放用）", price: 3000, tag: "絆ギフト" }
   );
   return items;
 }
@@ -42,11 +42,7 @@ function generateDailyShopItems(dateKey, refreshCount = 0) {
 function ensureShopState() {
   const today = typeof getLoginTodayStr === "function" ? getLoginTodayStr() : new Date().toISOString().slice(0, 10);
   if (!state.shopState || state.shopState.dateKey !== today) {
-    state.shopState = {
-      dateKey: today,
-      refreshCount: 0,
-      boughtIds: []
-    };
+    state.shopState = { dateKey: today, refreshCount: 0, boughtIds: [] };
   }
   return state.shopState;
 }
@@ -55,13 +51,32 @@ function renderShopView() {
   renderTopBar();
   const sh = ensureShopState();
   const items = generateDailyShopItems(sh.dateKey, sh.refreshCount);
+  const mp = typeof ensureMonthlyPassState === "function" ? ensureMonthlyPassState() : { remainDays: 0, cycleClaimedDays: 0 };
 
-  document.getElementById("shop-header-info").innerHTML = `
+  // マンスリーパス常設カード
+  const passBanner = `
+    <div style="background:linear-gradient(135deg, rgba(139,70,232,0.18), rgba(255,208,0,0.22)); border:2px solid #b565ff; border-radius:12px; padding:9px; margin-bottom:9px;">
+      <div class="top-row">
+        <strong style="font-size:13px;">🎫 フロンティア・マンスリーパス（30日間）</strong>
+        <span class="rank-pill">${mp.remainDays > 0 ? `残り${mp.remainDays}日` : "未加入"}</span>
+      </div>
+      <div style="font-size:10.5px; margin:4px 0; line-height:1.45;">
+        即時特典：<strong>💎320＋🎟️パック券×3</strong><br>
+        毎日ログインで <strong>💎120＋🎟️×1＋⚡予備EN+40</strong>（累計30日で👑SSRカード確定！）
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
+        <button class="btn-xs btn-primary" onclick="activateMonthlyPass('gems')">💎 480で${mp.remainDays > 0 ? "30日延長" : "有効化"}</button>
+        <button class="btn-xs btn-accent2" onclick="activateMonthlyPass('credits')">🪙 60,000で${mp.remainDays > 0 ? "30日延長" : "有効化"}</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("shop-header-info").innerHTML = passBanner + `
     <div class="top-row">
-      <span style="font-size:11px; font-weight:900;">📅 本日の品揃え（毎日0時更新）</span>
+      <span style="font-size:11px; font-weight:900;">📅 本日の日替わり補給（毎日0時更新）</span>
       <button class="btn-xs btn-primary" onclick="refreshShopLineup()">🔄 品揃え更新（🪙3,000）</button>
     </div>
-    <div style="font-size:10px; color:var(--muted); margin-top:4px;">所持クレジット：🪙 ${state.credits.toLocaleString()} ｜ 欲しいSSRカードや絆ギフトを入手しよう！</div>
+    <div style="font-size:10px; color:var(--muted); margin-top:4px;">所持クレジット：🪙 ${state.credits.toLocaleString()}</div>
   `;
 
   document.getElementById("shop-item-list").innerHTML = items.map(it => {
