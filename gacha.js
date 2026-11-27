@@ -1,37 +1,51 @@
-let activeBannerId = "pickup_mikoto";
+let activeBannerId = "";
 let gachaTimers = [];
 let currentPullResults = [];
 let spotlightIdx = 0;
 
 function getGachaTabs() {
+  if (typeof syncEventUnlockedCards === "function") syncEventUnlockedCards();
+  const today = typeof getEventTodayStr === "function" ? getEventTodayStr() : new Date().toISOString().slice(0, 10);
+  const sched = (window.MF_EVENTS_DATA?.GACHA_SCHEDULES || []).filter(b => today >= b.start && today <= b.end);
+
+  // スケジュール範囲外でも必ず1人限定PUが表示されるフォールバック
+  const activeTimed = sched.length > 0 ? sched : [{
+    id: "pu_default_mikoto", start: "2026-11-01", end: "2099-12-31",
+    shortName: "❄️ ミコトPU", tag: "限定ピックアップ",
+    title: "白狐の絶対零度・限定招集", featuredSsr: "mikoto", isLimitedBanner: true,
+    desc: "限定SSR『ミコト』単独ピックアップ！限定隊員は本招集または復刻招集でのみ出現します。"
+  }];
+
+  const cardTotal = Object.keys(window.MF_CARDS?.TACTIC_CARDS || {}).length;
   return [
-    ...(window.MF_DATA.BANNERS || []),
+    ...activeTimed,
+    {
+      id: "standard_all", shortName: "🌠 恒常招集", tag: "スタンダード",
+      title: "方舟都市・開拓隊員スカウト", featuredSsr: "lunaria",
+      desc: "ルナリア・ヴァレリア・クロエら恒常SSR・SR隊員が出現します（※限定隊員は含まれません）。"
+    },
     {
       id: "card_pack", shortName: "🎟️ カード", tag: "パック券専用",
-      title: "全102種・戦術カード特別パック", isCardBanner: true,
-      desc: "結晶石は不要！討伐や任務で手に入る『🎟️ 戦術パック券』でガンガン引けます（10連は券8枚でお得＆SR以上確定！）。"
+      title: `全${cardTotal}種・戦術カードパック`, isCardBanner: true,
+      desc: "討伐や任務・イベントで手に入る『🎟️ 戦術パック券』で引けます（10連は券8枚でお得＆SR以上確定！）。"
     }
   ];
 }
 
 function buyCardTicketsWithCredits(qty) {
   const cost = qty * 2000;
-  if (state.credits < cost) {
-    showToast(`🪙 クレジット不足（必要：${cost.toLocaleString()}）`);
-    return;
-  }
+  if (state.credits < cost) { showToast(`🪙 クレジット不足（必要：${cost.toLocaleString()}）`); return; }
   state.credits -= cost;
   state.cardTickets = (state.cardTickets || 0) + qty;
-  saveGame();
-  playSfx("gift");
-  renderTopBar();
-  renderGachaView();
+  saveGame(); playSfx("gift");
+  renderTopBar(); renderGachaView();
   showToast(`🎟️ 戦術パック券 ×${qty} を購入しました！`);
 }
 
 function renderGachaView() {
   renderTopBar();
   const tabs = getGachaTabs();
+  if (!tabs.some(b => b.id === activeBannerId)) activeBannerId = tabs[0].id;
   const banner = tabs.find(b => b.id === activeBannerId) || tabs[0];
 
   document.getElementById("gacha-banner-tabs").innerHTML = tabs.map(b => `
@@ -55,18 +69,24 @@ function renderGachaView() {
         <button class="btn-xs btn-primary" onclick="buyCardTicketsWithCredits(5)">🪙10,000 → 🎟️券×5</button>
       </div>
     `;
-    document.getElementById("gacha-pity-text").textContent = "🎟️ 討伐戦・デイリー任務・調査ノートでパック券が毎回手に入ります！";
+    document.getElementById("gacha-pity-text").textContent = "🎟️ 月3回のイベント更新ごとに新カードも自動追加されます！";
     document.getElementById("btn-gacha-1").innerHTML = `1枚引く<br><span style="font-size:11px;">🎟️ 券 ×1</span>`;
     document.getElementById("btn-gacha-10").innerHTML = `10連（SR以上確定！）<br><span style="font-size:11px;">🎟️ 券 ×8（2枚お得）</span>`;
   } else {
     const feat = window.MF_DATA.CHARACTERS[banner.featuredSsr];
+    const periodTxt = banner.start && banner.end ? `開催期間：${banner.start} 〜 ${banner.end}` : "常設開催";
+    const limNote = banner.isLimitedBanner ? "※限定隊員は本招集・復刻招集でのみ排出" : "※恒常SSR（ルナリア・ヴァレリア・クロエ）が対象";
     document.getElementById("gacha-banner-card").innerHTML = `
       <div style="display:flex; gap:10px; align-items:center;">
         ${window.MF_SPRITES.portraitHTML(feat, "icon-lg")}
-        <div style="text-align:left;">
-          <span class="rank-pill">${banner.tag}</span>
+        <div style="text-align:left; flex:1;">
+          <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+            <span class="rank-pill" style="${banner.isRerun ? "background:#ff7b39; color:#fff;" : ""}">${banner.tag}</span>
+            <span style="font-size:9.5px; color:var(--muted); font-weight:800;">${periodTxt}</span>
+          </div>
           <h3 style="margin:4px 0; font-size:14px;">${escapeHtml(banner.title)}</h3>
-          <p style="font-size:11px; color:var(--muted); margin:0;">${escapeHtml(banner.desc)}</p>
+          <p style="font-size:10.5px; color:var(--muted); margin:0 0 3px;">${escapeHtml(banner.desc)}</p>
+          <div style="font-size:9.5px; color:var(--accent); font-weight:900;">${limNote}</div>
         </div>
       </div>
     `;
@@ -85,7 +105,7 @@ function executeScout(count) {
   if (banner.isCardBanner) {
     const needTk = count === 10 ? 8 : 1;
     if ((state.cardTickets || 0) < needTk) {
-      showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚 ／ 討伐や任務・クレジット交換で入手！）`);
+      showToast(`🎟️ 戦術パック券が足りません（必要：${needTk}枚）`);
       return;
     }
     state.cardTickets -= needTk;
@@ -118,7 +138,9 @@ function executeScout(count) {
     }
   } else {
     const chars = Object.values(window.MF_DATA.CHARACTERS).filter(c => !c.isProtagonist);
-    const byRar = r => chars.filter(c => c.rarity === r);
+    const standardSsrPool = chars.filter(c => c.rarity === "SSR" && !c.limited);
+    const byRar = r => chars.filter(c => c.rarity === r && !c.limited);
+
     for (let i = 0; i < count; i++) {
       state.pityCount = (state.pityCount || 0) + 1;
       let rar = "N";
@@ -131,12 +153,19 @@ function executeScout(count) {
       let picked = null;
       if (rar === "SSR") {
         state.pityCount = 0;
-        const winPu = state.pityGuaranteed || Math.random() < 0.5;
-        if (winPu) { picked = window.MF_DATA.CHARACTERS[banner.featuredSsr]; state.pityGuaranteed = false; }
-        else {
-          const std = byRar("SSR").filter(c => !c.limited);
-          picked = std[Math.floor(Math.random() * std.length)] || window.MF_DATA.CHARACTERS.lunaria;
-          state.pityGuaranteed = true;
+        if (banner.id === "standard_all") {
+          // 恒常招集は絶対に限定キャラを出さない
+          picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
+        } else {
+          // 限定PU・復刻PU：50%（またはすり抜け後100%）でPU対象、外れた場合は恒常SSRのみ
+          const winPu = state.pityGuaranteed || Math.random() < 0.5;
+          if (winPu) {
+            picked = window.MF_DATA.CHARACTERS[banner.featuredSsr];
+            state.pityGuaranteed = false;
+          } else {
+            picked = standardSsrPool[Math.floor(Math.random() * standardSsrPool.length)] || window.MF_DATA.CHARACTERS.lunaria;
+            state.pityGuaranteed = true;
+          }
         }
       } else {
         const list = byRar(rar);
