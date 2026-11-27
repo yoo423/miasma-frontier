@@ -1,13 +1,14 @@
 const SAVE_KEY = "miasma_frontier_save_v1";
+const BUILD_VERSION = "3.1.0";
 const MAX_EN = 160;
 const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 const FEATURE_UNLOCK_RULES = {
-  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『新緑の廃墟と最初の霧獣』クリア" },
-  camp:    { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
-  craft:   { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
-  arena:   { reqStory: "ch1_ep8", label: "第1章完結（第8話『モス・ベヒーモス』討伐）" }
+  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『翡翠の墓標・ヴェルデ平原』クリア" },
+  camp:    { reqStory: "ch1_ep3", label: "第1章・第3話『焚き火の灯火と、割れた認識票』クリア" },
+  craft:   { reqStory: "ch1_ep3", label: "第1章・第3話『焚き火の灯火と、割れた認識票』クリア" },
+  arena:   { reqStory: "ch1_ep8", label: "第1章完結（『モス・ベヒーモス』討伐）" }
 };
 
 let state = null;
@@ -77,8 +78,7 @@ function loadSave() {
     const base = createDefaultSave();
     const validDeck = Array.isArray(parsed.tacticDeck) && parsed.tacticDeck.length >= 8 && parsed.tacticDeck.length <= 28;
     return {
-      ...base,
-      ...parsed,
+      ...base, ...parsed,
       cardTickets: typeof parsed.cardTickets === "number" ? parsed.cardTickets : base.cardTickets,
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
@@ -112,7 +112,7 @@ function isFeatureUnlocked(featureId) {
 function toggleDebugUnlockAll() {
   state.debugUnlockAll = !state.debugUnlockAll;
   saveGame(); playSfx("switch"); renderTerminalView();
-  showToast(state.debugUnlockAll ? "🔓 テスト用：すべての機能ロックを解除しました" : "🔒 ストーリー進行による機能解放モードに戻しました");
+  showToast(state.debugUnlockAll ? "🔓 テスト用：全機能のストーリーロックを解除" : "🔒 通常ロックモードに戻しました");
 }
 
 function updateStamina() {
@@ -363,12 +363,12 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.8.0（第2章・対人アリーナ・フレンド）";
+  document.getElementById("term-version").textContent = `現在のバージョン：Ver ${BUILD_VERSION}`;
   const dbgBtn = document.getElementById("btn-debug-unlock");
   if (dbgBtn) dbgBtn.textContent = state.debugUnlockAll ? "🔒 テスト全解放中（通常ロックに戻す）" : "🔓 テスト用：全機能のストーリーロックを解除";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.8.0：長編第2章＆対人アリーナ＆フレンド機能実装</strong><div style="font-size:11px; color:var(--muted);">第2章（全8話）、同時プロット3すくみ対人＆2P＆模擬戦アリーナ、招待コード式フレンド＆応援ギフト機能を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver ${BUILD_VERSION}：ガチ高難易度＆商業級ノベル演出・第1章前編リライト</strong><div style="font-size:11px; color:var(--muted);">トゲ装甲反射・致命チャージ・怒り瘴気・立ち絵見切れ修正・文字送り＆地の文＆背景7種演出を実装。</div></div>`;
   }
 }
 
@@ -389,8 +389,8 @@ async function checkAppUpdate() {
   try {
     const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
     const info = await res.json();
-    if (info.version !== window.MF_DATA.APP_VERSION && confirm(`最新 Ver ${info.version} に更新しますか？`)) location.reload(true);
-    else statusEl.textContent = "✅ 最新ビルドで動作中です。";
+    if (info.version !== BUILD_VERSION && confirm(`最新 Ver ${info.version} に更新しますか？`)) location.reload(true);
+    else statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）で動作中です。`;
   } catch (e) { statusEl.textContent = "確認完了"; }
 }
 function resetAllSaveData() { if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
@@ -398,6 +398,7 @@ function showToast(msg) { const el = document.getElementById("toast"); el.textCo
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])); }
 
 window.addEventListener("DOMContentLoaded", () => {
+  if (window.MF_DATA) window.MF_DATA.APP_VERSION = BUILD_VERSION;
   state = loadSave();
   updateStamina();
   applyTheme();
