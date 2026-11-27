@@ -1,3 +1,19 @@
+// =========================================================
+// 🚀 運営アップデート公開スイッチ（ここを書き換えるだけで新章解禁！）
+// 例：2＝第2章まで公開中（第3章は「近日公開」として隠れる）
+//     3＝第3章を公開！ / 6＝第6章完結まで全公開！
+// =========================================================
+const PUBLISHED_MAX_CHAPTER = 2;
+
+const STORY_CHAPTER_META = [
+  { num: 1, icon: "🌿", title: "第1章：新緑の廃墟『ヴェルデ平原』",         reqPrev: null,       endId: "ch1_ep20", desc: "百年間霧に閉ざされた大地を歩み、第7小隊の物語を紡ごう。" },
+  { num: 2, icon: "⚡", title: "第2章：雷鳴の峡谷『ヴォルト・キャニオン』",   reqPrev: "ch1_ep20", endId: "ch2_ep20", desc: "雷雲渦巻く峡谷の奥で、黄金の融光種と第2小隊の真実に迫る。" },
+  { num: 3, icon: "❄️", title: "第3章：白銀の研究所『フロスト・ヘイヴン』",   reqPrev: "ch2_ep20", endId: "ch3_ep20", desc: "極寒の雪原と古代研究棟。融光種を操る黒幕の正体がついに明かされる。" },
+  { num: 4, icon: "🔥", title: "第4章：灼熱の溶鉱炉『イグニス・カルデラ』",   reqPrev: "ch3_ep20", endId: "ch4_ep20", desc: "溶岩渦巻く巨大精錬炉跡。逃亡した黒幕と炎帝竜を追う激闘編。" },
+  { num: 5, icon: "🌊", title: "第5章：水没ネオン街『アクア・メトロポリス』", reqPrev: "ch4_ep20", endId: "ch5_ep20", desc: "深海に沈んだ旧文明の首都。方舟都市リベルタ誕生の秘密へ迫る。" },
+  { num: 6, icon: "👑", title: "第6章：天蓋の塔『アーク・スパイア』",         reqPrev: "ch5_ep20", endId: "ch6_ep20", desc: "第1部完結。原初の災厄・ゼロとの最終決戦、そして人類の未来へ。" }
+];
+
 let currentStoryTab = "chapters";
 let activeChapterGroup = 1;
 let activeStory = null;
@@ -26,17 +42,13 @@ function cycleTextSpeed() {
   const idx = TEXT_SPEEDS.findIndex(s => s.id === curId);
   const next = TEXT_SPEEDS[(idx + 1) % TEXT_SPEEDS.length];
   state.textSpeed = next.id;
-  saveGame();
-  playSfx("tap");
-  updateNovelControlButtons();
+  saveGame(); playSfx("tap"); updateNovelControlButtons();
   showToast(`会話スピード：${next.label}`);
 }
 
 function toggleStoryAuto() {
   storyAutoOn = !storyAutoOn;
-  clearTimeout(autoStoryTimer);
-  playSfx("tap");
-  updateNovelControlButtons();
+  clearTimeout(autoStoryTimer); playSfx("tap"); updateNovelControlButtons();
   if (storyAutoOn && activeStory && !isTyping) scheduleAutoAdvance();
 }
 
@@ -51,37 +63,42 @@ function updateNovelControlButtons() {
 }
 
 function stopNovelTimers() {
-  clearInterval(typeTimer);
-  clearTimeout(autoStoryTimer);
-  typeTimer = null;
-  autoStoryTimer = null;
-  isTyping = false;
+  clearInterval(typeTimer); clearTimeout(autoStoryTimer);
+  typeTimer = null; autoStoryTimer = null; isTyping = false;
 }
 
-function getStoryCh1() {
-  const a = window.MF_STORY_CH1_A || [];
-  const b = window.MF_STORY_CH1_B || [];
-  return [...a, ...b];
-}
-
-function getStoryCh2() {
-  const a = window.MF_STORY_CH2_A || [];
-  const b = window.MF_STORY_CH2_B || [];
-  return a.length > 0 ? [...a, ...b] : (window.MF_STORY_CH2 || []);
+function getChapterEpisodes(num) {
+  const a = window[`MF_STORY_CH${num}_A`] || [];
+  const b = window[`MF_STORY_CH${num}_B`] || [];
+  if (a.length > 0 || b.length > 0) return [...a, ...b];
+  return window[`MF_STORY_CH${num}`] || [];
 }
 
 function getStoryChapters() {
-  return [...getStoryCh1(), ...getStoryCh2()];
+  const all = [];
+  STORY_CHAPTER_META.forEach(m => {
+    if (m.num <= PUBLISHED_MAX_CHAPTER) all.push(...getChapterEpisodes(m.num));
+  });
+  return all;
 }
 
-function isCh1Completed() {
-  return (state?.clearedStories || []).includes("ch1_ep20");
+function isChapterUnlockedForPlayer(meta) {
+  if (meta.num > PUBLISHED_MAX_CHAPTER) return false;
+  if (!meta.reqPrev) return true;
+  return (state?.clearedStories || []).includes(meta.reqPrev);
 }
 
 function selectChapterGroup(num) {
-  if (num === 2 && !isCh1Completed()) {
+  const meta = STORY_CHAPTER_META.find(m => m.num === num);
+  if (!meta) return;
+  if (num > PUBLISHED_MAX_CHAPTER) {
     playSfx("tap");
-    showToast("🔒 第1章・第二十話『決戦！新緑の主モス・ベヒーモス』を踏破すると解放されます");
+    showToast(`🔜 ${meta.title} は今後の大型アップデートで解放予定です！`);
+    return;
+  }
+  if (!isChapterUnlockedForPlayer(meta)) {
+    playSfx("tap");
+    showToast(`🔒 第${num - 1}章・第二十話を踏破すると解放されます`);
     return;
   }
   activeChapterGroup = num;
@@ -134,37 +151,42 @@ function setStoryTab(tab) { stopNovelTimers(); currentStoryTab = tab; activeStor
 
 function renderChapterList() {
   const cleared = state.clearedStories || [];
-  const ch1 = getStoryCh1();
-  const ch2 = getStoryCh2();
-  const ch2Unlocked = isCh1Completed();
-  if (activeChapterGroup === 2 && !ch2Unlocked) activeChapterGroup = 1;
+  if (activeChapterGroup > PUBLISHED_MAX_CHAPTER) activeChapterGroup = 1;
+  const curMeta = STORY_CHAPTER_META.find(m => m.num === activeChapterGroup) || STORY_CHAPTER_META[0];
+  if (!isChapterUnlockedForPlayer(curMeta)) activeChapterGroup = 1;
 
-  const list = activeChapterGroup === 2 ? ch2 : ch1;
+  const activeMeta = STORY_CHAPTER_META.find(m => m.num === activeChapterGroup) || STORY_CHAPTER_META[0];
+  const list = getChapterEpisodes(activeMeta.num);
   const clearCount = list.filter(c => cleared.includes(c.id)).length;
-  const titleText = activeChapterGroup === 2
-    ? "⚡ 第2章：雷鳴の峡谷『ヴォルト・キャニオン』"
-    : "🌿 第1章：新緑の廃墟『ヴェルデ平原』";
+
+  // 公開済みの章 ＋ 次の1章だけ「🔜 近日公開」としてタブ表示（運営型RPG仕様）
+  const visibleMetas = STORY_CHAPTER_META.filter(m => m.num <= Math.min(STORY_CHAPTER_META.length, PUBLISHED_MAX_CHAPTER + 1));
 
   const tabsHtml = `
-    <div class="chip-grid" style="margin-bottom:8px;">
-      <button class="select-chip ${activeChapterGroup === 1 ? "selected" : ""}" onclick="selectChapterGroup(1)">🌿 第1章（全${ch1.length}話）</button>
-      <button class="select-chip ${activeChapterGroup === 2 ? "selected" : ""}" style="${ch2Unlocked ? "" : "opacity:0.6;"}" onclick="selectChapterGroup(2)">${ch2Unlocked ? "⚡" : "🔒"} 第2章（全${ch2.length}話）</button>
+    <div class="chip-grid cols-3" style="margin-bottom:8px;">
+      ${visibleMetas.map(m => {
+        const coming = m.num > PUBLISHED_MAX_CHAPTER;
+        const unlocked = isChapterUnlockedForPlayer(m);
+        const sel = m.num === activeMeta.num;
+        return `
+          <button class="select-chip ${sel ? "selected" : ""}" style="${coming || !unlocked ? "opacity:0.6;" : ""}" onclick="selectChapterGroup(${m.num})">
+            ${coming ? "🔜" : (unlocked ? m.icon : "🔒")} 第${m.num}章${coming ? "<br><span style='font-size:9px;'>近日公開</span>" : ""}
+          </button>
+        `;
+      }).join("")}
     </div>
     <div class="card" style="padding:10px; margin-bottom:8px; background:var(--surface-sub);">
       <div class="top-row">
-        <strong style="font-size:12.5px;">${titleText}</strong>
+        <strong style="font-size:12.5px;">${activeMeta.icon} ${activeMeta.title}</strong>
         <span class="rank-pill">${clearCount} / ${list.length}話</span>
       </div>
-      <div style="font-size:10.5px; color:var(--muted); margin-top:3px;">
-        ${activeChapterGroup === 1 ? "百年間霧に閉ざされた大地を歩み、第7小隊の物語を紡ごう。" : "雷雲渦巻く峡谷の奥で、黄金の異変の真相に迫る。"}
-      </div>
+      <div style="font-size:10.5px; color:var(--muted); margin-top:3px;">${activeMeta.desc}</div>
     </div>
   `;
 
   document.getElementById("story-chapter-list").innerHTML = tabsHtml + list.map(ch => {
     const isCleared = cleared.includes(ch.id);
-    // 第2章1話は必ず第1章・第二十話クリアを必須とする二重ガード
-    const req = ch.id === "ch2_ep1" ? "ch1_ep20" : ch.reqClear;
+    const req = ch.reqClear;
     const locked = !!(req && !cleared.includes(req));
     const enemy = ch.battleEnemyId ? (window.MF_DATA.ENEMIES || []).find(e => e.id === ch.battleEnemyId) : null;
     const iconTag = enemy ? `⚔️ ${enemy.name}` : "💬 物語";
@@ -191,8 +213,7 @@ function renderChapterList() {
 function startStoryChapter(chId, isEpilogue = false) {
   const ch = getStoryChapters().find(c => c.id === chId);
   if (!ch) return;
-  const req = ch.id === "ch2_ep1" ? "ch1_ep20" : ch.reqClear;
-  if (!isEpilogue && req && !(state.clearedStories || []).includes(req)) {
+  if (!isEpilogue && ch.reqClear && !(state.clearedStories || []).includes(ch.reqClear)) {
     showToast("🔒 前のエピソードを踏破すると解放されます");
     return;
   }
@@ -255,7 +276,6 @@ function renderNovelScene() {
   const nextBtn = document.getElementById("btn-novel-next");
   nextBtn.style.display = "block";
   nextBtn.textContent = "……";
-
   startTypewriter(text);
 }
 
@@ -271,10 +291,7 @@ function startTypewriter(fullText) {
   typeTimer = setInterval(() => {
     pos += 1;
     textEl.textContent = fullText.slice(0, pos);
-    if (pos >= fullText.length) {
-      clearInterval(typeTimer); typeTimer = null; isTyping = false;
-      onTypewriterFinished();
-    }
+    if (pos >= fullText.length) { clearInterval(typeTimer); typeTimer = null; isTyping = false; onTypewriterFinished(); }
   }, spd.ms);
 }
 
@@ -308,15 +325,12 @@ function onTypewriterFinished() {
   if (!isLast) nextBtn.textContent = "次へ ▶";
   else if (!isEpilogue && chapter.battleEnemyId) nextBtn.textContent = "⚔️ 戦闘へ突入する！";
   else nextBtn.textContent = "✨ 物語を終える ▶";
-
   if (storyAutoOn && !isLast) scheduleAutoAdvance();
 }
 
 function scheduleAutoAdvance() {
   clearTimeout(autoStoryTimer);
-  autoStoryTimer = setTimeout(() => {
-    if (storyAutoOn && activeStory && !isTyping) advanceNovelScene();
-  }, getTextSpeedObj().autoWait);
+  autoStoryTimer = setTimeout(() => { if (storyAutoOn && activeStory && !isTyping) advanceNovelScene(); }, getTextSpeedObj().autoWait);
 }
 
 function openStoryBacklog() {
@@ -391,6 +405,7 @@ function completeStoryChapter(ch) {
     if (ch.id === "ch1_ep3") unlockMsg = " ／ フレンド通信が利用可能に！";
     if (ch.id === "ch1_ep4") unlockMsg = " ／ キャンプ＆クラフト設備が稼働！";
     if (ch.id === "ch1_ep20") unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
+    if (ch.id === "ch2_ep20" && PUBLISHED_MAX_CHAPTER >= 3) unlockMsg = " ／ 『❄️第3章』解放！";
     showToast(`📖 ${ch.chapter}踏破！💎+${ch.reward.gems} / 🎟️券+2${unlockMsg}`);
   }
 }
