@@ -70,14 +70,20 @@ function renderBattleView() {
     const partsLabel = en.parts.length ? `💥 部位：${en.parts.map(p => p.name).join("・")}` : "通常・精鋭ターゲット";
     const warn = teamPower < en.recPower ? "⚠️ 要育成・強敵" : "✅ 推奨圏内";
     const radiantStyle = en.isRadiant ? "border-color:#ffd000;" : "";
+    const thumb = window.MF_SPRITES.enemyHTML ? window.MF_SPRITES.enemyHTML(en, "thumb") : "";
     return `
       <div class="card" style="padding:10px; margin-bottom:8px; ${radiantStyle}">
-        <div class="top-row"><strong>${en.emoji} ${escapeHtml(en.name)}</strong><span class="rank-pill">${en.rank}</span></div>
-        <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin:4px 0;">
-          <span class="tag">討伐 ${log.kills}体</span>
-          <span style="font-size:10px; font-weight:900;">推奨戦力 ${en.recPower}（${warn}）</span>
+        <div style="display:flex; gap:9px; align-items:center;">
+          ${thumb}
+          <div style="flex:1; min-width:0;">
+            <div class="top-row"><strong style="font-size:12.5px;">${escapeHtml(en.name)}</strong><span class="rank-pill">${en.rank}</span></div>
+            <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin:3px 0;">
+              <span class="tag">討伐 ${log.kills}体</span>
+              <span style="font-size:10px; font-weight:900;">推奨 ${en.recPower}（${warn}）</span>
+            </div>
+            <div style="font-size:10.5px; color:var(--muted);">${partsLabel}</div>
+          </div>
         </div>
-        <div style="font-size:11px; color:var(--muted);">${partsLabel}</div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
           <span style="font-size:11px; font-weight:800;">報酬：🎟️券+${en.rewards.tickets || 1} / 💎+${en.rewards.gems}</span>
           <button class="btn-xs btn-accent2" onclick="startBattle('${en.id}')">🃏 討伐開始</button>
@@ -107,7 +113,6 @@ function startBattle(enemyId, opts = null) {
   const baseTemplate = (window.MF_DATA.ENEMIES || []).find(e => e.id === enemyId);
   if (!baseTemplate) return;
 
-  // 育成クエスト等の難易度倍率を反映した敵インスタンス生成
   const hpMult = opts?.hpMult || 1.0;
   const atkMultEn = opts?.atkMult || 1.0;
   const template = {
@@ -118,7 +123,6 @@ function startBattle(enemyId, opts = null) {
     maxStagger: Math.round(baseTemplate.maxStagger * Math.sqrt(hpMult))
   };
 
-  // 小隊平均Lvと基準Lvの差（低レベル絶対阻止メカニズム）
   const avgLv = typeof getPartyAvgLevel === "function" ? getPartyAvgLevel() : 1;
   const minReqLv = opts?.minReqLv || 0;
   const lvGap = Math.max(0, minReqLv - avgLv);
@@ -163,6 +167,13 @@ function startBattle(enemyId, opts = null) {
       : `⚔️ ${template.name} 出現！敵の予兆を見極めて戦え！`],
     resolving: false, usedAuto: false, finished: false
   };
+
+  // バトル開始時に1回だけ敵グラフィックをセット（チラつき防止）
+  const stageVisual = document.getElementById("btl-stage-emoji");
+  if (stageVisual) {
+    stageVisual.className = "stage-enemy-wrap";
+    stageVisual.innerHTML = window.MF_SPRITES.enemyHTML ? window.MF_SPRITES.enemyHTML(baseTemplate, "stage") : baseTemplate.emoji;
+  }
 
   drawCards(5);
   document.getElementById("modal-battle-result").classList.remove("active");
@@ -335,13 +346,11 @@ function executeTurnQueue() {
 
 function getLvGapOutMult() {
   if (!btl || btl.lvGap <= 0) return 1.0;
-  // Lv差1ごとに与ダメ12%減（最大94%カット：低Lvでは全く歯が立たない）
   return Math.max(0.06, 1 - btl.lvGap * 0.12);
 }
 
 function getLvGapInMult() {
   if (!btl || btl.lvGap <= 0) return 1.0;
-  // Lv差1ごとに被ダメ+28%（低Lvでは致命ダメージ）
   return 1 + btl.lvGap * 0.28;
 }
 
@@ -389,7 +398,6 @@ function resolveSingleCard(card, isThirdChain) {
       dmg = applyElementReaction(btl.attachedElement, card.element, dmg); btl.attachedElement = null;
     } else { btl.attachedElement = card.element; }
 
-    // Lv差圧倒によるダメージ軽減
     dmg = Math.max(1, Math.round(dmg * getLvGapOutMult()));
     if (btl.lvGap >= 5) stag = Math.max(2, Math.round(stag * 0.25));
 
@@ -601,7 +609,6 @@ function renderBattleHUD() {
   if (stage) {
     const baseCls = btl.enemy.isRadiant ? "stage-radiant" : (btl.isBoss ? "stage-boss" : "stage-field");
     stage.className = `battle-stage ${baseCls} ${btl.enraged || btl.lvGap > 0 ? "stage-enraged" : ""}`;
-    document.getElementById("btl-stage-emoji").textContent = btl.enemy.emoji;
   }
 
   const elTag = btl.attachedElement ? `${window.MF_DATA.ELEMENTS[btl.attachedElement].icon}付着中` : "無付着";
@@ -664,4 +671,4 @@ function renderBattleHUD() {
   }).join("");
 
   attachHandSwipeHandlers();
-                                                                       }
+}
