@@ -4,11 +4,10 @@ const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 const FEATURE_UNLOCK_RULES = {
-  friends: { reqAny: ["ch1_ep3"],  label: "第1章・第三話『紫の牙、最初の試練』踏破" },
-  camp:    { reqAny: ["ch1_ep4"],  label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  craft:   { reqAny: ["ch1_ep4"],  label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  arena:   { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" },
-  endgame: { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" }
+  friends: { reqAny: ["ch1_ep3"], label: "第1章・第三話『紫の牙、最初の試練』踏破" },
+  camp:    { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  craft:   { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  arena:   { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" }
 };
 
 let state = null;
@@ -77,9 +76,7 @@ function createDefaultSave() {
     loginBonus: null,
     monthlyPass: null,
     readNoticeIds: [],
-    towerFloor: 0,
-    towerSweepDate: "",
-    raidState: null,
+    endgame: null,
     arenaRating: 1000,
     arenaWins: 0,
     friends: [],
@@ -103,10 +100,6 @@ function loadSave() {
       ...base,
       ...parsed,
       seenOpening: !!parsed.seenOpening,
-      readNoticeIds: parsed.readNoticeIds || [],
-      towerFloor: parsed.towerFloor || 0,
-      towerSweepDate: parsed.towerSweepDate || "",
-      raidState: parsed.raidState || null,
       activeTitle: parsed.activeTitle || base.activeTitle,
       unlockedTitles: parsed.unlockedTitles || base.unlockedTitles,
       bondGifts: typeof parsed.bondGifts === "number" ? parsed.bondGifts : base.bondGifts,
@@ -130,6 +123,8 @@ function loadSave() {
       missions: parsed.missions || {},
       loginBonus: parsed.loginBonus || null,
       monthlyPass: parsed.monthlyPass || null,
+      readNoticeIds: parsed.readNoticeIds || [],
+      endgame: parsed.endgame || null,
       shopState: parsed.shopState || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
@@ -214,7 +209,7 @@ function openTabletMenu() {
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
-  if (typeof updateNoticeBadges === "function") updateNoticeBadges();
+  if (typeof updateNoticeBadge === "function") updateNoticeBadge();
   updateTabletLocks();
   updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
@@ -222,7 +217,7 @@ function openTabletMenu() {
 function closeTabletMenu() { document.getElementById("modal-tablet").classList.remove("active"); }
 
 function updateTabletLocks() {
-  ["camp", "craft", "arena", "friends", "endgame"].forEach(fid => {
+  ["camp", "craft", "arena", "friends"].forEach(fid => {
     const el = document.getElementById(`tb-lock-${fid}`);
     if (el) el.style.display = isFeatureUnlocked(fid) ? "none" : "inline-block";
   });
@@ -248,15 +243,12 @@ function updateTabletBadge() {
   const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
   const lbCnt = typeof getLoginBonusStatus === "function" ? getLoginBonusStatus().unclaimedCount : 0;
   const ntCnt = typeof getUnreadNoticeCount === "function" ? getUnreadNoticeCount() : 0;
-  const egCnt = typeof getUnclaimedEndgameCount === "function" ? getUnclaimedEndgameCount() : 0;
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
-  const egBadge = document.getElementById("home-endgame-badge");
-  if (egBadge) { egBadge.style.display = egCnt > 0 ? "inline-block" : "none"; egBadge.textContent = `${egCnt}件`; }
   const badge = document.getElementById("home-tablet-badge");
   if (badge) {
-    const total = mCnt + bCnt + dCnt + msCnt + lbCnt + ntCnt + egCnt;
+    const total = mCnt + bCnt + dCnt + msCnt + lbCnt + ntCnt;
     badge.style.display = total > 0 ? "inline-block" : "none";
     badge.textContent = total > 9 ? "9+" : String(total);
   }
@@ -353,7 +345,7 @@ function renderHome() {
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
-  if (typeof updateNoticeBadges === "function") updateNoticeBadges();
+  if (typeof updateNoticeBadge === "function") updateNoticeBadge();
   updateTabletBadge();
 
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
@@ -477,8 +469,8 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
 
-  if (typeof startBootSequence === "function") {
-    startBootSequence();
+  if (typeof startOpeningSequence === "function") {
+    startOpeningSequence(false);
   } else {
     switchView(state.initialized ? "home" : "creator");
   }
