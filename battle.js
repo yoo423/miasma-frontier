@@ -1,3 +1,21 @@
+// 👑 限定ピックアップSSRの圧倒的戦力補正（編成・詳細・戦闘・アリーナすべてに自動反映）
+(function hookLimitedPowerBoost() {
+  if (typeof window.calcCharPower === "function" && !window.calcCharPower._mfBoosted) {
+    const origCalc = window.calcCharPower;
+    const wrapped = function(charId) {
+      const base = origCalc(charId);
+      const ch = window.MF_DATA?.CHARACTERS?.[charId];
+      if (!ch) return base;
+      if (ch.limited) return Math.round(base * 1.38) + 50;
+      if (ch.rarity === "SSR") return Math.round(base * 1.12) + 15;
+      if (ch.rarity === "SR") return Math.round(base * 1.05);
+      return base;
+    };
+    wrapped._mfBoosted = true;
+    window.calcCharPower = wrapped;
+  }
+})();
+
 let btl = null;
 let battleAutoMode = false;
 let battleSpeed = 1;
@@ -109,6 +127,48 @@ function pickNextEnemyIntent(turn, prevType, enemy, enraged) {
   return { type: "attack", icon: "⚔️", name: "霧獣の連撃", dmg: Math.round(enemy.atk * mult), hint: "通常攻撃。元素反応で削るかカウンターを狙え！" };
 }
 
+function applyLimitedOpeningPassives() {
+  if (!btl) return;
+  const p = state.party || [];
+  const logs = [];
+  if (p.includes("mikoto")) {
+    const sh = Math.round(btl.teamMaxHp * 0.25);
+    btl.shield += sh; btl.attachedElement = "ice";
+    logs.push(`👑ミコト固有：氷結防壁+${sh}＆敵へ❄️氷付着！`);
+  }
+  if (p.includes("celestia")) {
+    btl.shredTurns = Math.max(btl.shredTurns, 3);
+    btl.exGauge = Math.min(95, btl.exGauge + 25);
+    logs.push("👑セレスティア固有：開幕3T防御DOWN＆EX+25%！");
+  }
+  if (p.includes("sylphy")) {
+    btl.ap = Math.min(7, btl.ap + 2);
+    drawCards(1);
+    logs.push("👑シルフィ固有：開幕AP+2＆1枚追加ドロー！");
+  }
+  if (p.includes("lily")) {
+    const sh = Math.round(btl.teamMaxHp * 0.38);
+    btl.shield += sh;
+    logs.push(`👑リリィ固有：特大聖壁+${sh}＆防壁維持率UP！`);
+  }
+  if (p.includes("marina")) {
+    if (!btl.attachedElement) btl.attachedElement = "water";
+    logs.push("👑マリナ固有：敵へ💧水付着＆部位破壊ダメ+45%！");
+  }
+  if (p.includes("iris")) {
+    btl.nextAtkMult = Math.max(btl.nextAtkMult, 1.35);
+    logs.push("👑イリス固有：開幕攻撃1.35倍＆3連チェイン極大強化！");
+  }
+  if (p.includes("serina")) {
+    btl.exGauge = Math.min(95, btl.exGauge + 12);
+    logs.push("👑セリーナ固有：毎ターン小隊HP10%回復＆EX+12%！");
+  }
+  if (logs.length > 0) {
+    logs.reverse().forEach(l => pushBattleLog(l));
+    setTimeout(() => spawnBattleFloat("👑 限定パッシブ発動!", "#ffd000"), 250);
+  }
+}
+
 function startBattle(enemyId, opts = null) {
   const baseTemplate = (window.MF_DATA.ENEMIES || []).find(e => e.id === enemyId);
   if (!baseTemplate) return;
@@ -137,11 +197,11 @@ function startBattle(enemyId, opts = null) {
   playSfx(isBoss ? "roar" : "switch");
 
   const atkMult = getCraftAtkMultiplier(opts?.extraAtkBuff || 0);
-  const hasSpotter = state.party.some(id => id === "mint" || id === "scanner");
+  const hasSpotter = state.party.some(id => id === "mint" || id === "scanner" || id === "marina");
   const members = state.party.map(id => {
     const ch = getCharProfile(id);
     const power = calcCharPower(id);
-    return { id, name: ch.name, emoji: ch.emoji, element: ch.element, atk: Math.round(power * 0.82 * atkMult), maxHp: Math.round(power * 3.6) };
+    return { id, name: ch.name, emoji: ch.emoji, element: ch.element, limited: !!ch.limited, atk: Math.round(power * 0.82 * atkMult), maxHp: Math.round(power * 3.6) };
   });
 
   const totalMaxHp = members.reduce((s, m) => s + m.maxHp, 0);
@@ -166,7 +226,7 @@ function startBattle(enemyId, opts = null) {
     drawPile: shuffleCards(rawDeck), discardPile: [], hand: [], queue: [],
     intent: pickNextEnemyIntent(1, null, template, false),
     log: [isRaid
-      ? `☄️ 極限レイド開始！5ターン以内に最大火力を叩き出せ！`
+      ? "☄️ 極限レイド開始！5ターン以内に最大火力を叩き出せ！"
       : (lvGap > 0
           ? `☠️ 警告！Lv差圧倒オーラ発動（平均Lv.${avgLv} / 基準Lv.${minReqLv}）！`
           : `⚔️ ${template.name} 出現！敵の予兆を見極めて戦え！`)],
@@ -180,6 +240,8 @@ function startBattle(enemyId, opts = null) {
   }
 
   drawCards(5);
+  applyLimitedOpeningPassives();
+
   document.getElementById("modal-battle-result").classList.remove("active");
   document.getElementById("btl-select-panel").style.display = "none";
   document.getElementById("btl-arena-panel").style.display = "block";
@@ -304,7 +366,8 @@ function buildQueuePreviewText() {
       else simEl = c.element;
     }
   });
-  if (btl.queue.length === 3) notes.push("🔥 3連チェイン(+30%)");
+  const chainPct = (state.party || []).includes("iris") ? "+55%" : "+30%";
+  if (btl.queue.length === 3) notes.push(`🔥 3連チェイン(${chainPct})`);
   return [...new Set(notes)].join(" / ") || "準備OK！「決定してチェイン発動」をタップ";
 }
 
@@ -327,7 +390,7 @@ function executeTurnQueue() {
   if (!btl || btl.resolving || btl.finished) return;
   if (btl.queue.length === 0 && !confirm("カードを1枚も出さずにターン終了しますか？")) return;
 
-  btl.resolving = true; btl.counterMult = 0; btl.nextAtkMult = 1.0;
+  btl.resolving = true; btl.counterMult = 0;
   const cardsToRun = [...btl.queue];
   btl.queue = [];
   const hasFullChain = cardsToRun.length === 3;
@@ -338,7 +401,7 @@ function executeTurnQueue() {
     if (!btl || btl.finished) return;
     if (step >= cardsToRun.length) { setTimeout(() => resolveEnemyTurn(), getStepDelay(1450)); return; }
     const card = cardsToRun[step];
-    const isHeavy = card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR";
+    const isHeavy = card.isUlt || card.isLimitedCard || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR";
     resolveSingleCard(card, hasFullChain && step === 2);
     if (!card.isUlt) btl.discardPile.push(card);
     renderBattleHUD();
@@ -360,11 +423,11 @@ function resolveSingleCard(card, isThirdChain) {
   const member = btl.members.find(m => m.id === card.charId) || btl.members[0];
   const elInfo = window.MF_DATA.ELEMENTS[card.element];
 
-  if (card.isUlt || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR") {
+  if (card.isUlt || card.isLimitedCard || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR") {
     showBattleCutin(member.id, `${card.icon} ${card.name}`, `${member.name}「いくぞ！${elInfo.name}の力！」`, elInfo.color);
   }
   if (card.draw) drawCards(card.draw);
-  if (card.apGain) btl.ap = Math.min(7, btl.ap + card.apGain);
+  if (card.apGain) btl.ap = Math.min(8, btl.ap + card.apGain);
   if (card.shredTurns) { btl.shredTurns = Math.max(btl.shredTurns, card.shredTurns); triggerBattleFx("#00e5ff", "🎯"); spawnBattleFloat("🎯 防御DOWN!", "#00e5ff"); pushBattleLog(`🎯 ${card.name}！防御DOWN！`); }
   if (card.healRatio) {
     const heal = Math.round(btl.teamMaxHp * card.healRatio);
@@ -376,20 +439,20 @@ function resolveSingleCard(card, isThirdChain) {
     btl.shield += sh; playSfx("guard"); triggerBattleFx("#00e5ff", "🛡️"); spawnBattleFloat(`🛡️ +${sh}`, "#00e5ff"); pushBattleLog(`🛡️ ${card.name}！バリア +${sh}`);
   }
   if (card.counterMult) { btl.counterMult = Math.max(btl.counterMult, card.counterMult); playSfx("guard"); pushBattleLog(`🪞 ${card.name}構え！`); }
-  if (card.nextAtkMult) { btl.nextAtkMult *= card.nextAtkMult; triggerBattleFx("#ff7b39", "🔥"); pushBattleLog(`🔥 ${card.name}！次撃威力UP！`); }
 
   if (card.power) {
-    let dmg = Math.round(member.atk * card.power * btl.nextAtkMult * (isThirdChain ? 1.3 : 1.0));
+    const chainMult = isThirdChain ? ((state.party || []).includes("iris") ? 1.55 : 1.3) : 1.0;
+    let dmg = Math.round(member.atk * card.power * btl.nextAtkMult * chainMult);
     btl.nextAtkMult = 1.0;
     let stag = card.stagger || 12;
 
     if (btl.intent.type === "guard") {
-      if (card.type === "break" || card.type === "ult") {
+      if (card.type === "break" || card.type === "ult" || card.guardBreakMult) {
         dmg = Math.round(dmg * (card.guardBreakMult || 2.2)); stag += 35;
         if (btl.lvGap < 5) btl.stunned = true;
         playSfx("break"); triggerBattleFx("#ffd000", "💥"); spawnBattleFloat("💥 装甲粉砕!", "#ffd000"); pushBattleLog(`💥 【装甲粉砕】${card.name}！`);
       } else { dmg = Math.round(dmg * 0.5); }
-    } else if (btl.intent.type === "charge" && (card.type === "break" || card.type === "ult")) {
+    } else if (btl.intent.type === "charge" && (card.type === "break" || card.type === "ult" || card.guardBreakMult)) {
       dmg = Math.round(dmg * 1.8); stag += 40;
       if (btl.lvGap < 5) btl.stunned = true;
       playSfx("break"); triggerBattleFx("#ffd000", "⚡"); spawnBattleFloat("⚡ チャージ中断!", "#ffd000"); pushBattleLog("⚡ 【チャージ中断】大技阻止！");
@@ -412,7 +475,8 @@ function resolveSingleCard(card, isThirdChain) {
 
     if (btl.targetPartIdx >= 0 && btl.parts[btl.targetPartIdx] && !btl.parts[btl.targetPartIdx].broken) {
       const part = btl.parts[btl.targetPartIdx];
-      const pMult = (part.spotted ? 1.25 : 1.0) * (btl.shredTurns > 0 ? 1.3 : 1.0);
+      const marinaBonus = (state.party || []).includes("marina") ? 1.45 : 1.0;
+      const pMult = (part.spotted ? 1.25 : 1.0) * (btl.shredTurns > 0 ? 1.3 : 1.0) * marinaBonus;
       part.hp = Math.max(0, part.hp - Math.round(dmg * pMult));
       if (part.hp === 0) {
         part.broken = true; btl.stunned = true; playSfx("break");
@@ -435,11 +499,20 @@ function resolveSingleCard(card, isThirdChain) {
     }
   }
 
+  // 攻撃後に次撃バフを乗せるカード（イリス・マリナ・セレスティア等）に対応
+  if (card.nextAtkMult) {
+    btl.nextAtkMult *= card.nextAtkMult;
+    triggerBattleFx("#ff7b39", "🔥");
+    pushBattleLog(`🔥 ${card.name}！次の攻撃威力UP！`);
+  }
+
   if (!card.isUlt) {
     btl.exGauge = Math.min(100, btl.exGauge + (card.exGain || 14) + (isThirdChain ? 15 : 0));
     if (btl.exGauge >= 100) {
       btl.exGauge = 0;
-      const ultCard = { ...window.MF_CARDS.getUltCard(state.party[0] || "protagonist"), uid: btlUidSeq++ };
+      // 限定SSRがパーティにいれば優先してその限定EX札を召喚！
+      const ultOwner = (state.party || []).find(id => window.MF_DATA.CHARACTERS[id]?.limited) || state.party[0] || "protagonist";
+      const ultCard = { ...window.MF_CARDS.getUltCard(ultOwner), uid: btlUidSeq++ };
       btl.hand.push(ultCard); playSfx("gift");
       pushBattleLog(`🌟 EX必殺札『${ultCard.name}』降臨！`);
     }
@@ -497,7 +570,6 @@ function resolveEnemyTurn() {
 
   renderBattleHUD();
 
-  // レイドは5ターン終了またはHP0でスコア集計終了
   if (btl.isRaid && (btl.teamHp <= 0 || btl.turn >= btl.raidMaxTurns)) {
     setTimeout(() => finishRaidBattle(), getStepDelay(800));
     return;
@@ -507,7 +579,17 @@ function resolveEnemyTurn() {
   setTimeout(() => {
     if (!btl || btl.finished) return;
     btl.turn += 1; if (btl.shredTurns > 0) btl.shredTurns -= 1;
-    btl.ap = btl.maxAp; btl.shield = Math.floor(btl.shield * 0.5);
+    btl.ap = btl.maxAp;
+    // リリィ編成時はバリア維持率を50%→75%へ強化
+    const keepRatio = (state.party || []).includes("lily") ? 0.75 : 0.5;
+    btl.shield = Math.floor(btl.shield * keepRatio);
+    // セリーナ編成時は毎ターン開始時にHP10%回復＆EX+12%
+    if ((state.party || []).includes("serina")) {
+      const h = Math.round(btl.teamMaxHp * 0.1);
+      btl.teamHp = Math.min(btl.teamMaxHp, btl.teamHp + h);
+      btl.exGauge = Math.min(99, btl.exGauge + 12);
+      pushBattleLog(`🌸 セリーナの歌声！小隊HP+${h}＆EX+12%！`);
+    }
     btl.intent = pickNextEnemyIntent(btl.turn, intent.type, btl.enemy, btl.enraged);
     drawCards(Math.max(2, 5 - btl.hand.length));
     btl.resolving = false; renderBattleHUD();
@@ -518,7 +600,7 @@ function resolveEnemyTurn() {
 function runAutoTurn() {
   if (!btl || btl.resolving || btl.finished || !battleAutoMode) return;
   btl.usedAuto = true; clearQueueCards();
-  const sorted = [...btl.hand].sort((a, b) => (b.isUlt ? 99 : 0) - (a.isUlt ? 99 : 0) || b.cost - a.cost);
+  const sorted = [...btl.hand].sort((a, b) => (b.isUlt ? 99 : 0) - (a.isUlt ? 99 : 0) || (b.isLimitedCard ? 50 : 0) - (a.isLimitedCard ? 50 : 0) || b.cost - a.cost);
   for (const card of sorted) { if (btl.queue.length >= 3) break; if (btl.ap >= card.cost) selectHandCard(card.uid); }
   executeTurnQueue();
 }
@@ -694,7 +776,7 @@ function renderBattleHUD() {
     const canPlay = !btl.resolving && btl.ap >= c.cost && btl.queue.length < 3;
     const typeLabel = { attack: "攻撃", break: "崩し", guard: "防御", buff: "戦術", heal: "回復", ult: "EX必殺" }[c.type] || "";
     const ch = !String(c.ownerName || "").startsWith("戦術札") ? getCharProfile(c.charId) : null;
-    const holoCls = (c.rarity === "SSR" || c.isUlt) ? "holo-card" : "";
+    const holoCls = (c.rarity === "SSR" || c.isUlt || c.isLimitedCard) ? "holo-card" : "";
     const artWindow = ch
       ? `<div class="tcg-art-box">${window.MF_SPRITES.portraitHTML(ch, "cutin")}<span class="tcg-art-badge">${c.icon}</span></div>`
       : `<div class="tcg-art-box tactic-art"><span class="tcg-big-icon">${c.icon}</span><span class="tcg-rar-badge">${c.rarity || "R"}</span></div>`;
@@ -709,4 +791,4 @@ function renderBattleHUD() {
   }).join("");
 
   attachHandSwipeHandlers();
-                                                   }
+}
