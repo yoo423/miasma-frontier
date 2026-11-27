@@ -3,12 +3,11 @@ let activeChapterGroup = 1;
 let activeStory = null;
 let expRun = null;
 
-// 文字送り速度設定（ゆっくり / ふつう / はやい / 一括）
 const TEXT_SPEEDS = [
-  { id: "slow",   label: "🐢 ゆっくり", ms: 72, autoWait: 2600 },
-  { id: "normal", label: "🚶 ふつう",   ms: 38, autoWait: 1850 },
-  { id: "fast",   label: "⚡ はやい",   ms: 16, autoWait: 1200 },
-  { id: "instant",label: "⏭ 一括",     ms: 0,  autoWait: 1500 }
+  { id: "slow",    label: "🐢 ゆっくり", ms: 72, autoWait: 2600 },
+  { id: "normal",  label: "🚶 ふつう",   ms: 38, autoWait: 1850 },
+  { id: "fast",    label: "⚡ はやい",   ms: 16, autoWait: 1200 },
+  { id: "instant", label: "⏭ 一括",     ms: 0,  autoWait: 1500 }
 ];
 
 let typeTimer = null;
@@ -62,11 +61,32 @@ function stopNovelTimers() {
 function getStoryCh1() {
   const a = window.MF_STORY_CH1_A || [];
   const b = window.MF_STORY_CH1_B || [];
-  return a.length > 0 ? [...a, ...b] : (window.MF_STORY_CH1 || []);
+  return [...a, ...b];
+}
+
+function getStoryCh2() {
+  const a = window.MF_STORY_CH2_A || [];
+  const b = window.MF_STORY_CH2_B || [];
+  return a.length > 0 ? [...a, ...b] : (window.MF_STORY_CH2 || []);
 }
 
 function getStoryChapters() {
-  return [...getStoryCh1(), ...(window.MF_STORY_CH2 || [])];
+  return [...getStoryCh1(), ...getStoryCh2()];
+}
+
+function isCh1Completed() {
+  return (state?.clearedStories || []).includes("ch1_ep20");
+}
+
+function selectChapterGroup(num) {
+  if (num === 2 && !isCh1Completed()) {
+    playSfx("tap");
+    showToast("🔒 第1章・第二十話『決戦！新緑の主モス・ベヒーモス』を踏破すると解放されます");
+    return;
+  }
+  activeChapterGroup = num;
+  playSfx("tap");
+  renderChapterList();
 }
 
 const RANDOM_EVENTS = [
@@ -115,8 +135,9 @@ function setStoryTab(tab) { stopNovelTimers(); currentStoryTab = tab; activeStor
 function renderChapterList() {
   const cleared = state.clearedStories || [];
   const ch1 = getStoryCh1();
-  const ch2 = window.MF_STORY_CH2 || [];
-  const ch2Unlocked = cleared.includes("ch1_ep20") || cleared.includes("ch1_ep10") || cleared.includes("ch1_ep8");
+  const ch2 = getStoryCh2();
+  const ch2Unlocked = isCh1Completed();
+  if (activeChapterGroup === 2 && !ch2Unlocked) activeChapterGroup = 1;
 
   const list = activeChapterGroup === 2 ? ch2 : ch1;
   const clearCount = list.filter(c => cleared.includes(c.id)).length;
@@ -126,8 +147,8 @@ function renderChapterList() {
 
   const tabsHtml = `
     <div class="chip-grid" style="margin-bottom:8px;">
-      <button class="select-chip ${activeChapterGroup === 1 ? "selected" : ""}" onclick="activeChapterGroup=1; playSfx('tap'); renderChapterList();">🌿 第1章（${ch1.length}話）</button>
-      <button class="select-chip ${activeChapterGroup === 2 ? "selected" : ""}" onclick="activeChapterGroup=2; playSfx('tap'); renderChapterList();">${ch2Unlocked ? "⚡" : "🔒"} 第2章（${ch2.length}話）</button>
+      <button class="select-chip ${activeChapterGroup === 1 ? "selected" : ""}" onclick="selectChapterGroup(1)">🌿 第1章（全${ch1.length}話）</button>
+      <button class="select-chip ${activeChapterGroup === 2 ? "selected" : ""}" style="${ch2Unlocked ? "" : "opacity:0.6;"}" onclick="selectChapterGroup(2)">${ch2Unlocked ? "⚡" : "🔒"} 第2章（全${ch2.length}話）</button>
     </div>
     <div class="card" style="padding:10px; margin-bottom:8px; background:var(--surface-sub);">
       <div class="top-row">
@@ -142,7 +163,9 @@ function renderChapterList() {
 
   document.getElementById("story-chapter-list").innerHTML = tabsHtml + list.map(ch => {
     const isCleared = cleared.includes(ch.id);
-    const locked = ch.reqClear && !cleared.includes(ch.reqClear);
+    // 第2章1話は必ず第1章・第二十話クリアを必須とする二重ガード
+    const req = ch.id === "ch2_ep1" ? "ch1_ep20" : ch.reqClear;
+    const locked = !!(req && !cleared.includes(req));
     const enemy = ch.battleEnemyId ? (window.MF_DATA.ENEMIES || []).find(e => e.id === ch.battleEnemyId) : null;
     const iconTag = enemy ? `⚔️ ${enemy.name}` : "💬 物語";
     return `
@@ -168,6 +191,11 @@ function renderChapterList() {
 function startStoryChapter(chId, isEpilogue = false) {
   const ch = getStoryChapters().find(c => c.id === chId);
   if (!ch) return;
+  const req = ch.id === "ch2_ep1" ? "ch1_ep20" : ch.reqClear;
+  if (!isEpilogue && req && !(state.clearedStories || []).includes(req)) {
+    showToast("🔒 前のエピソードを踏破すると解放されます");
+    return;
+  }
   const list = isEpilogue ? (ch.epilogue || []) : ch.scenes;
   if (!list.length) return;
   stopNovelTimers();
@@ -190,13 +218,12 @@ function triggerNovelFx(fx) {
 function renderNovelScene() {
   stopNovelTimers();
   updateNovelControlButtons();
-  const { chapter, scenes, isEpilogue, index, replyLine } = activeStory;
+  const { chapter, scenes, index, replyLine } = activeStory;
   const scene = scenes[index];
   const speakerId = replyLine ? replyLine.speaker : scene.speaker;
   const text = replyLine ? replyLine.text : scene.text;
   const isNarrator = speakerId === "narrator";
 
-  // BGM・SE・背景ムード・画面演出
   if (!replyLine) {
     if (scene.bgm && window.MF_AUDIO) window.MF_AUDIO.playBgm(scene.bgm);
     if (scene.sfx) playSfx(scene.sfx);
@@ -204,13 +231,10 @@ function renderNovelScene() {
   }
 
   const stageEl = document.getElementById("novel-stage-portrait");
-  const bgCls = scene.bg ? `nbg-${scene.bg}` : "nbg-verde_morning";
-  stageEl.className = `novel-stage ${bgCls}`;
-
+  stageEl.className = `novel-stage ${scene.bg ? `nbg-${scene.bg}` : "nbg-verde_morning"}`;
   document.getElementById("novel-chapter-title").textContent = `${chapter.chapter}：${chapter.title}`;
-  const locBar = document.getElementById("novel-location-bar");
   if (scene.loc) activeStory.lastLoc = scene.loc;
-  locBar.textContent = `📍 ${activeStory.lastLoc || chapter.subtitle}`;
+  document.getElementById("novel-location-bar").textContent = `📍 ${activeStory.lastLoc || chapter.subtitle}`;
 
   const spkEl = document.getElementById("novel-speaker-name");
   if (isNarrator) {
@@ -220,14 +244,13 @@ function renderNovelScene() {
     const ch = getCharProfile(speakerId);
     stageEl.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
     spkEl.style.display = "inline-block";
-    spkEl.textContent = `${ch.name}`;
+    spkEl.textContent = ch.name;
   }
 
   const logName = isNarrator ? "【情景】" : getCharProfile(speakerId).name;
   const lastLog = activeStory.history[activeStory.history.length - 1];
   if (!lastLog || lastLog.text !== text) activeStory.history.push({ name: logName, text });
 
-  // 選択肢とボタンは文字送り完了後に表示
   document.getElementById("novel-choices").style.display = "none";
   const nextBtn = document.getElementById("btn-novel-next");
   nextBtn.style.display = "block";
@@ -240,12 +263,7 @@ function startTypewriter(fullText) {
   currentFullText = fullText;
   const textEl = document.getElementById("novel-dialogue-text");
   const spd = getTextSpeedObj();
-
-  if (spd.ms === 0) {
-    textEl.textContent = fullText;
-    onTypewriterFinished();
-    return;
-  }
+  if (spd.ms === 0) { textEl.textContent = fullText; onTypewriterFinished(); return; }
 
   isTyping = true;
   textEl.textContent = "";
@@ -254,9 +272,7 @@ function startTypewriter(fullText) {
     pos += 1;
     textEl.textContent = fullText.slice(0, pos);
     if (pos >= fullText.length) {
-      clearInterval(typeTimer);
-      typeTimer = null;
-      isTyping = false;
+      clearInterval(typeTimer); typeTimer = null; isTyping = false;
       onTypewriterFinished();
     }
   }, spd.ms);
@@ -264,9 +280,7 @@ function startTypewriter(fullText) {
 
 function finishTypewriterImmediately() {
   if (!isTyping) return false;
-  clearInterval(typeTimer);
-  typeTimer = null;
-  isTyping = false;
+  clearInterval(typeTimer); typeTimer = null; isTyping = false;
   document.getElementById("novel-dialogue-text").textContent = currentFullText;
   onTypewriterFinished();
   return true;
@@ -300,10 +314,9 @@ function onTypewriterFinished() {
 
 function scheduleAutoAdvance() {
   clearTimeout(autoStoryTimer);
-  const wait = getTextSpeedObj().autoWait;
   autoStoryTimer = setTimeout(() => {
     if (storyAutoOn && activeStory && !isTyping) advanceNovelScene();
-  }, wait);
+  }, getTextSpeedObj().autoWait);
 }
 
 function openStoryBacklog() {
@@ -339,15 +352,13 @@ function pickStoryChoice(choiceIdx) {
 function advanceNovelScene() {
   if (!activeStory) return;
   if (finishTypewriterImmediately()) return;
-
   stopNovelTimers();
   const { chapter, scenes, isEpilogue, index } = activeStory;
   if (activeStory.replyLine) { activeStory.replyLine = null; activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
   if (index < scenes.length - 1) { activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
 
   const chRef = chapter;
-  activeStory = null;
-  storyAutoOn = false;
+  activeStory = null; storyAutoOn = false;
 
   if (isEpilogue || !chRef.battleEnemyId) {
     completeStoryChapter(chRef);
@@ -379,7 +390,7 @@ function completeStoryChapter(ch) {
     let unlockMsg = "";
     if (ch.id === "ch1_ep3") unlockMsg = " ／ フレンド通信が利用可能に！";
     if (ch.id === "ch1_ep4") unlockMsg = " ／ キャンプ＆クラフト設備が稼働！";
-    if (ch.id === "ch1_ep10" || ch.id === "ch1_ep20") unlockMsg = " ／ 対人アリーナが開放！";
+    if (ch.id === "ch1_ep20") unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
     showToast(`📖 ${ch.chapter}踏破！💎+${ch.reward.gems} / 🎟️券+2${unlockMsg}`);
   }
 }
