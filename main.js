@@ -1,14 +1,13 @@
 const SAVE_KEY = "miasma_frontier_save_v1";
-const BUILD_VERSION = "3.1.0";
 const MAX_EN = 160;
 const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 const FEATURE_UNLOCK_RULES = {
-  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『翡翠の墓標・ヴェルデ平原』クリア" },
-  camp:    { reqStory: "ch1_ep3", label: "第1章・第3話『焚き火の灯火と、割れた認識票』クリア" },
-  craft:   { reqStory: "ch1_ep3", label: "第1章・第3話『焚き火の灯火と、割れた認識票』クリア" },
-  arena:   { reqStory: "ch1_ep8", label: "第1章完結（『モス・ベヒーモス』討伐）" }
+  friends: { reqAny: ["ch1_ep3", "ch1_ep2"], label: "第1章・第三話『紫の牙、最初の試練』踏破" },
+  camp:    { reqAny: ["ch1_ep4", "ch1_ep3"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  craft:   { reqAny: ["ch1_ep4", "ch1_ep3"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  arena:   { reqAny: ["ch1_ep20", "ch1_ep10", "ch1_ep8"], label: "第1章踏破" }
 };
 
 let state = null;
@@ -34,7 +33,7 @@ function createDefaultSave() {
     lastEnTimestamp: Date.now(),
     uiTheme: "camp",
     soundOn: true,
-    debugUnlockAll: false,
+    textSpeed: "slow",
     pityCount: 0,
     pityGuaranteed: false,
     ownedChars: ["protagonist", "momo", "mint", "aoi"],
@@ -78,7 +77,9 @@ function loadSave() {
     const base = createDefaultSave();
     const validDeck = Array.isArray(parsed.tacticDeck) && parsed.tacticDeck.length >= 8 && parsed.tacticDeck.length <= 28;
     return {
-      ...base, ...parsed,
+      ...base,
+      ...parsed,
+      textSpeed: parsed.textSpeed || base.textSpeed,
       cardTickets: typeof parsed.cardTickets === "number" ? parsed.cardTickets : base.cardTickets,
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
@@ -103,16 +104,10 @@ function loadSave() {
 function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
 function isFeatureUnlocked(featureId) {
-  if (state?.debugUnlockAll) return true;
   const rule = FEATURE_UNLOCK_RULES[featureId];
   if (!rule) return true;
-  return (state?.clearedStories || []).includes(rule.reqStory);
-}
-
-function toggleDebugUnlockAll() {
-  state.debugUnlockAll = !state.debugUnlockAll;
-  saveGame(); playSfx("switch"); renderTerminalView();
-  showToast(state.debugUnlockAll ? "🔓 テスト用：全機能のストーリーロックを解除" : "🔒 通常ロックモードに戻しました");
+  const cleared = state?.clearedStories || [];
+  return (rule.reqAny || []).some(id => cleared.includes(id));
 }
 
 function updateStamina() {
@@ -135,7 +130,7 @@ function toggleSound() {
   if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
   if (state.soundOn) playSfx("switch");
   renderTopBar();
-  showToast(state.soundOn ? "🔊 BGM・効果音 ON" : "🔇 BGM・効果音 OFF");
+  showToast(state.soundOn ? "🔊 サウンド ON" : "🔇 サウンド OFF");
 }
 
 function applyTheme() { document.body.classList.toggle("theme-tactical", state.uiTheme === "tactical"); }
@@ -143,7 +138,7 @@ function applyTheme() { document.body.classList.toggle("theme-tactical", state.u
 function toggleUiTheme() {
   state.uiTheme = state.uiTheme === "camp" ? "tactical" : "camp";
   saveGame(); applyTheme(); playSfx("switch"); renderTopBar();
-  showToast(state.uiTheme === "camp" ? "🏕️ 拠点クリーンUIに切替" : "⚡ 作戦端末UIに切替");
+  showToast(state.uiTheme === "camp" ? "🏕️ 拠点表示に切替" : "⚡ 作戦表示に切替");
 }
 
 function openTabletMenu() {
@@ -168,7 +163,7 @@ function tabletGo(viewId) {
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
-    showToast(`🔒 ${rule?.label || "ストーリー進行"} で解放されます！`);
+    showToast(`🔒 ${rule?.label || "作戦進行"} で解放されます`);
     return;
   }
   closeTabletMenu();
@@ -195,7 +190,7 @@ function switchView(viewId) {
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
-    showToast(`🔒 ${rule?.label || "ストーリー進行"} で解放されます！`);
+    showToast(`🔒 ${rule?.label || "作戦進行"} で解放されます`);
     return;
   }
   playSfx("tap");
@@ -263,7 +258,7 @@ function renderTopBar() {
   document.getElementById("tb-gems").textContent = state.gems.toLocaleString();
   const tkEl = document.getElementById("tb-tickets");
   if (tkEl) tkEl.textContent = String(state.cardTickets || 0);
-  document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️ 拠点UI" : "⚡ 端末UI";
+  document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️ 拠点" : "⚡ 作戦";
   document.getElementById("btn-sound").textContent = state.soundOn ? "🔊" : "🔇";
 }
 
@@ -308,7 +303,7 @@ function renderHome() {
 
   const reactions = detectActiveReactions();
   document.getElementById("home-reactions").textContent =
-    reactions.length > 0 ? `✨ 発動可能な元素反応：${reactions.join(" / ")}` : "✨ 属性を組み合わせると元素反応が発生！";
+    reactions.length > 0 ? `✨ 発動可能な元素反応：${reactions.join(" / ")}` : "✨ 属性を組み合わせると元素反応が発生";
 }
 
 function cycleShowcase(forceId) {
@@ -341,8 +336,8 @@ function renderSquadView() {
   }).join("");
 }
 
-function setProtagonistElement(elId) { state.protagonistElement = elId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更！`); }
-function setProtagonistWeapon(wpId) { state.protagonistWeapon = wpId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更！`); }
+function setProtagonistElement(elId) { state.protagonistElement = elId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`共鳴属性を「${window.MF_DATA.ELEMENTS[elId].name}」に変更`); }
+function setProtagonistWeapon(wpId) { state.protagonistWeapon = wpId; saveGame(); playSfx("switch"); if (typeof renderCharDetailView === "function") renderCharDetailView(); showToast(`装備武器を「${window.MF_DATA.WEAPONS[wpId].name}」に変更`); }
 
 let tempStyleId = "m_cool", tempWeaponId = "sword", tempElementId = "arc";
 function renderCreatorView() { tempStyleId = state.styleId; tempWeaponId = state.protagonistWeapon; tempElementId = state.protagonistElement; document.getElementById("cr-name-input").value = state.playerName; refreshCreatorSelections(); }
@@ -356,20 +351,16 @@ function refreshCreatorSelections() {
 }
 function confirmProtagonist() {
   const rawName = document.getElementById("cr-name-input").value.trim();
-  if (!rawName) { showToast("隊長の名前を入力してください！"); return; }
+  if (!rawName) { showToast("隊長の名前を入力してください"); return; }
   state.initialized = true; state.playerName = rawName.slice(0, 12);
   state.styleId = tempStyleId; state.protagonistWeapon = tempWeaponId; state.protagonistElement = tempElementId;
   saveGame(); playSfx("gift"); switchView("home");
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = `現在のバージョン：Ver ${BUILD_VERSION}`;
-  const dbgBtn = document.getElementById("btn-debug-unlock");
-  if (dbgBtn) dbgBtn.textContent = state.debugUnlockAll ? "🔒 テスト全解放中（通常ロックに戻す）" : "🔓 テスト用：全機能のストーリーロックを解除";
-  const listEl = document.getElementById("term-history-list");
-  if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver ${BUILD_VERSION}：ガチ高難易度＆商業級ノベル演出・第1章前編リライト</strong><div style="font-size:11px; color:var(--muted);">トゲ装甲反射・致命チャージ・怒り瘴気・立ち絵見切れ修正・文字送り＆地の文＆背景7種演出を実装。</div></div>`;
-  }
+  const spd = typeof getTextSpeedObj === "function" ? getTextSpeedObj() : { label: "🐢 ゆっくり" };
+  const el = document.getElementById("term-text-speed-label");
+  if (el) el.textContent = `現在の会話スピード：${spd.label}`;
 }
 
 function redeemSerialCode() {
@@ -380,25 +371,14 @@ function redeemSerialCode() {
   state.redeemedCodes.push(code); state.gems += reward.gems; state.credits += reward.credits;
   state.en += reward.en; state.expBooks += (reward.books || 0); state.cores += (reward.cores || 0);
   saveGame(); playSfx("gift"); renderTopBar(); input.value = "";
-  showToast(`🎁 ${reward.label}を受取ました！`);
+  showToast("🎁 司令部支援物資を受取ました！");
 }
 
-async function checkAppUpdate() {
-  const statusEl = document.getElementById("term-update-status");
-  statusEl.textContent = "確認中...";
-  try {
-    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: "no-store" });
-    const info = await res.json();
-    if (info.version !== BUILD_VERSION && confirm(`最新 Ver ${info.version} に更新しますか？`)) location.reload(true);
-    else statusEl.textContent = `✅ 最新バージョン（Ver ${info.version}）で動作中です。`;
-  } catch (e) { statusEl.textContent = "確認完了"; }
-}
-function resetAllSaveData() { if (confirm("セーブデータを初期化しますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
+function resetAllSaveData() { if (confirm("記録データを初期化して最初から始めますか？")) { localStorage.removeItem(SAVE_KEY); location.reload(); } }
 function showToast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove("show"), 2600); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])); }
 
 window.addEventListener("DOMContentLoaded", () => {
-  if (window.MF_DATA) window.MF_DATA.APP_VERSION = BUILD_VERSION;
   state = loadSave();
   updateStamina();
   applyTheme();
