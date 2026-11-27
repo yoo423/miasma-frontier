@@ -4,10 +4,11 @@ const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
 const FEATURE_UNLOCK_RULES = {
-  friends: { reqAny: ["ch1_ep3"], label: "第1章・第三話『紫の牙、最初の試練』踏破" },
-  camp:    { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  craft:   { reqAny: ["ch1_ep4"], label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
-  arena:   { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" }
+  friends: { reqAny: ["ch1_ep3"],  label: "第1章・第三話『紫の牙、最初の試練』踏破" },
+  camp:    { reqAny: ["ch1_ep4"],  label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  craft:   { reqAny: ["ch1_ep4"],  label: "第1章・第四話『前線キャンプと焚き火の夜』踏破" },
+  arena:   { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" },
+  endgame: { reqAny: ["ch1_ep20"], label: "第1章・第二十話『決戦！新緑の主モス・ベヒーモス』踏破" }
 };
 
 let state = null;
@@ -20,6 +21,7 @@ function createDefaultSave() {
   ];
   return {
     initialized: false,
+    seenOpening: false,
     playerName: "ユウ",
     activeTitle: "第7小隊・新任隊長",
     unlockedTitles: ["第7小隊・新任隊長"],
@@ -73,6 +75,11 @@ function createDefaultSave() {
     huntLog: {},
     missions: {},
     loginBonus: null,
+    monthlyPass: null,
+    readNoticeIds: [],
+    towerFloor: 0,
+    towerSweepDate: "",
+    raidState: null,
     arenaRating: 1000,
     arenaWins: 0,
     friends: [],
@@ -95,6 +102,11 @@ function loadSave() {
     return {
       ...base,
       ...parsed,
+      seenOpening: !!parsed.seenOpening,
+      readNoticeIds: parsed.readNoticeIds || [],
+      towerFloor: parsed.towerFloor || 0,
+      towerSweepDate: parsed.towerSweepDate || "",
+      raidState: parsed.raidState || null,
       activeTitle: parsed.activeTitle || base.activeTitle,
       unlockedTitles: parsed.unlockedTitles || base.unlockedTitles,
       bondGifts: typeof parsed.bondGifts === "number" ? parsed.bondGifts : base.bondGifts,
@@ -117,6 +129,7 @@ function loadSave() {
       huntLog: parsed.huntLog || {},
       missions: parsed.missions || {},
       loginBonus: parsed.loginBonus || null,
+      monthlyPass: parsed.monthlyPass || null,
       shopState: parsed.shopState || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
@@ -201,6 +214,7 @@ function openTabletMenu() {
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
+  if (typeof updateNoticeBadges === "function") updateNoticeBadges();
   updateTabletLocks();
   updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
@@ -208,18 +222,15 @@ function openTabletMenu() {
 function closeTabletMenu() { document.getElementById("modal-tablet").classList.remove("active"); }
 
 function updateTabletLocks() {
-  ["camp", "craft", "arena", "friends"].forEach(fid => {
+  ["camp", "craft", "arena", "friends", "endgame"].forEach(fid => {
     const el = document.getElementById(`tb-lock-${fid}`);
     if (el) el.style.display = isFeatureUnlocked(fid) ? "none" : "inline-block";
   });
 }
 
 function tabletGo(viewId) {
-  if (viewId === "login_bonus") {
-    closeTabletMenu();
-    if (typeof openLoginBonusModal === "function") openLoginBonusModal();
-    return;
-  }
+  if (viewId === "login_bonus") { closeTabletMenu(); if (typeof openLoginBonusModal === "function") openLoginBonusModal(); return; }
+  if (viewId === "notices") { closeTabletMenu(); if (typeof openNoticeModal === "function") openNoticeModal(); return; }
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
@@ -236,12 +247,16 @@ function updateTabletBadge() {
   const dCnt = typeof getUnclaimedDexCount === "function" ? getUnclaimedDexCount() : 0;
   const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
   const lbCnt = typeof getLoginBonusStatus === "function" ? getLoginBonusStatus().unclaimedCount : 0;
+  const ntCnt = typeof getUnreadNoticeCount === "function" ? getUnreadNoticeCount() : 0;
+  const egCnt = typeof getUnclaimedEndgameCount === "function" ? getUnclaimedEndgameCount() : 0;
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
+  const egBadge = document.getElementById("home-endgame-badge");
+  if (egBadge) { egBadge.style.display = egCnt > 0 ? "inline-block" : "none"; egBadge.textContent = `${egCnt}件`; }
   const badge = document.getElementById("home-tablet-badge");
   if (badge) {
-    const total = mCnt + bCnt + dCnt + msCnt + lbCnt;
+    const total = mCnt + bCnt + dCnt + msCnt + lbCnt + ntCnt + egCnt;
     badge.style.display = total > 0 ? "inline-block" : "none";
     badge.textContent = total > 9 ? "9+" : String(total);
   }
@@ -266,6 +281,7 @@ function switchView(viewId) {
 
   if (viewId === "home") renderHome();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
+  if (viewId === "endgame" && typeof renderEndgameView === "function") renderEndgameView();
   if (viewId === "battle") {
     if (typeof setBattleSubTab === "function") setBattleSubTab(typeof currentBattleSubTab !== "undefined" ? currentBattleSubTab : "hunt");
     else if (typeof renderBattleView === "function") renderBattleView();
@@ -337,6 +353,7 @@ function renderHome() {
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   if (typeof updateLoginBonusBadge === "function") updateLoginBonusBadge();
+  if (typeof updateNoticeBadges === "function") updateNoticeBadges();
   updateTabletBadge();
 
   if (!state.ownedChars.includes(showcaseCharId)) showcaseCharId = "protagonist";
@@ -459,6 +476,10 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof syncMissions === "function") syncMissions();
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
-  switchView(state.initialized ? "home" : "creator");
-  if (state.initialized && typeof checkLoginBonusAutoOpen === "function") checkLoginBonusAutoOpen();
+
+  if (typeof startBootSequence === "function") {
+    startBootSequence();
+  } else {
+    switchView(state.initialized ? "home" : "creator");
+  }
 });
