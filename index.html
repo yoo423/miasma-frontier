@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=300" />
+  <link rel="stylesheet" href="style.css?v=310" />
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
     window.addEventListener("error", function(e) {
@@ -83,7 +83,7 @@
       </div>
     </main>
 
-    <!-- 1-B. 物語＆開拓マップ -->
+    <!-- 1-B. 商業級ノベル物語＆開拓マップ -->
     <section id="view-story" class="view">
       <div class="card">
         <div class="section-title"><span>📖 物語 ＆ 霧の開拓マップ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -102,8 +102,8 @@
           </div>
         </div>
         <div id="novel-location-bar" class="novel-loc-bar">📍 場所</div>
-        <div id="novel-stage-portrait" class="novel-stage"></div>
-        <div class="novel-box">
+        <div id="novel-stage-portrait" class="novel-stage novel-bg-field" onclick="advanceNovelScene()"></div>
+        <div id="novel-box" class="novel-box" onclick="advanceNovelScene()">
           <div id="novel-speaker-name" class="novel-speaker">発言者</div>
           <div id="novel-dialogue-text" class="novel-text"></div>
         </div>
@@ -127,34 +127,22 @@
         <div class="card" style="margin-bottom:9px;">
           <div class="section-title"><span>🏆 同時プロット読み合いアリーナ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
           <div id="arena-status-bar" style="background:var(--surface-sub); padding:8px; border-radius:10px; margin-bottom:9px;"></div>
-
-          <!-- 🌐 リアルタイム・オンライン通信対戦 -->
           <div style="background:rgba(24,184,138,0.12); border:2px solid var(--accent); border-radius:12px; padding:9px; margin-bottom:9px;">
             <strong style="font-size:12.5px;">🌐 オンライン通信対戦（離れた友達と対戦！）</strong>
             <div id="online-status-text" style="font-size:11px; color:var(--accent); font-weight:800; margin:4px 0 7px;">部屋を作って4桁番号を教えるだけで即対戦！</div>
             <button class="btn-primary" style="width:100%; margin-bottom:6px;" onclick="hostOnlineRoom()">📡 対戦ルームを作る（ホスト）</button>
-            <div style="display:flex; gap:6px;">
-              <input type="text" id="online-room-input" maxlength="4" placeholder="4桁の部屋番号" />
-              <button class="btn-accent2" style="white-space:nowrap;" onclick="joinOnlineRoom()">参加する</button>
-            </div>
+            <div style="display:flex; gap:6px;"><input type="text" id="online-room-input" maxlength="4" placeholder="4桁の部屋番号" /><button class="btn-accent2" style="white-space:nowrap;" onclick="joinOnlineRoom()">参加する</button></div>
           </div>
-
-          <button style="width:100%; padding:10px; margin-bottom:8px;" onclick="startArenaMatch('local2p')">
-            👥 1台2人・読み合い対戦（交互に端末を渡して対戦）
-          </button>
+          <button style="width:100%; padding:10px; margin-bottom:8px;" onclick="startArenaMatch('local2p')">👥 1台2人・読み合い対戦（交互に端末を渡して対戦）</button>
           <div style="font-size:12px; font-weight:900; margin:6px 0;">🤖 ランク模擬戦（レート＆🎟️パック券獲得）</div>
           <div id="arena-rival-list"></div>
         </div>
       </div>
 
       <div id="arena-board-panel" class="playmat-board" style="display:none;">
-        <div class="top-row" style="margin-bottom:6px;">
-          <strong id="arena-turn-label" style="font-size:12px; color:#ffd000;">TURN 1</strong>
-          <button class="btn-xs" onclick="exitArenaMatch()">撤退</button>
-        </div>
+        <div class="top-row" style="margin-bottom:6px;"><strong id="arena-turn-label" style="font-size:12px; color:#ffd000;">TURN 1</strong><button class="btn-xs" onclick="exitArenaMatch()">撤退</button></div>
         <div id="arena-handoff-box" class="card" style="display:none; text-align:center; padding:24px 14px;">
-          <div style="font-size:46px; margin-bottom:8px;">🔄</div>
-          <h3 style="margin:0 0 6px;">プレイヤー1の伏せセット完了！</h3>
+          <div style="font-size:46px; margin-bottom:8px;">🔄</div><h3 style="margin:0 0 6px;">プレイヤー1の伏せセット完了！</h3>
           <p style="font-size:12px; color:var(--muted); margin:0 0 14px;">手札が見えないよう端末をプレイヤー2へ渡してください。</p>
           <button class="btn-accent2" style="width:100%; padding:12px;" onclick="proceedFromHandoff()">プレイヤー2の選択を始める ▶</button>
         </div>
@@ -166,10 +154,7 @@
           <div style="font-size:10px; color:#00e5ff; font-weight:900; margin:2px 0;">▼ 自分の伏せスロット（タップで戻す）</div>
           <div id="arena-p1-slots" class="pm-chain-zones"></div>
           <div class="gauge-box" style="margin-top:6px;"><div class="gauge-label"><span id="arena-p1-label" style="color:#6fffe9;">自分HP</span></div><div class="gauge-bar"><div id="arena-p1-fill" style="background:#18b88a; width:100%;"></div></div></div>
-          <div class="top-row" style="margin:6px 0;">
-            <span id="arena-ap-label" style="font-size:11px; font-weight:900; color:#ffd000;">AP 4/4</span>
-            <button id="btn-arena-confirm" class="btn-accent2" onclick="confirmPvpPlot()">🎴 伏せ決定・オープン！</button>
-          </div>
+          <div class="top-row" style="margin:6px 0;"><span id="arena-ap-label" style="font-size:11px; font-weight:900; color:#ffd000;">AP 4/4</span><button id="btn-arena-confirm" class="btn-accent2" onclick="confirmPvpPlot()">🎴 伏せ決定・オープン！</button></div>
           <div id="arena-hand-tray" class="hand-tray"></div>
         </div>
       </div>
@@ -220,7 +205,7 @@
       </div>
     </section>
 
-    <!-- 3. 討伐バトル（FXレイヤー追加） -->
+    <!-- 3. 討伐バトル -->
     <section id="view-battle" class="view">
       <div id="btl-select-panel" class="card"><div class="section-title"><span>⚔️ 霧獣・融光種 討伐ターゲット</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="btl-enemy-list"></div></div>
       <div id="btl-arena-panel" class="playmat-board" style="display:none;">
@@ -373,25 +358,26 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="data.js?v=300"></script>
-  <script src="audio.js?v=300"></script>
-  <script src="sprites.js?v=300"></script>
-  <script src="wiki.js?v=300"></script>
-  <script src="cards_data_1.js?v=300"></script>
-  <script src="cards_data_2.js?v=300"></script>
-  <script src="cards.js?v=300"></script>
-  <script src="missions.js?v=300"></script>
-  <script src="bestiary.js?v=300"></script>
-  <script src="inventory.js?v=300"></script>
-  <script src="gacha.js?v=300"></script>
-  <script src="growth.js?v=300"></script>
-  <script src="battle.js?v=300"></script>
-  <script src="arena.js?v=300"></script>
-  <script src="friends.js?v=300"></script>
-  <script src="story_ch1.js?v=300"></script>
-  <script src="story_ch2.js?v=300"></script>
-  <script src="story.js?v=300"></script>
-  <script src="camp.js?v=300"></script>
-  <script src="main.js?v=300"></script>
+  <script src="data.js?v=310"></script>
+  <script src="audio.js?v=310"></script>
+  <script src="sprites.js?v=310"></script>
+  <script src="wiki.js?v=310"></script>
+  <script src="cards_data_1.js?v=310"></script>
+  <script src="cards_data_2.js?v=310"></script>
+  <script src="cards.js?v=310"></script>
+  <script src="missions.js?v=310"></script>
+  <script src="bestiary.js?v=310"></script>
+  <script src="inventory.js?v=310"></script>
+  <script src="gacha.js?v=310"></script>
+  <script src="growth.js?v=310"></script>
+  <script src="battle.js?v=310"></script>
+  <script src="arena.js?v=310"></script>
+  <script src="friends.js?v=310"></script>
+  <script src="story_ch1_p1.js?v=310"></script>
+  <script src="story_ch1.js?v=310"></script>
+  <script src="story_ch2.js?v=310"></script>
+  <script src="story.js?v=310"></script>
+  <script src="camp.js?v=310"></script>
+  <script src="main.js?v=310"></script>
 </body>
 </html>
