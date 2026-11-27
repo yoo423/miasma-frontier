@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=260" />
+  <link rel="stylesheet" href="style.css?v=270" />
   <script>
     window.addEventListener("error", function(e) {
       var box = document.getElementById("debug-error-box");
@@ -36,10 +36,11 @@
           <button id="btn-sound" class="btn-xs" onclick="toggleSound()">🔊</button>
         </div>
       </div>
-      <div class="resource-strip">
-        <div class="res-chip"><span>⚡ EN <strong id="tb-en">160/160</strong><span id="tb-reserve" class="res-sub">予備 +0</span></span></div>
-        <div class="res-chip"><span>🪙 <strong id="tb-credits">8,000</strong></span></div>
-        <div class="res-chip"><span>💎 <strong id="tb-gems">3,200</strong></span></div>
+      <div class="resource-strip" style="grid-template-columns:repeat(4,1fr); gap:4px;">
+        <div class="res-chip" style="padding:3px 4px; font-size:10px;"><span>⚡<strong id="tb-en">160/160</strong><span id="tb-reserve" class="res-sub">予備+0</span></span></div>
+        <div class="res-chip" style="padding:3px 4px; font-size:10px;"><span>🪙<strong id="tb-credits">8,000</strong></span></div>
+        <div class="res-chip" style="padding:3px 4px; font-size:10px;"><span>💎<strong id="tb-gems">3,200</strong></span></div>
+        <div class="res-chip" style="padding:3px 4px; font-size:10px;"><span>🎟️<strong id="tb-tickets">10</strong>枚</span></div>
       </div>
     </header>
 
@@ -73,7 +74,7 @@
       <div class="home-main-dock">
         <button class="menu-btn" onclick="switchView('deck')"><span class="menu-badge">40枚</span><span class="m-ico">🃏</span><span>デッキ</span></button>
         <button class="menu-btn" onclick="switchView('squad')"><span class="m-ico">🧑‍✈️</span><span>隊員</span></button>
-        <button class="menu-btn" onclick="switchView('gacha')"><span class="menu-badge">102種</span><span class="m-ico">🌠</span><span>スカウト</span></button>
+        <button class="menu-btn" onclick="switchView('gacha')"><span class="menu-badge">🎟️券</span><span class="m-ico">🌠</span><span>スカウト</span></button>
         <button class="menu-btn btn-primary" onclick="openTabletMenu()">
           <span id="home-tablet-badge" class="menu-badge" style="display:none;">!</span>
           <span class="m-ico">📱</span><span>タブレット</span>
@@ -81,7 +82,7 @@
       </div>
     </main>
 
-    <!-- 1-B. 長編物語（第1章・全8話）＆分岐開拓マップ -->
+    <!-- 1-B. 物語＆開拓マップ -->
     <section id="view-story" class="view">
       <div class="card">
         <div class="section-title"><span>📖 物語 ＆ 霧の開拓マップ</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -119,6 +120,20 @@
       </div>
     </section>
 
+    <!-- 1-B2. デイリー＆ウィークリー任務 -->
+    <section id="view-missions" class="view">
+      <div class="card">
+        <div class="section-title"><span>📋 デイリー＆ウィークリー任務</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="chip-grid" style="margin-bottom:8px;">
+          <button id="ms-tab-daily" class="select-chip selected" onclick="currentMissionTab='daily'; playSfx('tap'); renderMissionView();">☀️ デイリー任務</button>
+          <button id="ms-tab-weekly" class="select-chip" onclick="currentMissionTab='weekly'; playSfx('tap'); renderMissionView();">🗓️ ウィークリー任務</button>
+        </div>
+        <div id="ms-reset-note" style="font-size:11px; color:var(--muted); margin-bottom:6px;"></div>
+        <button class="btn-accent2" style="width:100%; margin-bottom:10px;" onclick="claimAllMissions()">✨ 達成済みをすべて一括受取</button>
+        <div id="ms-list"></div>
+      </div>
+    </section>
+
     <!-- 1-C. 攻略Wiki -->
     <section id="view-wiki" class="view">
       <div class="card">
@@ -128,10 +143,10 @@
       </div>
     </section>
 
-    <!-- 1-D. 霧獣調査ノート -->
+    <!-- 1-D. 霧獣調査ノート（全22種） -->
     <section id="view-bestiary" class="view">
       <div class="card">
-        <div class="section-title"><span>📓 霧獣調査ノート（初討伐・生態記録）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="section-title"><span>📓 霧獣調査ノート（全22種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="bestiary-summary" style="font-size:11px; background:var(--surface-sub); padding:7px 9px; border-radius:9px; margin-bottom:8px;"></div>
         <div id="bestiary-list"></div>
       </div>
@@ -174,10 +189,10 @@
       </div>
     </section>
 
-    <!-- 3. RPG × 戦術プレイマット・カードバトル -->
+    <!-- 3. 戦術プレイマット・カードバトル -->
     <section id="view-battle" class="view">
       <div id="btl-select-panel" class="card">
-        <div class="section-title"><span>⚔️ 霧獣・融光種 討伐ターゲット</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="section-title"><span>⚔️ 霧獣・融光種 討伐ターゲット（全22種）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="btl-enemy-list"></div>
       </div>
 
@@ -191,13 +206,10 @@
           </div>
         </div>
         <div id="btl-enemy-status" style="font-size:10.5px; font-weight:900; color:var(--miasma); margin-top:2px;"></div>
-
-        <!-- RPGエンカウント領域（敵ジオラマ） -->
         <div id="btl-stage" class="battle-stage stage-field">
           <div id="btl-stage-emoji" class="stage-enemy-emoji">🐺</div>
           <div id="btl-float-layer" class="float-layer"></div>
         </div>
-
         <div class="gauge-box">
           <div class="gauge-label"><span id="btl-hp-text">HP</span><span id="btl-stagger-text">体勢 0</span></div>
           <div class="gauge-bar"><div id="btl-hp-fill" style="background:#ff595e; width:100%;"></div></div>
@@ -205,27 +217,21 @@
         <div class="gauge-bar" style="height:6px; margin-bottom:4px;"><div id="btl-stagger-fill" style="background:#ffd000; width:0%;"></div></div>
         <div id="btl-parts-row" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;"></div>
         <div id="btl-intent-box" class="intent-banner"></div>
-
-        <!-- プレイマット中央：山札 / 3連チェインゾーン / 捨て札 -->
         <div class="pm-field-row">
           <div class="pm-pile"><span>山札</span><strong id="btl-deck-count">15</strong><span>枚</span></div>
           <div id="btl-chain-slots" class="pm-chain-zones"></div>
           <div class="pm-pile"><span>捨て札</span><strong id="btl-discard-count">0</strong><span>枚</span></div>
         </div>
-
         <div id="btl-preview" class="battle-popup">👆 手札を上にスワイプ または タップでマットへ配置</div>
         <div id="btl-log-box" class="battle-log-box"></div>
-
         <div style="display:grid; grid-template-columns:2fr 1fr; gap:6px; margin:5px 0;">
           <button id="btn-btl-exec" class="btn-accent2" onclick="executeTurnQueue()">🔥 決定してチェイン発動！</button>
           <button onclick="clearQueueCards()">↩ やり直す</button>
         </div>
-
         <div class="gauge-box">
           <div class="gauge-label"><span id="btl-team-hp-text">小隊HP</span><span id="btl-shield-text"></span></div>
           <div class="gauge-bar"><div id="btl-team-hp-fill" style="background:#18b88a; width:100%;"></div></div>
         </div>
-
         <div class="ap-ex-row">
           <div id="btl-ap-orbs">AP 4/4</div>
           <div class="ex-mini-bar">
@@ -233,13 +239,11 @@
             <div class="gauge-bar" style="height:6px;"><div id="btl-ex-fill" style="background:linear-gradient(90deg,#ffd000,#b565ff); width:0%;"></div></div>
           </div>
         </div>
-
-        <!-- ポケカ風・縦型TCGカード手札トレイ（横スライド＆上スワイプで場に出す） -->
         <div id="btl-hand-tray" class="hand-tray"></div>
       </div>
     </section>
 
-    <!-- 4. 隊員編成・詳細 -->
+    <!-- 4〜9. 隊員・スカウト・隊長設定・配布箱・倉庫・キャンプ・クラフト・システム -->
     <section id="view-squad" class="view">
       <div class="card">
         <div class="section-title"><span>🛡️ 4人パーティ編成（枠タップで入替）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -258,10 +262,7 @@
         <div class="top-row">
           <button class="btn-xs" onclick="cycleDetailChar(-1)">◀ 前</button>
           <strong id="cd-header-title" style="font-size:13px;">隊員詳細</strong>
-          <div style="display:flex; gap:5px;">
-            <button class="btn-xs" onclick="cycleDetailChar(1)">次 ▶</button>
-            <button class="btn-xs btn-primary" onclick="switchView('squad')">一覧へ</button>
-          </div>
+          <div style="display:flex; gap:5px;"><button class="btn-xs" onclick="cycleDetailChar(1)">次 ▶</button><button class="btn-xs btn-primary" onclick="switchView('squad')">一覧へ</button></div>
         </div>
       </div>
       <div id="cd-hero-box" class="card"></div>
@@ -277,21 +278,19 @@
       </div>
     </section>
 
-    <!-- 5. スカウト -->
     <section id="view-gacha" class="view">
       <div class="card">
-        <div class="section-title"><span>🌠 軌道スカウト（隊員＆全102種カード）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="section-title"><span>🌠 軌道スカウト（隊員💎＆カード🎟️）</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="gacha-banner-tabs" class="chip-grid" style="margin-bottom:8px;"></div>
         <div id="gacha-banner-card" style="background:var(--surface-sub); border:2px solid var(--border); border-radius:14px; padding:10px;"></div>
         <div id="gacha-pity-text" style="font-size:11px; font-weight:900; color:var(--miasma); margin:8px 0;"></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <button id="btn-gacha-1" onclick="executeScout(1)">1回招集<br><span style="font-size:11px;">💎 160</span></button>
-          <button id="btn-gacha-10" class="btn-accent2" onclick="executeScout(10)">10回招集<br><span style="font-size:11px;">💎 1,600</span></button>
+          <button id="btn-gacha-1" onclick="executeScout(1)">1回招集</button>
+          <button id="btn-gacha-10" class="btn-accent2" onclick="executeScout(10)">10回招集</button>
         </div>
       </div>
     </section>
 
-    <!-- 6〜9. 隊長設定・配布箱・倉庫・キャンプ・クラフト・システム -->
     <section id="view-creator" class="view">
       <div class="card">
         <div class="section-title"><span>🪪 第7クリアラー小隊・隊長登録</span><button class="btn-xs" onclick="switchView('home')">閉じる</button></div>
@@ -354,16 +353,14 @@
       <div class="card">
         <div class="section-title"><span>⚙️ システム・アップデート</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
         <div id="term-version" style="font-size:12px; font-weight:900; margin-bottom:6px;"></div>
-        <button class="btn-primary" style="width:100%;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
+        <button class="btn-primary" style="width:100%; margin-bottom:8px;" onclick="checkAppUpdate()">🔄 最新アップデートを確認する</button>
+        <button id="btn-debug-unlock" style="width:100%;" onclick="toggleDebugUnlockAll()">🔓 テスト用：全機能のストーリーロックを解除</button>
         <div id="term-update-status" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
       </div>
       <div class="card"><div class="section-title"><span>📜 更新履歴</span></div><div id="term-history-list"></div></div>
       <div class="card">
         <div class="section-title"><span>🎁 シリアルコード入力</span></div>
-        <div style="display:flex; gap:6px;">
-          <input type="text" id="term-code-input" placeholder="コードを入力" />
-          <button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button>
-        </div>
+        <div style="display:flex; gap:6px;"><input type="text" id="term-code-input" placeholder="コードを入力" /><button class="btn-accent2" style="white-space:nowrap;" onclick="redeemSerialCode()">受取</button></div>
       </div>
       <div class="card"><div class="section-title"><span>⚠️ データ管理</span></div><button style="width:100%;" onclick="resetAllSaveData()">セーブデータを初期化する</button></div>
     </section>
@@ -377,16 +374,19 @@
     </div>
   </div>
 
-  <!-- 📱 タブレットメニューモーダル -->
+  <!-- 📱 タブレットメニューモーダル（任務・フレンド・対人アリーナを追加） -->
   <div id="modal-tablet" class="modal-overlay" onclick="closeTabletMenu()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="top-row"><strong style="font-size:15px;">📱 第7小隊・作戦タブレット</strong><button class="btn-xs" onclick="closeTabletMenu()">✕ 閉じる</button></div>
       <div class="tablet-grid">
+        <button class="menu-btn btn-accent2" onclick="tabletGo('missions')"><span id="home-mission-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📋</span><span>任務</span></button>
         <button class="menu-btn btn-primary" onclick="tabletGo('wiki')"><span class="menu-badge">コツ</span><span class="m-ico">📘</span><span>攻略Wiki</span></button>
         <button class="menu-btn" onclick="tabletGo('card_dex')"><span id="home-dex-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">📚</span><span>カード図鑑</span></button>
         <button class="menu-btn" onclick="tabletGo('bestiary')"><span id="home-bestiary-badge" class="menu-badge" style="display:none;">NEW</span><span class="m-ico">📓</span><span>調査ノート</span></button>
-        <button class="menu-btn" onclick="tabletGo('camp')"><span class="m-ico">🏭</span><span>キャンプ</span></button>
-        <button class="menu-btn" onclick="tabletGo('craft')"><span class="m-ico">🔨</span><span>クラフト</span></button>
+        <button class="menu-btn" onclick="tabletGo('camp')"><span id="tb-lock-camp" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🏭</span><span>キャンプ</span></button>
+        <button class="menu-btn" onclick="tabletGo('craft')"><span id="tb-lock-craft" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🔨</span><span>クラフト</span></button>
+        <button class="menu-btn" onclick="tabletGo('arena')"><span id="tb-lock-arena" class="menu-badge" style="display:none;">🔒1章</span><span class="m-ico">🏆</span><span>対人戦</span></button>
+        <button class="menu-btn" onclick="tabletGo('friends')"><span id="tb-lock-friends" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🤝</span><span>フレンド</span></button>
         <button class="menu-btn" onclick="tabletGo('bag')"><span class="m-ico">🎒</span><span>倉庫</span></button>
         <button class="menu-btn" onclick="tabletGo('mail')"><span id="home-mail-badge" class="menu-badge" style="display:none;">NEW</span><span class="m-ico">🎁</span><span>配布箱</span></button>
         <button class="menu-btn" onclick="tabletGo('creator')"><span class="m-ico">🪪</span><span>隊長設定</span></button>
@@ -396,9 +396,7 @@
   </div>
 
   <!-- 🏆 戦闘終了・画面中央リザルトモーダル -->
-  <div id="modal-battle-result" class="modal-overlay">
-    <div class="modal-box"><div id="btl-result-modal-body"></div></div>
-  </div>
+  <div id="modal-battle-result" class="modal-overlay"><div class="modal-box"><div id="btl-result-modal-body"></div></div></div>
 
   <!-- 🃏 分かりやすいカード詳細モーダル -->
   <div id="modal-card-detail" class="modal-overlay" onclick="closeCardDetailModal()">
@@ -461,21 +459,22 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="data.js?v=260"></script>
-  <script src="audio.js?v=260"></script>
-  <script src="sprites.js?v=260"></script>
-  <script src="wiki.js?v=260"></script>
-  <script src="cards_data_1.js?v=260"></script>
-  <script src="cards_data_2.js?v=260"></script>
-  <script src="cards.js?v=260"></script>
-  <script src="bestiary.js?v=260"></script>
-  <script src="inventory.js?v=260"></script>
-  <script src="gacha.js?v=260"></script>
-  <script src="growth.js?v=260"></script>
-  <script src="battle.js?v=260"></script>
-  <script src="story_ch1.js?v=260"></script>
-  <script src="story.js?v=260"></script>
-  <script src="camp.js?v=260"></script>
-  <script src="main.js?v=260"></script>
+  <script src="data.js?v=270"></script>
+  <script src="audio.js?v=270"></script>
+  <script src="sprites.js?v=270"></script>
+  <script src="wiki.js?v=270"></script>
+  <script src="cards_data_1.js?v=270"></script>
+  <script src="cards_data_2.js?v=270"></script>
+  <script src="cards.js?v=270"></script>
+  <script src="missions.js?v=270"></script>
+  <script src="bestiary.js?v=270"></script>
+  <script src="inventory.js?v=270"></script>
+  <script src="gacha.js?v=270"></script>
+  <script src="growth.js?v=270"></script>
+  <script src="battle.js?v=270"></script>
+  <script src="story_ch1.js?v=270"></script>
+  <script src="story.js?v=270"></script>
+  <script src="camp.js?v=270"></script>
+  <script src="main.js?v=270"></script>
 </body>
 </html>
