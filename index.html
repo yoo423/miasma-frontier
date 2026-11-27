@@ -390,6 +390,39 @@
     <section id="view-camp" class="view"><div class="card"><div class="section-title"><span>🏭 前線キャンプ・自動生産ライン</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="camp-pending-box" style="background:var(--surface-sub); padding:10px; border-radius:12px; margin-bottom:10px;"></div><div style="font-size:12px; font-weight:900; margin-bottom:6px;">⚙️ 工場設備の強化</div><div id="camp-facility-list"></div></div><div class="card"><div class="section-title"><span>🐾 モンスター生態リンク</span></div><div id="camp-beast-grid" class="chip-grid"></div></div></section>
     <section id="view-craft" class="view"><div class="card"><div class="section-title"><span>🍳 タイミング調理ミニゲーム</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div><div id="craft-buff-status" style="font-size:11px; font-weight:900; color:var(--accent); margin-bottom:8px;"></div><div style="position:relative; height:22px; background:var(--surface-sub); border:2px solid var(--border); border-radius:999px; overflow:hidden; margin-bottom:8px;"><div style="position:absolute; left:38%; width:24%; height:100%; background:rgba(24,184,138,0.45);"></div><div id="cook-cursor" style="position:absolute; left:0%; top:0; width:6px; height:100%; background:#ff4d5a;"></div></div><button id="btn-cook-action" class="btn-primary" style="width:100%;" onclick="startCookingGame()">🍳 キャンプ飯を作る（無料）</button></div><div class="card"><div class="section-title"><span>🔨 武器鍛造・狩猟ガジェット作成</span></div><div id="craft-recipe-list"></div></div></section>
 
+        <!-- 1-B5. 💌 公式意見箱＆受信通知 -->
+    <section id="view-feedback" class="view">
+      <div class="card" style="margin-bottom:8px;">
+        <div class="section-title"><span>💌 公式意見箱 ＆ 通知</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
+        <div class="chip-grid">
+          <button id="fb-tab-send" class="select-chip selected" onclick="currentFeedbackTab='send'; playSfx('tap'); renderFeedbackView();">✍️ 意見を送る</button>
+          <button id="fb-tab-inbox" class="select-chip" onclick="currentFeedbackTab='inbox'; playSfx('tap'); renderFeedbackView();">🔔 送信・通知履歴<span id="fb-inbox-badge"></span></button>
+        </div>
+      </div>
+
+      <div id="fb-send-panel" class="card">
+        <div class="top-row" style="margin-bottom:8px;">
+          <strong style="font-size:12px;">🔔 端末プッシュ通知設定</strong>
+          <button class="btn-xs btn-primary" onclick="requestBrowserNotificationPerm()">通知を許可する</button>
+        </div>
+        <label style="font-size:11.5px; font-weight:900;">項目カテゴリ</label>
+        <select id="fb-cat-select" style="margin:4px 0 9px;">
+          <option value="ご意見・感想">ご意見・感想</option>
+          <option value="バランス・難易度">バランス・難易度</option>
+          <option value="ストーリー・キャラ">ストーリー・キャラ</option>
+          <option value="不具合報告">不具合報告</option>
+        </select>
+        <label style="font-size:11.5px; font-weight:900;">メッセージ内容</label>
+        <textarea id="fb-msg-input" rows="4" maxlength="400" placeholder="改善してほしい点や感想を入力してください" style="width:100%; font-family:inherit; font-weight:800; font-size:13px; padding:9px 11px; border-radius:12px; border:2.5px solid var(--border); background:var(--surface-sub); color:var(--ink); margin:4px 0 10px; box-sizing:border-box;"></textarea>
+        <button class="btn-accent2" style="width:100%; padding:12px; font-size:14px;" onclick="submitOfficialFeedback()">📨 意見を送信して通知を送る</button>
+      </div>
+
+      <div id="fb-inbox-panel" class="card" style="display:none;">
+        <div class="section-title"><span>🔔 送信＆通知ログ</span></div>
+        <div id="fb-inbox-list"></div>
+      </div>
+    </section>
+
     <section id="view-terminal" class="view">
       <div class="card">
         <div class="section-title"><span>⚙️ 端末設定</span><button class="btn-xs" onclick="switchView('home')">← 拠点へ</button></div>
@@ -451,6 +484,8 @@
         <button class="menu-btn" onclick="tabletGo('mail')"><span id="home-mail-badge" class="menu-badge" style="display:none;">NEW</span><span class="m-ico">🎁</span><span>配布箱</span></button>
         <button class="menu-btn" onclick="tabletGo('creator')"><span class="m-ico">🪪</span><span>隊長設定</span></button>
         <button class="menu-btn" onclick="tabletGo('terminal')"><span class="m-ico">⚙️</span><span>端末設定</span></button>
+        <button class="menu-btn btn-primary" onclick="tabletGo('feedback')"><span id="tablet-feedback-badge" class="menu-badge" style="display:none;">!</span><span class="m-ico">💌</span><span>意見箱</span></button>
+
       </div>
     </div>
   </div>
@@ -501,7 +536,7 @@
   <script src="wiki.js?v=380"></script>
   <script src="cards_data_1.js?v=380"></script>
   <script src="cards_data_2.js?v=380"></script>
-  <script src="cards.js?v=420"></script>
+  <script src="cards.js?v=430"></script>
   <script src="events_data.js?v=410"></script>
   <script src="events.js?v=410"></script>
   <script src="login_bonus.js?v=380"></script>
@@ -511,7 +546,7 @@
   <script src="bonds.js?v=380"></script>
   <script src="bestiary.js?v=380"></script>
   <script src="inventory.js?v=380"></script>
-  <script src="gacha.js?v=410"></script>
+  <script src="gacha.js?v=430"></script>
   <script src="growth.js?v=380"></script>
   <script src="battle.js?v=420"></script>
   <script src="endgame.js?v=380"></script>
@@ -528,5 +563,6 @@
   <script src="story.js?v=390"></script>
   <script src="camp.js?v=380"></script>
   <script src="main.js?v=410"></script>
+  <script src="feedback.js?v=430"></script>
 </body>
 </html>
