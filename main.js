@@ -78,6 +78,7 @@ function createDefaultSave() {
     readNoticeIds: [],
     endgame: null,
     eventProgress: {},
+    feedbackBox: [],
     arenaRating: 1000,
     arenaWins: 0,
     friends: [],
@@ -127,6 +128,7 @@ function loadSave() {
       readNoticeIds: parsed.readNoticeIds || [],
       endgame: parsed.endgame || null,
       eventProgress: parsed.eventProgress || {},
+      feedbackBox: parsed.feedbackBox || [],
       shopState: parsed.shopState || null,
       friends: parsed.friends || [],
       materials: parsed.materials || {},
@@ -205,6 +207,7 @@ function toggleUiTheme() {
   showToast(state.uiTheme === "camp" ? "🏕️ 拠点表示に切替" : "⚡ 作戦表示に切替");
 }
 
+// ---------- 📱 タブレットメニュー（2ページ横スワイプ制御） ----------
 function openTabletMenu() {
   playSfx("switch");
   if (typeof syncMissions === "function") syncMissions();
@@ -215,8 +218,28 @@ function openTabletMenu() {
   updateTabletLocks();
   updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
+  onTabletScroll();
 }
 function closeTabletMenu() { document.getElementById("modal-tablet").classList.remove("active"); }
+
+function scrollTabletPage(pageIdx) {
+  const pager = document.getElementById("tablet-pager");
+  if (!pager) return;
+  pager.scrollTo({ left: pageIdx * pager.clientWidth, behavior: "smooth" });
+  playSfx("tap");
+}
+
+function onTabletScroll() {
+  const pager = document.getElementById("tablet-pager");
+  if (!pager || pager.clientWidth === 0) return;
+  const page = Math.round(pager.scrollLeft / pager.clientWidth);
+  const d0 = document.getElementById("tb-dot-0");
+  const d1 = document.getElementById("tb-dot-1");
+  const lbl = document.getElementById("tb-page-label");
+  if (d0) d0.classList.toggle("active", page === 0);
+  if (d1) d1.classList.toggle("active", page === 1);
+  if (lbl) lbl.textContent = page === 0 ? "1 / 2（日課・育成・図鑑）" : "2 / 2（拠点・対人・設定）";
+}
 
 function updateTabletLocks() {
   ["camp", "craft", "arena", "friends"].forEach(fid => {
@@ -245,8 +268,6 @@ function updateTabletBadge() {
   const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
   const lbCnt = typeof getLoginBonusStatus === "function" ? getLoginBonusStatus().unclaimedCount : 0;
   const ntCnt = typeof getUnreadNoticeCount === "function" ? getUnreadNoticeCount() : 0;
-  const fbCnt = typeof getUnreadFeedbackCount === "function" ? getUnreadFeedbackCount() : 0;
-
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
@@ -259,7 +280,6 @@ function updateTabletBadge() {
 }
 
 function switchView(viewId) {
-  if (viewId === "feedback" && typeof renderFeedbackView === "function") renderFeedbackView();
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
@@ -271,9 +291,15 @@ function switchView(viewId) {
   const target = document.getElementById(`view-${viewId}`);
   if (target) target.classList.add("active");
 
+  // 画面ごとに全12曲の専用BGMを自動切替
   if (window.MF_AUDIO) {
-    if (viewId === "story") window.MF_AUDIO.playBgm("story");
-    else if (viewId !== "battle" && viewId !== "arena") window.MF_AUDIO.playBgm("home");
+    const bgmMap = {
+      home: "home", story: "story", bonds: "story",
+      gacha: "gacha", shop: "shop", craft: "shop", camp: "shop",
+      event: "event", endgame: "tower", arena: "pvp"
+    };
+    if (bgmMap[viewId]) window.MF_AUDIO.playBgm(bgmMap[viewId]);
+    else if (viewId !== "battle") window.MF_AUDIO.playBgm("home");
   }
 
   if (viewId === "home") renderHome();
@@ -289,6 +315,7 @@ function switchView(viewId) {
   if (viewId === "arena" && typeof renderArenaView === "function") renderArenaView();
   if (viewId === "friends" && typeof renderFriendsView === "function") renderFriendsView();
   if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
+  if (viewId === "feedback" && typeof renderFeedbackView === "function") renderFeedbackView();
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
@@ -473,7 +500,10 @@ window.addEventListener("DOMContentLoaded", () => {
   if (window.MF_CARDS?.ensureDeckSlots) window.MF_CARDS.ensureDeckSlots();
   updateStamina();
   applyTheme();
-  if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
+  if (window.MF_AUDIO) {
+    window.MF_AUDIO.setEnabled(state.soundOn);
+    window.MF_AUDIO.playBgm("title");
+  }
   if (typeof syncMissions === "function") syncMissions();
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
