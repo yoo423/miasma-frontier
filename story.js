@@ -2,130 +2,9 @@ let currentStoryTab = "chapters";
 let activeStory = null;
 let expRun = null;
 
-const STORY_CHAPTERS = [
-  {
-    id: "ch0",
-    title: "序章：方舟都市リベルタの誓い",
-    subtitle: "プロローグ（会話劇のみ・初回報酬あり）",
-    battleEnemyId: null,
-    reward: { gems: 160, credits: 2000, books: 5, cores: 1 },
-    scenes: [
-      { speaker: "chloe", text: "……百年前、未知のエネルギー結晶『アーク』の暴走によって、大地は紫色の瘴霧『ミアズマ』に覆われました。" },
-      { speaker: "chloe", text: "人類は空に浮かぶ『方舟都市リベルタ』へ逃れましたが……都市のエネルギー炉も、あと数年で限界を迎えます。" },
-      { speaker: "aoi", text: "だからこそ、私たち『クリアラー（霧祓い）』が地上へ降り、霧を晴らして人類の新しい故郷を取り戻すんです！" },
-      { speaker: "momo", text: "へへっ！難しいことはクロエさんに任せて、あたしは隊長と一緒に美味しいもの見つけて霧獣をぶっ飛ばすよ！" },
-      { speaker: "mint", text: "……モモ、降下ポッドの中で跳ねないで。酔う……。でも、隊長が指揮なら、わたしはついていくよ。" },
-      {
-        speaker: "protagonist",
-        text: "降下ハッチ開放まで残り10秒。第7クリアラー小隊、地上への第一歩を踏み出す前に一言伝えるぞ。",
-        choices: [
-          { label: "「全員生きて、この手で地上を取り戻そう！」", replySpeaker: "aoi", reply: "はいっ！隊長、どこまでもお供します！第7クリアラー小隊、降下開始！", bondChar: "aoi" },
-          { label: "「まずは安全第一。美味しいキャンプ飯を作る余裕を残そうな」", replySpeaker: "momo", reply: "やったぁ！隊長わかってるぅ！降りたらすぐ特製シチュー作るね！", bondChar: "momo" }
-        ]
-      },
-      { speaker: "chloe", text: "通信は繋いだままにしておきますね。……気をつけて。地上のミアズマは、最近奇妙な『光』を帯び始めているようです。" }
-    ]
-  },
-  {
-    id: "ch1",
-    title: "第1章：新緑の廃墟と瘴霧の狼群",
-    subtitle: "ヴェルデ平原・前線キャンプ設営作戦",
-    reqClear: "ch0",
-    battleEnemyId: "wolf_pack",
-    reward: { gems: 160, credits: 2500, books: 6, cores: 1 },
-    scenes: [
-      { speaker: "aoi", text: "降下ポッド、着地成功！ここがかつての地上都市の跡地……新緑の廃墟『ヴェルデ平原』です。" },
-      { speaker: "mint", text: "……風は涼しいけど、霧の向こうに鋭い気配が複数。目が光ってる……ミアズマ・ウルフの群れ。" },
-      { speaker: "momo", text: "おおっ、初仕事だね！あたしの炎の双剣で一気に突っ込んでいい！？" },
-      { speaker: "aoi", text: "待ってモモ！敵の攻撃を闇雲に受けるより、隊長のカードチェインで属性連携を組むのが基本よ！" },
-      {
-        speaker: "protagonist",
-        text: "ウルフの群れが包囲してきた。第7小隊、初陣の戦術を決めるぞ。",
-        choices: [
-          { label: "「モモの炎とミントの風で『拡散』コンボを叩き込む！」", replySpeaker: "momo", reply: "よっしゃあ！燃え上がれーっ！ミント、風でドーンと広げてね！", bondChar: "momo" },
-          { label: "「敵の攻撃予兆を見極めて、防御とカウンターで確実に仕留める」", replySpeaker: "mint", reply: "……冷静な指示。うん、相手の隙はわたしが全部見抜いてあげる。", bondChar: "mint" }
-        ]
-      },
-      { speaker: "aoi", text: "前線キャンプ予定地を確保します！全員、カード展開！戦闘開始！" }
-    ]
-  },
-  {
-    id: "ch2",
-    title: "第2章：紅蓮の大剣と白狐の巫女",
-    subtitle: "濃霧の遺跡・先遣エース隊との合流",
-    reqClear: "ch1",
-    battleEnemyId: "crystal_beetle",
-    reward: { gems: 240, credits: 4000, books: 10, cores: 2 },
-    scenes: [
-      { speaker: "kaede", text: "はーい、キャンプ設営おつかれさま！って、あれ？東の遺跡からすごい爆音が聞こえたよ！？" },
-      { speaker: "lunaria", text: "くっ……この甲虫、殻が硬すぎるわね！あたしの炎の大剣を弾くなんて生意気じゃない！" },
-      { speaker: "mikoto", text: "ルナリア殿、力任せに振るっては体力を消耗するだけです。……あら、あちらに新任の第7小隊の皆様が。" },
-      { speaker: "aoi", text: "前衛エースのルナリアさんに、極氷の巫女ミコトさん！？すぐ援護に入ります！" },
-      { speaker: "lunaria", text: "あんたが噂の新人隊長ね！ちょうどいい、この結晶甲虫『重装種』の硬い殻を一緒に叩き割るわよ！" },
-      { speaker: "mikoto", text: "敵は防御を固める『装甲硬化』を使ってきます。通常の攻撃は半減されますので、『崩し』札で殻を砕くのが定石ですよ。" },
-      {
-        speaker: "lunaria",
-        text: "さあ隊長、あんたの指揮を見せてもらおうじゃない！あたしとミコト、どっちを軸に攻める？",
-        choices: [
-          { label: "「ミコトの氷からルナリアの炎へ繋ぐ『融解 2.2倍』で焼き切る！」", replySpeaker: "lunaria", reply: "最高じゃない！あんた、あたしと気が合いそうね！一撃で終わらせてやるわ！", bondChar: "lunaria" },
-          { label: "「ミコトの凍結と崩しカードで敵の動きを完封してから畳み掛ける」", replySpeaker: "mikoto", reply: "お見事な戦術眼です。では、私の氷華で敵を縛り上げましょう。", bondChar: "mikoto" }
-        ]
-      },
-      { speaker: "mikoto", text: "甲虫が殻を硬化させました。隊長殿、見事なカード采配を期待しておりますよ。" }
-    ]
-  },
-  {
-    id: "ch3",
-    title: "第3章：地鳴りの巨獣と封印の真実",
-    subtitle: "決戦！ヴェルデ平原の主『モス・ベヒーモス』",
-    reqClear: "ch2",
-    battleEnemyId: "moss_behemoth",
-    reward: { gems: 320, credits: 6500, books: 16, cores: 4 },
-    scenes: [
-      { speaker: "chloe", text: "大変です隊長！先ほどの遺跡から古い記録ディスクを解読したんですが……とんでもないことが書かれてました！" },
-      { speaker: "valeria", text: "方舟都市の名門として確認しておきますわ。その記録に何が記されていたのですか？" },
-      { speaker: "chloe", text: "ミアズマは自然災害じゃありません……百年前の研究機関が、地上の『主霧獣』を封じるために霧で覆った可能性が高いんです！" },
-      { speaker: "celestia", text: "緊急割り込み通信。高台より狙撃観測中のセレスティアです。……議論は後回しにしてください。地面が割れました。" },
-      { speaker: "mint", text: "すごい地響き……！古代樹と結晶を背負った巨大な影……ヴェルデ平原の主霧獣『モス・ベヒーモス』が起きた……！" },
-      { speaker: "lunaria", text: "あんなバケモノが眠ってたなんてね！でも、ここで退いたらキャンプのみんなが危ない！" },
-      { speaker: "celestia", text: "頭部の『結晶の巨角』に膨大なエネルギーが集中しています。あそこを部位破壊できれば、敵の火力は大きく落ちます。" },
-      {
-        speaker: "protagonist",
-        text: "主霧獣モス・ベヒーモスがこちらを睨みつけている。小隊全員へ最終作戦を伝える！",
-        choices: [
-          { label: "「狙うは巨角の部位破壊！セレスティア、援護を頼む！」", replySpeaker: "celestia", reply: "了解しました隊長。標的ロック完了……いつでも撃ち抜きます。", bondChar: "celestia" },
-          { label: "「大技チャージを『崩し』と『カウンター』で凌ぎ切って逆転する！」", replySpeaker: "valeria", reply: "見事な覚悟ですわ！このヴァレリアの槍が、必ず活路を切り開きます！", bondChar: "valeria" }
-        ]
-      },
-      { speaker: "protagonist", text: "第7クリアラー小隊、全力出撃！ヴェルデ平原の主霧獣を討伐する！" }
-    ]
-  },
-  {
-    id: "ch4",
-    title: "第4章：雷鳴の峡谷と黄金の変異",
-    subtitle: "ヴォルト・キャニオン〜『融光種』の目覚め",
-    reqClear: "ch3",
-    battleEnemyId: "thunder_wyvern",
-    reward: { gems: 480, credits: 10000, books: 24, cores: 6 },
-    scenes: [
-      { speaker: "sylphy", text: "おいおい、ヴェルデの主を本当に倒しちまったのか？新入り隊長の噂はここまで届いてるぜ！" },
-      { speaker: "koharu", text: "わーい、第7小隊のみんなだ！ここは第2エリア『ヴォルト・キャニオン』。雷がバチバチ降ってくる危険地帯だよ！" },
-      { speaker: "chloe", text: "通信越しでもわかります……この峡谷のアーク結晶濃度、異常値です。霧獣が過剰エネルギーを吸って黄金に変異する『融光種』の兆候が……！" },
-      { speaker: "sylphy", text: "ふん、俺の鼻がさっきから焦げ臭い雷の匂いを拾ってる。空を見ろ、雷雲を引き連れたデカブツのお出ましだ！" },
-      { speaker: "celestia", text: "確認しました。第2エリアの主霧獣『サンダー・ワイバーン』……翼の放電器官が、すでに黄金の光を帯び始めています。" },
-      { speaker: "koharu", text: "あれが完全に『融光種』へ変異する前に止めないと、峡谷の工場ラインが丸焼けになっちゃうよ！" },
-      {
-        speaker: "sylphy",
-        text: "へっ、燃えてきたぜ！隊長、空を飛ぶ雷竜相手にどう料理する気だ？",
-        choices: [
-          { label: "「シルフィのスピードで風拡散を連発し、一気に体勢を崩す！」", replySpeaker: "sylphy", reply: "気に入ったぜ隊長！俺の双剣で雷雲ごと切り裂いてやるよ！", bondChar: "sylphy" },
-          { label: "「コハルの重槌と崩し札で翼を砕き、地上に叩き落とす！」", replySpeaker: "koharu", reply: "任せて！特製ショックハンマーで一発お見舞いしてあげるっ！", bondChar: "koharu" }
-        ]
-      },
-      { speaker: "protagonist", text: "雷鳴を突き抜けろ！第7クリアラー小隊、サンダー・ワイバーン迎撃戦、開始！" }
-    ]
-  }
-];
+function getStoryChapters() {
+  return window.MF_STORY_CH1 || [];
+}
 
 const RANDOM_EVENTS = [
   {
@@ -172,23 +51,38 @@ function setStoryTab(tab) { currentStoryTab = tab; activeStory = null; playSfx("
 
 function renderChapterList() {
   const cleared = state.clearedStories || [];
-  document.getElementById("story-chapter-list").innerHTML = STORY_CHAPTERS.map(ch => {
+  const chapters = getStoryChapters();
+  const clearCount = chapters.filter(c => cleared.includes(c.id)).length;
+
+  const headerHtml = `
+    <div class="card" style="padding:10px; margin-bottom:8px; background:var(--surface-sub);">
+      <div class="top-row">
+        <strong style="font-size:13px;">🌿 第1章：新緑の廃墟『ヴェルデ平原』編</strong>
+        <span class="rank-pill">${clearCount} / ${chapters.length}話</span>
+      </div>
+      <div style="font-size:11px; color:var(--muted); margin-top:3px;">
+        全8話の長編ストーリー。会話の選択肢で仲間との絆が深まり、物語が進行します。
+      </div>
+    </div>
+  `;
+
+  document.getElementById("story-chapter-list").innerHTML = headerHtml + chapters.map(ch => {
     const isCleared = cleared.includes(ch.id);
     const locked = ch.reqClear && !cleared.includes(ch.reqClear);
     const enemy = ch.battleEnemyId ? (window.MF_DATA.ENEMIES || []).find(e => e.id === ch.battleEnemyId) : null;
     return `
       <div class="card" style="padding:10px; margin-bottom:8px; opacity:${locked ? 0.55 : 1};">
         <div class="top-row">
-          <strong style="font-size:13px;">📖 ${escapeHtml(ch.title)}</strong>
+          <strong style="font-size:12.5px;">${escapeHtml(ch.chapter)}：${escapeHtml(ch.title)}</strong>
           <span class="tag" style="${isCleared ? "background:#18b88a; color:#fff;" : ""}">${isCleared ? "クリア済" : (locked ? "🔒未解放" : "NEW")}</span>
         </div>
         <div style="font-size:11px; color:var(--muted); margin:3px 0;">
-          ${escapeHtml(ch.subtitle)}${enemy ? ` ／ 目標：${enemy.emoji}${enemy.name}` : ""}
+          ${escapeHtml(ch.subtitle)}${enemy ? ` ／ 戦闘：${enemy.emoji}${enemy.name}` : ""}
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
           <span style="font-size:10px; font-weight:800;">初回報酬：💎+${ch.reward.gems} / 📘+${ch.reward.books} / 💠+${ch.reward.cores}</span>
           <button class="btn-xs ${locked ? "" : "btn-primary"}" ${locked ? "disabled" : ""} onclick="startStoryChapter('${ch.id}')">
-            ${isCleared ? "もう一度読む" : "物語を開始 ▶"}
+            ${isCleared ? "読み直す" : "開始 ▶"}
           </button>
         </div>
       </div>
@@ -196,26 +90,36 @@ function renderChapterList() {
   }).join("");
 }
 
-function startStoryChapter(chId) {
-  const ch = STORY_CHAPTERS.find(c => c.id === chId);
+function startStoryChapter(chId, isEpilogue = false) {
+  const ch = getStoryChapters().find(c => c.id === chId);
   if (!ch) return;
-  activeStory = { chapter: ch, index: 0, replyLine: null };
+  const list = isEpilogue ? (ch.epilogue || []) : ch.scenes;
+  if (!list.length) return;
+  activeStory = { chapter: ch, scenes: list, isEpilogue, index: 0, replyLine: null, history: [] };
   playSfx("switch");
   renderStoryView();
 }
 
 function renderNovelScene() {
-  const { chapter, index, replyLine } = activeStory;
-  const scene = chapter.scenes[index];
-  const isLast = index >= chapter.scenes.length - 1;
+  const { chapter, scenes, isEpilogue, index, replyLine } = activeStory;
+  const scene = scenes[index];
+  const isLast = index >= scenes.length - 1;
   const speakerId = replyLine ? replyLine.speaker : scene.speaker;
   const text = replyLine ? replyLine.text : scene.text;
   const ch = getCharProfile(speakerId);
 
-  document.getElementById("novel-chapter-title").textContent = `${chapter.title}（${index + 1}/${chapter.scenes.length}）`;
+  document.getElementById("novel-chapter-title").textContent =
+    `${chapter.chapter}${isEpilogue ? "（エピローグ）" : ""}（${index + 1}/${scenes.length}）`;
+  document.getElementById("novel-location-bar").textContent = `📍 ${scene.loc || "ヴェルデ平原"}`;
   document.getElementById("novel-stage-portrait").innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
   document.getElementById("novel-speaker-name").textContent = `${ch.name}（${ch.trait || "第7小隊"}）`;
   document.getElementById("novel-dialogue-text").textContent = text;
+
+  // 会話ログ記録（重複防止）
+  const lastLog = activeStory.history[activeStory.history.length - 1];
+  if (!lastLog || lastLog.text !== text) {
+    activeStory.history.push({ name: ch.name, text });
+  }
 
   const choicesBox = document.getElementById("novel-choices");
   const nextBtn = document.getElementById("btn-novel-next");
@@ -229,14 +133,34 @@ function renderNovelScene() {
   } else {
     choicesBox.style.display = "none";
     nextBtn.style.display = "block";
-    nextBtn.textContent = isLast ? (chapter.battleEnemyId ? "⚔️ ストーリー戦闘へ突入！" : "✨ 序章を完了して次へ ▶") : "次へ ▶";
+    if (!isLast) nextBtn.textContent = "次へ ▶";
+    else if (!isEpilogue && chapter.battleEnemyId) nextBtn.textContent = "⚔️ ストーリー戦闘へ突入！";
+    else nextBtn.textContent = "✨ エピソード完了！次へ ▶";
   }
 }
 
+function openStoryBacklog() {
+  if (!activeStory) return;
+  const body = document.getElementById("story-log-body");
+  body.innerHTML = activeStory.history.map(h => `
+    <div style="text-align:left; background:var(--surface-sub); border-radius:9px; padding:7px 9px; margin-bottom:6px;">
+      <strong style="font-size:11px; color:var(--accent);">${escapeHtml(h.name)}</strong>
+      <div style="font-size:12px; line-height:1.45; margin-top:2px;">${escapeHtml(h.text)}</div>
+    </div>
+  `).join("");
+  document.getElementById("modal-story-log").classList.add("active");
+  playSfx("tap");
+}
+
+function closeStoryBacklog() {
+  document.getElementById("modal-story-log").classList.remove("active");
+}
+
 function pickStoryChoice(choiceIdx) {
-  const scene = activeStory.chapter.scenes[activeStory.index];
+  const scene = activeStory.scenes[activeStory.index];
   const picked = scene.choices[choiceIdx];
   if (!picked) return;
+  activeStory.history.push({ name: state.playerName, text: picked.label });
   if (picked.bondChar) {
     state.bondPoints = state.bondPoints || {};
     state.bondPoints[picked.bondChar] = (state.bondPoints[picked.bondChar] || 0) + 1;
@@ -250,24 +174,34 @@ function pickStoryChoice(choiceIdx) {
 
 function advanceNovelScene() {
   if (!activeStory) return;
-  const { chapter, index } = activeStory;
+  const { chapter, scenes, isEpilogue, index } = activeStory;
   if (activeStory.replyLine) {
     activeStory.replyLine = null; activeStory.index += 1; playSfx("tap"); renderNovelScene(); return;
   }
-  if (index < chapter.scenes.length - 1) {
+  if (index < scenes.length - 1) {
     activeStory.index += 1; playSfx("tap"); renderNovelScene(); return;
   }
 
   const chRef = chapter;
   activeStory = null;
-  if (!chRef.battleEnemyId) {
+
+  if (isEpilogue || !chRef.battleEnemyId) {
     completeStoryChapter(chRef);
     playSfx("gift");
     renderStoryView();
     return;
   }
+
   switchView("battle");
-  startBattle(chRef.battleEnemyId, { returnView: "story", onWin: () => completeStoryChapter(chRef) });
+  startBattle(chRef.battleEnemyId, {
+    returnView: "story",
+    onWin: () => {
+      completeStoryChapter(chRef);
+      if (chRef.epilogue && chRef.epilogue.length > 0) {
+        setTimeout(() => startStoryChapter(chRef.id, true), 120);
+      }
+    }
+  });
 }
 
 function completeStoryChapter(ch) {
@@ -279,9 +213,7 @@ function completeStoryChapter(ch) {
     state.expBooks = (state.expBooks || 0) + ch.reward.books;
     state.cores = (state.cores || 0) + ch.reward.cores;
     saveGame();
-    showToast(`📖 ${ch.title} 初回クリア！💎+${ch.reward.gems} 獲得！`);
-  } else {
-    showToast(`📖 ${ch.title} をクリアしました！`);
+    showToast(`📖 ${ch.chapter} 初回クリア！💎+${ch.reward.gems} 獲得！`);
   }
 }
 
