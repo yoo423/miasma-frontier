@@ -1,10 +1,17 @@
 let currentStoryTab = "chapters";
-let activeChapterGroup = 1; // 1: 第1章 / 2: 第2章
+let activeChapterGroup = 1;
 let activeStory = null;
 let expRun = null;
+let novelTypeTimer = null;
+let novelAutoPlay = false;
 
 function getStoryChapters() {
-  return [...(window.MF_STORY_CH1 || []), ...(window.MF_STORY_CH2 || [])];
+  return [
+    ...(window.MF_STORY_CH1 || []),
+    ...(window.MF_STORY_CH1_B || []),
+    ...(window.MF_STORY_CH1_C || []),
+    ...(window.MF_STORY_CH2 || [])
+  ];
 }
 
 const RANDOM_EVENTS = [
@@ -34,6 +41,22 @@ const RANDOM_EVENTS = [
   }
 ];
 
+function triggerScreenFx(fxType) {
+  if (!fxType) return;
+  if (fxType === "shake") {
+    const shell = document.querySelector(".app-shell");
+    if (shell) { shell.classList.remove("app-shake"); void shell.offsetWidth; shell.classList.add("app-shake"); }
+  } else {
+    const fl = document.getElementById("screen-flash");
+    if (!fl) return;
+    fl.className = `screen-flash ${fxType === "red" ? "flash-red" : "flash-white"}`;
+    void fl.offsetWidth;
+    fl.classList.add("active");
+    clearTimeout(fl._t);
+    fl._t = setTimeout(() => fl.classList.remove("active"), 450);
+  }
+}
+
 function renderStoryView() {
   renderTopBar();
   document.getElementById("story-tab-chapters").className = `select-chip ${currentStoryTab === "chapters" ? "selected" : ""}`;
@@ -48,19 +71,27 @@ function renderStoryView() {
   else renderExpeditionPanel();
 }
 
-function setStoryTab(tab) { currentStoryTab = tab; activeStory = null; playSfx("tap"); renderStoryView(); }
+function setStoryTab(tab) {
+  clearInterval(novelTypeTimer);
+  novelAutoPlay = false;
+  currentStoryTab = tab;
+  activeStory = null;
+  playSfx("tap");
+  renderStoryView();
+}
 
 function renderChapterList() {
   const cleared = state.clearedStories || [];
-  const ch1 = window.MF_STORY_CH1 || [];
+  const ch1 = [...(window.MF_STORY_CH1 || []), ...(window.MF_STORY_CH1_B || []), ...(window.MF_STORY_CH1_C || [])];
   const ch2 = window.MF_STORY_CH2 || [];
-  const ch2Unlocked = cleared.includes("ch1_ep8") || state.debugUnlockAll;
+  const lastCh1Id = ch1[ch1.length - 1]?.id || "ch1_ep8";
+  const ch2Unlocked = cleared.includes(lastCh1Id) || cleared.includes("ch1_ep8") || state.debugUnlockAll;
 
   const list = activeChapterGroup === 2 ? ch2 : ch1;
   const clearCount = list.filter(c => cleared.includes(c.id)).length;
   const titleText = activeChapterGroup === 2
     ? "⚡ 第2章：雷鳴の峡谷『ヴォルト・キャニオン』編"
-    : "🌿 第1章：新緑の廃墟『ヴェルデ平原』編";
+    : "🌿 第1章：新緑の廃墟『ヴェルデ平原』編（超長編リニューアル）";
 
   const tabsHtml = `
     <div class="chip-grid" style="margin-bottom:8px;">
@@ -79,7 +110,7 @@ function renderChapterList() {
         <span class="rank-pill">${clearCount} / ${list.length}話</span>
       </div>
       <div style="font-size:10.5px; color:var(--muted); margin-top:3px;">
-        ${activeChapterGroup === 1 ? "第1章クリアで『🏆 対人アリーナ』と『⚡ 第2章』が解放されます！" : "第2エリアの主霧獣＆黄金の融光種に迫る全8話の長編ストーリー！"}
+        ストーリーで倒した霧獣が『討伐戦』に解禁されます。強敵に勝てない時は討伐戦で育成してから挑もう！
       </div>
     </div>
   `;
@@ -88,6 +119,7 @@ function renderChapterList() {
     const isCleared = cleared.includes(ch.id);
     const locked = !state.debugUnlockAll && ch.reqClear && !cleared.includes(ch.reqClear);
     const enemy = ch.battleEnemyId ? (window.MF_DATA.ENEMIES || []).find(e => e.id === ch.battleEnemyId) : null;
+    const reqPwr = enemy ? `（推奨戦力 ${enemy.recPower}）` : "";
     return `
       <div class="card" style="padding:10px; margin-bottom:8px; opacity:${locked ? 0.55 : 1};">
         <div class="top-row">
@@ -95,7 +127,7 @@ function renderChapterList() {
           <span class="tag" style="${isCleared ? "background:#18b88a; color:#fff;" : ""}">${isCleared ? "クリア済" : (locked ? "🔒未解放" : "NEW")}</span>
         </div>
         <div style="font-size:11px; color:var(--muted); margin:3px 0;">
-          ${escapeHtml(ch.subtitle)}${enemy ? ` ／ 戦闘：${enemy.emoji}${enemy.name}` : ""}
+          ${escapeHtml(ch.subtitle)}${enemy ? `<br>⚔️ 目標：${enemy.emoji}${enemy.name}${reqPwr}` : ""}
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
           <span style="font-size:10px; font-weight:800;">初回：💎+${ch.reward.gems} / 🎟️券+2 / 📘+${ch.reward.books}</span>
@@ -113,9 +145,24 @@ function startStoryChapter(chId, isEpilogue = false) {
   if (!ch) return;
   const list = isEpilogue ? (ch.epilogue || []) : ch.scenes;
   if (!list.length) return;
-  activeStory = { chapter: ch, scenes: list, isEpilogue, index: 0, replyLine: null, history: [] };
+  clearInterval(novelTypeTimer);
+  novelAutoPlay = false;
+  activeStory = { chapter: ch, scenes: list, isEpilogue, index: 0, replyLine: null, history: [], typing: false, fullText: "" };
   playSfx("switch");
   renderStoryView();
+}
+
+function toggleNovelAuto() {
+  novelAutoPlay = !novelAutoPlay;
+  playSfx("tap");
+  const btn = document.getElementById("btn-novel-auto");
+  if (btn) {
+    btn.textContent = novelAutoPlay ? "⏸ オート中" : "▶ オート";
+    btn.className = novelAutoPlay ? "btn-xs btn-accent2" : "btn-xs";
+  }
+  if (novelAutoPlay && activeStory && !activeStory.typing) {
+    setTimeout(() => { if (novelAutoPlay && activeStory && !activeStory.typing) advanceNovelScene(); }, 1100);
+  }
 }
 
 function renderNovelScene() {
@@ -124,34 +171,79 @@ function renderNovelScene() {
   const isLast = index >= scenes.length - 1;
   const speakerId = replyLine ? replyLine.speaker : scene.speaker;
   const text = replyLine ? replyLine.text : scene.text;
-  const ch = getCharProfile(speakerId);
+  const isNarrator = speakerId === "narrator";
+  const ch = isNarrator ? null : getCharProfile(speakerId);
+
+  // シーン演出（BGM切替・効果音・画面揺れ/フラッシュ）
+  if (!replyLine) {
+    if (scene.bgm && window.MF_AUDIO) window.MF_AUDIO.playBgm(scene.bgm);
+    if (scene.se) playSfx(scene.se);
+    if (scene.fx) triggerScreenFx(scene.fx);
+  }
 
   document.getElementById("novel-chapter-title").textContent =
     `${chapter.chapter}${isEpilogue ? "（エピローグ）" : ""}（${index + 1}/${scenes.length}）`;
   document.getElementById("novel-location-bar").textContent = `📍 ${scene.loc || "ヴェルデ平原"}`;
-  document.getElementById("novel-stage-portrait").innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
-  document.getElementById("novel-speaker-name").textContent = `${ch.name}（${ch.trait || "第7小隊"}）`;
-  document.getElementById("novel-dialogue-text").textContent = text;
+
+  const stageEl = document.getElementById("novel-stage-portrait");
+  stageEl.className = `novel-stage bg-${scene.bg || "ruins"}`;
+  if (isNarrator) {
+    stageEl.innerHTML = `<div class="narrator-emblem">✦<div style="font-size:11px; margin-top:6px; letter-spacing:2px;">MIASMA FRONTIER</div></div>`;
+  } else {
+    stageEl.innerHTML = `<div class="novel-char-enter">${window.MF_SPRITES.portraitHTML(ch, "contain")}</div>`;
+  }
+
+  const spkEl = document.getElementById("novel-speaker-name");
+  spkEl.textContent = isNarrator ? "📖 地の文（状況描写）" : `${ch.name}（${ch.trait || "第7小隊"}）`;
+  spkEl.style.background = isNarrator ? "#3b374d" : "var(--accent)";
+  spkEl.style.color = isNarrator ? "#fff" : "#121318";
 
   const lastLog = activeStory.history[activeStory.history.length - 1];
-  if (!lastLog || lastLog.text !== text) activeStory.history.push({ name: ch.name, text });
+  if (!lastLog || lastLog.text !== text) {
+    activeStory.history.push({ name: isNarrator ? "【地の文】" : ch.name, text });
+  }
 
+  // タイプライター表示（没入感UP）
+  clearInterval(novelTypeTimer);
+  const textEl = document.getElementById("novel-dialogue-text");
   const choicesBox = document.getElementById("novel-choices");
   const nextBtn = document.getElementById("btn-novel-next");
+  choicesBox.style.display = "none";
+  nextBtn.style.display = "block";
+  nextBtn.textContent = "▼";
 
-  if (!replyLine && scene.choices && scene.choices.length > 0) {
-    nextBtn.style.display = "none";
-    choicesBox.style.display = "flex";
-    choicesBox.innerHTML = scene.choices.map((c, idx) => `
-      <button class="btn-primary" style="text-align:left; font-size:12px;" onclick="pickStoryChoice(${idx})">${escapeHtml(c.label)}</button>
-    `).join("");
-  } else {
-    choicesBox.style.display = "none";
-    nextBtn.style.display = "block";
-    if (!isLast) nextBtn.textContent = "次へ ▶";
-    else if (!isEpilogue && chapter.battleEnemyId) nextBtn.textContent = "⚔️ ストーリー戦闘へ突入！";
-    else nextBtn.textContent = "✨ エピソード完了！次へ ▶";
-  }
+  activeStory.fullText = text;
+  activeStory.typing = true;
+  textEl.textContent = "";
+  let pos = 0;
+
+  const finishTyping = () => {
+    clearInterval(novelTypeTimer);
+    activeStory.typing = false;
+    textEl.textContent = text;
+    if (!replyLine && scene.choices && scene.choices.length > 0) {
+      nextBtn.style.display = "none";
+      choicesBox.style.display = "flex";
+      choicesBox.innerHTML = scene.choices.map((c, idx) => `
+        <button class="btn-primary" style="text-align:left; font-size:12px;" onclick="pickStoryChoice(${idx})">${escapeHtml(c.label)}</button>
+      `).join("");
+    } else {
+      nextBtn.style.display = "block";
+      if (!isLast) nextBtn.textContent = "次へ ▶";
+      else if (!isEpilogue && chapter.battleEnemyId) nextBtn.textContent = "⚔️ ストーリー戦闘へ突入！";
+      else nextBtn.textContent = "✨ エピソード完了！次へ ▶";
+      if (novelAutoPlay && !isLast) {
+        setTimeout(() => { if (novelAutoPlay && activeStory && !activeStory.typing) advanceNovelScene(); }, 1800);
+      }
+    }
+  };
+  activeStory.finishTyping = finishTyping;
+
+  novelTypeTimer = setInterval(() => {
+    pos += 1;
+    textEl.textContent = text.slice(0, pos);
+    if (pos >= text.length) finishTyping();
+  }, 30);
 }
 
 function openStoryBacklog() {
@@ -185,16 +277,23 @@ function pickStoryChoice(choiceIdx) {
 
 function advanceNovelScene() {
   if (!activeStory) return;
+  // まだタイプライター表示中なら一気に全文を表示
+  if (activeStory.typing && typeof activeStory.finishTyping === "function") {
+    activeStory.finishTyping();
+    return;
+  }
   const { chapter, scenes, isEpilogue, index } = activeStory;
   if (activeStory.replyLine) { activeStory.replyLine = null; activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
   if (index < scenes.length - 1) { activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
 
   const chRef = chapter;
+  clearInterval(novelTypeTimer);
+  novelAutoPlay = false;
   activeStory = null;
 
   if (isEpilogue || !chRef.battleEnemyId) {
     completeStoryChapter(chRef);
-    playSfx("gift");
+    playSfx("fanfare");
     renderStoryView();
     return;
   }
@@ -202,9 +301,14 @@ function advanceNovelScene() {
   switchView("battle");
   startBattle(chRef.battleEnemyId, {
     returnView: "story",
+    isStoryBattle: true,
     onWin: () => {
+      state.storyDefeatedEnemies = state.storyDefeatedEnemies || [];
+      if (!state.storyDefeatedEnemies.includes(chRef.battleEnemyId)) {
+        state.storyDefeatedEnemies.push(chRef.battleEnemyId);
+      }
       completeStoryChapter(chRef);
-      if (chRef.epilogue && chRef.epilogue.length > 0) setTimeout(() => startStoryChapter(chRef.id, true), 120);
+      if (chRef.epilogue && chRef.epilogue.length > 0) setTimeout(() => startStoryChapter(chRef.id, true), 150);
     }
   });
 }
@@ -220,14 +324,19 @@ function completeStoryChapter(ch) {
     state.cores = (state.cores || 0) + ch.reward.cores;
     saveGame();
     let unlockMsg = "";
-    if (ch.id === "ch1_ep2") unlockMsg = " 🔓『フレンド機能』解放！";
+    if (ch.id === "ch1_ep2") unlockMsg = " 🔓『フレンド機能』＆討伐戦にウルフ解放！";
     if (ch.id === "ch1_ep3") unlockMsg = " 🔓『キャンプ＆クラフト』解放！";
     if (ch.id === "ch1_ep8") unlockMsg = " 🔓『🏆対人アリーナ』＆『⚡第2章』解放！";
     showToast(`📖 ${ch.chapter}クリア！💎+${ch.reward.gems} / 🎟️券+2${unlockMsg}`);
   }
 }
 
-function closeNovelStage() { activeStory = null; renderStoryView(); }
+function closeNovelStage() {
+  clearInterval(novelTypeTimer);
+  novelAutoPlay = false;
+  activeStory = null;
+  renderStoryView();
+}
 
 // ---------- 分岐ルート開拓マップ ----------
 function renderExpeditionPanel() {
