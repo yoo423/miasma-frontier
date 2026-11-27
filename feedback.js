@@ -1,7 +1,7 @@
 // =========================================================
 // 💌 GoogleフォームのURL（または埋め込みHTML）を下の "" の中に貼るだけ
 // =========================================================
-window.MF_FEEDBACK_FORM_URL = "";
+window.MF_FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScTi-0RIOjMWtJOGMhm7jDxu4kTV-ZafUy4hM6b942nzz6GpQ/viewform?usp=publish-editor";
 
 function extractGoogleFormEmbedUrl(raw) {
   let s = String(raw || "").trim();
