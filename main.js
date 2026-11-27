@@ -3,6 +3,14 @@ const MAX_EN = 160;
 const MAX_RESERVE_EN = 1000;
 const EN_REGEN_MS = 6 * 60 * 1000;
 
+// ストーリー進行による機能解放ルール（RPGらしい段階解放）
+const FEATURE_UNLOCK_RULES = {
+  camp:    { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
+  craft:   { reqStory: "ch1_ep3", label: "第1章・第3話『前線キャンプと焚き火の夜』クリア" },
+  friends: { reqStory: "ch1_ep2", label: "第1章・第2話『新緑の廃墟と最初の霧獣』クリア" },
+  arena:   { reqStory: "ch1_ep8", label: "第1章完結（第8話『モス・ベヒーモス』討伐）" }
+};
+
 let state = null;
 let showcaseCharId = "protagonist";
 
@@ -17,6 +25,7 @@ function createDefaultSave() {
     playerExp: 0,
     gems: 3200,
     credits: 8000,
+    cardTickets: 10,
     expBooks: 30,
     cores: 6,
     activityPt: 0,
@@ -25,6 +34,7 @@ function createDefaultSave() {
     lastEnTimestamp: Date.now(),
     uiTheme: "camp",
     soundOn: true,
+    debugUnlockAll: false,
     pityCount: 0,
     pityGuaranteed: false,
     ownedChars: ["protagonist", "momo", "mint", "aoi"],
@@ -47,6 +57,8 @@ function createDefaultSave() {
     clearedStories: [],
     bondPoints: {},
     huntLog: {},
+    missions: {},
+    friends: [],
     materials: {},
     regionProgress: { verde: { exp: 15, mistLevel: 60, beacons: 1 } },
     mailbox: [],
@@ -65,6 +77,7 @@ function loadSave() {
     return {
       ...base,
       ...parsed,
+      cardTickets: typeof parsed.cardTickets === "number" ? parsed.cardTickets : base.cardTickets,
       ownedChars: parsed.ownedChars || base.ownedChars,
       party: parsed.party || base.party,
       ownedCards: { ...base.ownedCards, ...(parsed.ownedCards || {}) },
@@ -77,6 +90,8 @@ function loadSave() {
       clearedStories: parsed.clearedStories || [],
       bondPoints: parsed.bondPoints || {},
       huntLog: parsed.huntLog || {},
+      missions: parsed.missions || {},
+      friends: parsed.friends || [],
       materials: parsed.materials || {},
       regionProgress: { ...base.regionProgress, ...(parsed.regionProgress || {}) }
     };
@@ -84,6 +99,21 @@ function loadSave() {
 }
 
 function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+
+function isFeatureUnlocked(featureId) {
+  if (state?.debugUnlockAll) return true;
+  const rule = FEATURE_UNLOCK_RULES[featureId];
+  if (!rule) return true;
+  return (state?.clearedStories || []).includes(rule.reqStory);
+}
+
+function toggleDebugUnlockAll() {
+  state.debugUnlockAll = !state.debugUnlockAll;
+  saveGame();
+  playSfx("switch");
+  renderTerminalView();
+  showToast(state.debugUnlockAll ? "🔓 テスト用：すべての機能ロックを解除しました" : "🔒 ストーリー進行による機能解放モードに戻しました");
+}
 
 function updateStamina() {
   const now = Date.now();
@@ -118,30 +148,60 @@ function toggleUiTheme() {
 
 function openTabletMenu() {
   playSfx("switch");
+  if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
+  updateTabletLocks();
   updateTabletBadge();
   document.getElementById("modal-tablet").classList.add("active");
 }
 function closeTabletMenu() { document.getElementById("modal-tablet").classList.remove("active"); }
-function tabletGo(viewId) { closeTabletMenu(); switchView(viewId); }
+
+function updateTabletLocks() {
+  ["camp", "craft", "arena", "friends"].forEach(fid => {
+    const el = document.getElementById(`tb-lock-${fid}`);
+    if (el) el.style.display = isFeatureUnlocked(fid) ? "none" : "inline-block";
+  });
+}
+
+function tabletGo(viewId) {
+  if (!isFeatureUnlocked(viewId)) {
+    const rule = FEATURE_UNLOCK_RULES[viewId];
+    playSfx("tap");
+    showToast(`🔒 ${rule?.label || "ストーリー進行"} で解放されます！`);
+    return;
+  }
+  closeTabletMenu();
+  if (viewId === "arena" || viewId === "friends") {
+    showToast(`🚧『${viewId === "arena" ? "対人アリーナ" : "フレンド機能"}』は次回の Ver 2.8 で本実装します！`);
+    return;
+  }
+  switchView(viewId);
+}
 
 function updateTabletBadge() {
   const mCnt = typeof getUnclaimedMailCount === "function" ? getUnclaimedMailCount() : 0;
   const bCnt = typeof getUnclaimedBestiaryCount === "function" ? getUnclaimedBestiaryCount() : 0;
   const dCnt = typeof getUnclaimedDexCount === "function" ? getUnclaimedDexCount() : 0;
+  const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
   const badge = document.getElementById("home-tablet-badge");
   if (badge) {
-    const total = mCnt + bCnt + dCnt;
+    const total = mCnt + bCnt + dCnt + msCnt;
     badge.style.display = total > 0 ? "inline-block" : "none";
     badge.textContent = total > 9 ? "9+" : String(total);
   }
 }
 
 function switchView(viewId) {
+  if (!isFeatureUnlocked(viewId)) {
+    const rule = FEATURE_UNLOCK_RULES[viewId];
+    playSfx("tap");
+    showToast(`🔒 ${rule?.label || "ストーリー進行"} で解放されます！`);
+    return;
+  }
   playSfx("tap");
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   const target = document.getElementById(`view-${viewId}`);
@@ -155,6 +215,7 @@ function switchView(viewId) {
   if (viewId === "home") renderHome();
   if (viewId === "story" && typeof renderStoryView === "function") renderStoryView();
   if (viewId === "battle" && typeof renderBattleView === "function") renderBattleView();
+  if (viewId === "missions" && typeof renderMissionView === "function") renderMissionView();
   if (viewId === "bestiary" && typeof renderBestiaryView === "function") renderBestiaryView();
   if (viewId === "wiki" && typeof renderWikiView === "function") renderWikiView();
   if (viewId === "deck" && typeof renderDeckView === "function") renderDeckView();
@@ -199,15 +260,18 @@ function renderTopBar() {
   document.getElementById("tb-name").textContent = state.playerName;
   document.getElementById("tb-rank").textContent = `開拓Lv.${state.playerRank}`;
   document.getElementById("tb-en").textContent = `${state.en}/${MAX_EN}`;
-  document.getElementById("tb-reserve").textContent = `予備 +${state.reserveEn}`;
+  document.getElementById("tb-reserve").textContent = `予備+${state.reserveEn}`;
   document.getElementById("tb-credits").textContent = state.credits.toLocaleString();
   document.getElementById("tb-gems").textContent = state.gems.toLocaleString();
+  const tkEl = document.getElementById("tb-tickets");
+  if (tkEl) tkEl.textContent = String(state.cardTickets || 0);
   document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️ 拠点UI" : "⚡ 端末UI";
   document.getElementById("btn-sound").textContent = state.soundOn ? "🔊" : "🔇";
 }
 
 function renderHome() {
   renderTopBar();
+  if (typeof syncMissions === "function") syncMissions();
   if (typeof updateMailBadges === "function") updateMailBadges();
   if (typeof updateBestiaryBadge === "function") updateBestiaryBadge();
   updateTabletBadge();
@@ -301,10 +365,12 @@ function confirmProtagonist() {
 }
 
 function renderTerminalView() {
-  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.5.0（全102種カード＆最大40枚デッキ）";
+  document.getElementById("term-version").textContent = "現在のバージョン：Ver 2.7.0（パック券ガチャ・任務・敵22種・段階解放）";
+  const dbgBtn = document.getElementById("btn-debug-unlock");
+  if (dbgBtn) dbgBtn.textContent = state.debugUnlockAll ? "🔒 テスト全解放中（通常ロックに戻す）" : "🔓 テスト用：全機能のストーリーロックを解除";
   const listEl = document.getElementById("term-history-list");
   if (listEl) {
-    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.5.0：全102種戦術カード＆最大40枚デッキ拡張</strong><div style="font-size:11px; color:var(--muted);">6属性×17種の全102カード追加、20〜40枚デッキ＆同名3枚制限、おまかせ40枚編成、属性絞り込み付きカード図鑑を実装。</div></div>`;
+    listEl.innerHTML = `<div class="history-item"><strong>Ver 2.7.0：カードパック券・デイリー＆ウィークリー任務・敵22種実装</strong><div style="font-size:11px; color:var(--muted);">カードガチャ専用チケット、毎日/毎週任務、全22種の霧獣＆報酬増量、ストーリー進行による機能解放を実装。</div></div>`;
   }
 }
 
@@ -338,6 +404,7 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStamina();
   applyTheme();
   if (window.MF_AUDIO) window.MF_AUDIO.setEnabled(state.soundOn);
+  if (typeof syncMissions === "function") syncMissions();
   if (typeof syncAdminMail === "function") syncAdminMail();
   setInterval(() => { updateStamina(); renderTopBar(); }, 15000);
   switchView(state.initialized ? "home" : "creator");
