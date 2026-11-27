@@ -4,7 +4,6 @@ let bondTypeTimer = null;
 let bondIsTyping = false;
 let bondFullText = "";
 
-// 主要隊員の個別『絆エピソード』＆限定称号
 const BOND_EPISODES = {
   lunaria: {
     title: "紅蓮のリボンと本当の強さ",
@@ -117,7 +116,6 @@ const BOND_EPISODES = {
   }
 };
 
-// 実績・進行で自動解放される称号マスター
 const MASTER_TITLES = [
   { id: "t_rookie",    name: "第7小隊・新任隊長",   cond: "初期獲得", check: () => true },
   { id: "t_ch1_clear", name: "新緑の解放者",        cond: "第1章・第二十話踏破", check: () => (state.clearedStories || []).includes("ch1_ep20") },
@@ -128,29 +126,30 @@ const MASTER_TITLES = [
   { id: "t_arena5",    name: "読み合いの覇者",      cond: "対人アリーナ通算5勝", check: () => (state.arenaWins || 0) >= 5 }
 ];
 
+// じっくり時間をかけて育てる長期・絆ポイント設計
+const BOND_THRESHOLDS = [0, 10, 30, 65, 120]; // Lv.1:0 / Lv.2:10 / Lv.3(個別話):30 / Lv.4:65 / Lv.5(MAX):120
+
 function getBondPoint(charId) {
   return (state.bondPoints && state.bondPoints[charId]) || 0;
 }
 
 function getBondLevel(charId) {
   const pt = getBondPoint(charId);
-  if (pt >= 14) return 5;
-  if (pt >= 9) return 4;
-  if (pt >= 5) return 3;
-  if (pt >= 2) return 2;
+  if (pt >= 120) return 5;
+  if (pt >= 65) return 4;
+  if (pt >= 30) return 3;
+  if (pt >= 10) return 2;
   return 1;
 }
 
 function getNextBondNeed(lv) {
-  return { 1: 2, 2: 5, 3: 9, 4: 14, 5: 14 }[lv] || 14;
+  return BOND_THRESHOLDS[Math.min(lv, 4)] || 120;
 }
 
 function syncUnlockedTitles() {
   state.unlockedTitles = state.unlockedTitles || ["第7小隊・新任隊長"];
   MASTER_TITLES.forEach(t => {
-    if (t.check() && !state.unlockedTitles.includes(t.name)) {
-      state.unlockedTitles.push(t.name);
-    }
+    if (t.check() && !state.unlockedTitles.includes(t.name)) state.unlockedTitles.push(t.name);
   });
 }
 
@@ -159,11 +158,7 @@ function getBondEpisodeFor(charId) {
   const ch = getCharProfile(charId);
   return {
     title: `${ch.name}との穏やかな休息`,
-    rewardTitle: `${ch.name}の信頼`,
-    scenes: [
-      { bg: "camp_dusk", speaker: charId, text: `あ、隊長！ちょうどいいところに来てくれましたね。少しだけ息抜きしませんか？` },
-      { bg: "camp_dusk", speaker: charId, text: `第7小隊に配属されてから、本当に毎日が充実しています。隊長の指揮のもとで戦えてよかったです。` },
-      { bg: "camp_dusk", speaker: charId, text: `これからも${ch.trait || "隊員"}として、全力で隊長を支えますから、いつでも頼ってくださいね！` }
+    rewardTitle: `${ch.name}の信頼`, scenes: [ { bg: "camp_dusk", speaker: charId, text: "あ、隊長！ちょうどいいところに来てくれましたね。少しだけ息抜きしませんか？" }, { bg: "camp_dusk", speaker: charId, text: "第7小隊に配属されてから、本当に毎日が充実しています。隊長の指揮のもとで戦えてよかったです。" }, { bg: "camp_dusk", speaker: charId, text: `これからも${ch.trait || "隊員"}として、全力で隊長を支えますから、いつでも頼ってくださいね！` }
     ]
   };
 }
@@ -171,8 +166,7 @@ function getBondEpisodeFor(charId) {
 function renderBondsView() {
   renderTopBar();
   syncUnlockedTitles();
-  document.getElementById("bd-tab-members").className = `select-chip ${currentBondsTab === "members" ? "selected" : ""}`;
-  document.getElementById("bd-tab-profile").className = `select-chip ${currentBondsTab === "profile" ? "selected" : ""}`;
+  document.getElementById("bd-tab-members").className = `select-chip ${currentBondsTab === "members" ? "selected" : ""}`; document.getElementById("bd-tab-profile").className = `select-chip ${currentBondsTab === "profile" ? "selected" : ""}`;
 
   document.getElementById("bd-story-panel").style.display = activeBondStory ? "block" : "none";
   document.getElementById("bd-members-panel").style.display = !activeBondStory && currentBondsTab === "members" ? "block" : "none";
@@ -186,8 +180,8 @@ function renderBondsView() {
   const gifts = state.bondGifts || 0;
 
   document.getElementById("bd-info-bar").innerHTML = `
-    🎁 所持『アーク花のブーケ』：<strong>${gifts}個</strong>（補給ショップで購入可）<br>
-    <span style="font-size:10px; color:var(--muted);">絆Lv.3（5pt）で個別エピソード解放！読了で💎160・🎟️券×2・限定称号を獲得！</span>
+    💐 所持『アーク花のブーケ』：<strong>${gifts}個</strong>（補給ショップで購入可）<br>
+    <span style="font-size:10px; color:var(--muted);">日々の語らい・贈り物・物語の選択肢で少しずつ絆が深まります。絆Lv.3（30pt）で個別エピソード解放！</span>
   `;
 
   const members = (state.ownedChars || []).filter(id => id !== "protagonist");
@@ -197,9 +191,9 @@ function renderBondsView() {
     const ch = getCharProfile(id);
     const pt = getBondPoint(id);
     const lv = getBondLevel(id);
+    const prevBase = BOND_THRESHOLDS[lv - 1] || 0;
     const nextNeed = getNextBondNeed(lv);
-    const pct = lv >= 5 ? 100 : Math.min(100, Math.round((pt / nextNeed) * 100));
-    const ep = getBondEpisodeFor(id);
+    const pct = lv >= 5 ? 100 : Math.min(100, Math.round(((pt - prevBase) / Math.max(1, nextNeed - prevBase)) * 100));
     const unlocked = lv >= 3;
     const epDone = clearedEp.includes(id);
 
@@ -212,13 +206,13 @@ function renderBondsView() {
               <strong style="font-size:13px;">${escapeHtml(ch.name)}</strong>
               <span class="rank-pill">💞 絆Lv.${lv}</span>
             </div>
-            <div style="font-size:10px; color:var(--muted); margin:2px 0;">絆ポイント：${pt}${lv < 5 ? ` / ${nextNeed}` : "（MAX）"}</div>
+            <div style="font-size:10px; color:var(--muted); margin:2px 0;">絆ポイント：${pt}${lv < 5 ? ` / 次Lvまで ${nextNeed}pt` : "（MAX）"}</div>
             <div class="gauge-bar" style="height:6px; margin-bottom:6px;"><div style="background:#ff4d79; width:${pct}%;"></div></div>
             <div style="display:flex; gap:4px; flex-wrap:wrap;">
-              <button class="btn-xs" ${talkedToday ? "disabled" : ""} onclick="talkToMemberForBond('${id}')">${talkedToday ? "語らい済" : "💬 語らう(+1)"}</button>
+              <button class="btn-xs" ${talkedToday ? "disabled" : ""} onclick="talkToMemberForBond('${id}')">${talkedToday ? "本日語らい済" : "💬 語らう(+1)"}</button>
               <button class="btn-xs btn-primary" ${gifts <= 0 ? "disabled" : ""} onclick="giveGiftToMember('${id}')">💐 贈る(+2)</button>
               <button class="btn-xs ${unlocked ? "btn-accent2" : ""}" ${unlocked ? "" : "disabled"} onclick="openBondStory('${id}')">
-                ${epDone ? "📖 回想" : (unlocked ? "✨ 絆話を読む" : "🔒 Lv.3で解放")}
+                ${epDone ? "📖 回想" : (unlocked ? "✨ 絆話を読む" : "🔒 Lv.3(30pt)")}
               </button>
             </div>
           </div>
@@ -236,22 +230,11 @@ function talkToMemberForBond(charId) {
   state.bondPoints[charId] = (state.bondPoints[charId] || 0) + 1;
   saveGame(); playSfx("switch");
   renderBondsView();
-  showToast(`💬 ${getCharProfile(charId).name}とゆっくり語らった（絆+1）`);
+  showToast(`💬 ${getCharProfile(charId).name}とゆっくり語らった（絆+1）`); }  function giveGiftToMember(charId) { if ((state.bondGifts \vert{}\vert{} 0) <= 0) { showToast("💐 ブーケがありません（補給ショップで購入できます）"); return; } state.bondGifts -= 1; state.bondPoints = state.bondPoints \vert{}\vert{} {}; state.bondPoints[charId] = (state.bondPoints[charId] \vert{}\vert{} 0) + 2; saveGame(); playSfx("gift"); renderBondsView(); showToast(`💐 ${getCharProfile(charId).name}にブーケを贈った！（絆+2）`);
 }
 
-function giveGiftToMember(charId) {
-  if ((state.bondGifts || 0) <= 0) { showToast("💐 ブーケがありません（補給ショップで購入できます）"); return; }
-  state.bondGifts -= 1;
-  state.bondPoints = state.bondPoints || {};
-  state.bondPoints[charId] = (state.bondPoints[charId] || 0) + 2;
-  saveGame(); playSfx("gift");
-  renderBondsView();
-  showToast(`💐 ${getCharProfile(charId).name}にブーケを贈った！（絆+2）`);
-}
-
-// ---------- 個別『絆エピソード』ノベル再生 ----------
 function openBondStory(charId) {
-  if (getBondLevel(charId) < 3) { showToast("🔒 絆Lv.3（5pt）で解放されます"); return; }
+  if (getBondLevel(charId) < 3) { showToast("🔒 絆Lv.3（30pt）で解放されます"); return; }
   const ep = getBondEpisodeFor(charId);
   activeBondStory = { charId, ep, index: 0 };
   if (window.MF_AUDIO) window.MF_AUDIO.playBgm("story");
@@ -267,55 +250,7 @@ function renderBondNovelScene() {
 
   document.getElementById("bd-story-title").textContent = `💞 ${ch.name} 絆エピソード『${ep.title}』（${index + 1}/${ep.scenes.length}）`;
   const stage = document.getElementById("bd-story-stage");
-  stage.className = `novel-stage nbg-${scene.bg || "camp_dusk"}`;
-  stage.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
-  document.getElementById("bd-story-speaker").textContent = ch.name;
-
-  const textEl = document.getElementById("bd-story-text");
-  const spd = typeof getTextSpeedObj === "function" ? getTextSpeedObj() : { ms: 40 };
-  bondFullText = scene.text;
-
-  if (spd.ms === 0) {
-    textEl.textContent = bondFullText;
-    bondIsTyping = false;
-    return;
-  }
-  bondIsTyping = true;
-  textEl.textContent = "";
-  let pos = 0;
-  bondTypeTimer = setInterval(() => {
-    pos += 1;
-    textEl.textContent = bondFullText.slice(0, pos);
-    if (pos >= bondFullText.length) { clearInterval(bondTypeTimer); bondIsTyping = false; }
-  }, spd.ms);
-}
-
-function advanceBondStory() {
-  if (!activeBondStory) return;
-  if (bondIsTyping) {
-    clearInterval(bondTypeTimer); bondIsTyping = false;
-    document.getElementById("bd-story-text").textContent = bondFullText;
-    return;
-  }
-  if (activeBondStory.index < activeBondStory.ep.scenes.length - 1) {
-    activeBondStory.index += 1;
-    playSfx("tap");
-    renderBondNovelScene();
-    return;
-  }
-
-  // 読了報酬＆限定称号の付与
-  const { charId, ep } = activeBondStory;
-  activeBondStory = null;
-  state.clearedBondStories = state.clearedBondStories || [];
-  state.unlockedTitles = state.unlockedTitles || ["第7小隊・新任隊長"];
-  if (!state.clearedBondStories.includes(charId)) {
-    state.clearedBondStories.push(charId);
-    state.gems += 160;
-    state.cardTickets = (state.cardTickets || 0) + 2;
-    if (!state.unlockedTitles.includes(ep.rewardTitle)) state.unlockedTitles.push(ep.rewardTitle);
-    saveGame(); playSfx("gift");
-    showToast(`💞 絆エピソード読了！💎+160 / 🎟️券+2 / 称号『${ep.rewardTitle}』獲得！`);
+  stage.className = `novel-stage nbg-${scene.bg \vert{}\vert{} "camp_dusk"}`; stage.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain"); document.getElementById("bd-story-speaker").textContent = ch.name;  const textEl = document.getElementById("bd-story-text"); const spd = typeof getTextSpeedObj === "function" ? getTextSpeedObj() : { ms: 40 }; bondFullText = scene.text;  if (spd.ms === 0) { textEl.textContent = bondFullText; bondIsTyping = false; return; } bondIsTyping = true; textEl.textContent = ""; let pos = 0; bondTypeTimer = setInterval(() => { pos += 1; textEl.textContent = bondFullText.slice(0, pos); if (pos >= bondFullText.length) { clearInterval(bondTypeTimer); bondIsTyping = false; } }, spd.ms); }  function advanceBondStory() { if (!activeBondStory) return; if (bondIsTyping) { clearInterval(bondTypeTimer); bondIsTyping = false; document.getElementById("bd-story-text").textContent = bondFullText; return; } if (activeBondStory.index < activeBondStory.ep.scenes.length - 1) { activeBondStory.index += 1; playSfx("tap"); renderBondNovelScene(); return; }  const { charId, ep } = activeBondStory; activeBondStory = null; state.clearedBondStories = state.clearedBondStories \vert{}\vert{} []; state.unlockedTitles = state.unlockedTitles \vert{}\vert{} ["第7小隊・新任隊長"]; if (!state.clearedBondStories.includes(charId)) { state.clearedBondStories.push(charId); state.gems += 240; state.cardTickets = (state.cardTickets \vert{}\vert{} 0) + 3; if (!state.unlockedTitles.includes(ep.rewardTitle)) state.unlockedTitles.push(ep.rewardTitle); saveGame(); playSfx("gift"); showToast(`💞 絆エピソード読了！💎+240 / 🎟️券+3 / 称号『${ep.rewardTitle}』獲得！`);
   }
   if (window.MF_AUDIO) window.MF_AUDIO.playBgm("home");
   renderBondsView();
@@ -328,7 +263,6 @@ function closeBondStory() {
   renderBondsView();
 }
 
-// ---------- 🪪 隊長プロフィール＆称号管理 ----------
 function renderProfilePanel() {
   syncUnlockedTitles();
   const protag = getCharProfile("protagonist");
