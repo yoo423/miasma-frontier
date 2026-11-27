@@ -274,31 +274,3 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .loading-bar { width: min(82vw, 320px); height: 10px; border-radius: 999px; background: rgba(255,255,255,0.12); border: 1.5px solid #ffd000; overflow: hidden; margin: 10px 0 16px; }
 .loading-bar > div { height: 100%; background: linear-gradient(90deg, #18b88a, #ffd000); transition: width 0.08s linear; }
 .loading-tip { max-width: 360px; font-size: 11.5px; line-height: 1.55; color: #dce2f4; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 12px; }
-
-/* ===== 🎬 オープニング＆タイトル画面 ===== */
-.opening-screen { position: fixed; inset: 0; z-index: 180; display: none; flex-direction: column; color: #fff; }
-.opening-screen.active { display: flex; }
-
-.op-movie-layer {
-  flex: 1; display: flex; flex-direction: column; justify-content: space-between;
-  padding: 22px 20px 30px; text-align: center; cursor: pointer; transition: background 0.6s ease;
-}
-.op-bg-1 { background: radial-gradient(circle at 50% 25%, #4b2369 0%, #12101f 78%); }
-.op-bg-2 { background: radial-gradient(circle at 50% 25%, #233a5e 0%, #0f1422 78%); }
-.op-bg-3 { background: radial-gradient(circle at 50% 25%, #194d44 0%, #101720 78%); }
-.op-bg-4 { background: radial-gradient(circle at 50% 25%, #664912 0%, #151424 78%); }
-.op-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
-.op-dot { width: 22px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.25); }
-.op-dot.on { background: #ffd000; }
-
-.op-title-layer {
-  position: relative; flex: 1; display: flex; flex-direction: column; justify-content: space-between;
-  padding: 18px 16px 32px; overflow: hidden;
-  background: radial-gradient(circle at 50% 30%, #2d264d 0%, #121422 78%);
-}
-.op-title-art { position: absolute; inset: 40px 0 80px 0; display: flex; align-items: center; justify-content: center; opacity: 0.94; pointer-events: none; }
-.op-title-logo { position: relative; z-index: 2; text-align: center; margin-top: 8px; }
-.op-title-logo h1 { margin: 4px 0 0; font-size: 27px; letter-spacing: 2px; color: #ffd000; text-shadow: 0 3px 14px rgba(0,0,0,0.9), 0 0 18px rgba(181,101,255,0.8); }
-.op-title-bottom { position: relative; z-index: 2; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-@keyframes tapPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.04); opacity: 0.82; } }
-.btn-tap-start { width: min(86vw, 340px); padding: 14px; font-size: 16px; letter-spacing: 2px; background: linear-gradient(90deg, #18b88a, #ffd000); color: #121318; border: 3px solid #fff; border-radius: 999px; animation: tapPulse 1.6s infinite ease-in-out; }
