@@ -245,6 +245,8 @@ function updateTabletBadge() {
   const msCnt = typeof getUnclaimedMissionCount === "function" ? getUnclaimedMissionCount() : 0;
   const lbCnt = typeof getLoginBonusStatus === "function" ? getLoginBonusStatus().unclaimedCount : 0;
   const ntCnt = typeof getUnreadNoticeCount === "function" ? getUnreadNoticeCount() : 0;
+  const fbCnt = typeof getUnreadFeedbackCount === "function" ? getUnreadFeedbackCount() : 0;
+
 
   const dexBadge = document.getElementById("home-dex-badge");
   if (dexBadge) { dexBadge.style.display = dCnt > 0 ? "inline-block" : "none"; dexBadge.textContent = `${dCnt}件`; }
@@ -257,6 +259,7 @@ function updateTabletBadge() {
 }
 
 function switchView(viewId) {
+  if (viewId === "feedback" && typeof renderFeedbackView === "function") renderFeedbackView();
   if (!isFeatureUnlocked(viewId)) {
     const rule = FEATURE_UNLOCK_RULES[viewId];
     playSfx("tap");
