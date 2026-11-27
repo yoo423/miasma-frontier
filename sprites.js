@@ -1,4 +1,4 @@
-window.MF_IMG_VER = "230";
+window.MF_IMG_VER = "370";
 let zoomCharId = null;
 let zoomFaceMode = true;
 
@@ -62,7 +62,6 @@ window.MF_SPRITES = {
     }[c]));
   },
 
-  // mode: "hero"(ホーム大立ち絵) / "contain"(全身) / "face-zoom"(顔アップ拡大) / "cutin"(顔カットイン) / "icon" / "icon-lg"
   portraitHTML(ch, mode = "contain") {
     const sid = ch.styleId || (typeof state !== "undefined" ? state.styleId : "m_cool") || "m_cool";
     const base = ch.isProtagonist ? `assets/protagonist_${sid}` : `assets/${ch.id}`;
@@ -96,6 +95,30 @@ window.MF_SPRITES = {
         <span style="font-size:52px;">${ch.emoji || "👤"}</span>
         <span style="font-size:12px; font-weight:900;">${alt}</span>
       </div>
+    `;
+  },
+
+  // ボス画像表示（assets/<enemyId>.jpg があれば表示、なければ自動で絵文字表示）
+  enemyHTML(en, mode = "stage") {
+    if (!en) return "";
+    const base = `assets/${en.id}`;
+    const firstSrc = `${base}.jpg?v=${window.MF_IMG_VER}`;
+    const alt = this.esc(en.name);
+
+    if (mode === "thumb") {
+      return `
+        <div class="enemy-thumb">
+          <img class="enemy-thumb-img" src="${firstSrc}" data-base="${base}" data-fb="" data-step="0"
+               alt="${alt}" onerror="mfImgFallback(this)" />
+          <div class="enemy-thumb-fallback" style="display:none;">${en.emoji || "👾"}</div>
+        </div>
+      `;
+    }
+
+    return `
+      <img class="enemy-stage-img" src="${firstSrc}" data-base="${base}" data-fb="" data-step="0"
+           alt="${alt}" onerror="mfImgFallback(this)" />
+      <div class="stage-enemy-emoji" style="display:none;">${en.emoji || "👾"}</div>
     `;
   }
 };
