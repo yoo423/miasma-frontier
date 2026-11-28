@@ -362,8 +362,18 @@ function pickStoryChoice(choiceIdx) {
   playSfx("switch");
   renderNovelScene();
 }
+
+function getChapterEndIdSafe(num) {
+  if (typeof getChapterEpisodes === "function") {
+    const eps = getChapterEpisodes(num);
+    if (eps.length > 0) return eps[eps.length - 1].id;
+  }
+  const meta = (typeof STORY_CHAPTER_META !== "undefined" ? STORY_CHAPTER_META : []).find(m => m.num === num);
+  return meta ? meta.endId : `ch${num}_ep20`;
+}
+
 function getNextStoryEpisode(currentId) {
-  const all = getStoryChapters();
+  const all = typeof getStoryChapters === "function" ? getStoryChapters() : [];
   const idx = all.findIndex(c => c.id === currentId);
   if (idx < 0 || idx >= all.length - 1) return null;
   return all[idx + 1];
@@ -392,9 +402,10 @@ function showStoryClearOverlay(ch, isFirstClear) {
     document.body.appendChild(modal);
   }
 
+  const rw = ch.reward || {};
   const rewardHtml = isFirstClear
     ? `<div style="background:var(--surface-sub); border:1.5px solid #f3cf00; border-radius:10px; padding:8px; font-size:11.5px; font-weight:900; margin:8px 0;">
-         🎁 初踏破報酬：💎+${ch.reward.gems} ／ 🎟️券+2 ／ 📘+${ch.reward.books} ／ 💠+${ch.reward.cores}
+         🎁 初踏破報酬：💎+${Number(rw.gems || 0)} ／ 🎟️券+2 ／ 📘+${Number(rw.books || 0)} ／ 💠+${Number(rw.cores || 0)}
        </div>`
     : `<div style="font-size:11px; color:var(--muted); margin:6px 0;">回想エピソードを読み終えました</div>`;
 
@@ -424,15 +435,31 @@ function advanceNovelScene() {
   if (finishTypewriterImmediately()) return;
   stopNovelTimers();
   const { chapter, scenes, isEpilogue, index } = activeStory;
-  if (activeStory.replyLine) { activeStory.replyLine = null; activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
-  if (index < scenes.length - 1) { activeStory.index += 1; playSfx("tap"); renderNovelScene(); return; }
+
+  // 選択肢の返信表示後：次のシーンがあれば進め、最終シーンならそのまま完了処理へ
+  if (activeStory.replyLine) {
+    activeStory.replyLine = null;
+    if (index < scenes.length - 1) {
+      activeStory.index += 1;
+      playSfx("tap");
+      renderNovelScene();
+      return;
+    }
+  } else if (index < scenes.length - 1) {
+    activeStory.index += 1;
+    playSfx("tap");
+    renderNovelScene();
+    return;
+  }
 
   const chRef = chapter;
-  activeStory = null; storyAutoOn = false;
+  const epWasFirst = !!activeStory.wasFirstClear;
+  activeStory = null;
+  storyAutoOn = false;
 
   if (isEpilogue || !chRef.battleEnemyId) {
-    const isFirst = completeStoryChapter(chRef);
-    playSfx("gift");
+    const isFirst = epWasFirst || completeStoryChapter(chRef);
+    try { playSfx("gift"); } catch (_) {}
     renderStoryView();
     showStoryClearOverlay(chRef, isFirst);
     return;
@@ -444,7 +471,10 @@ function advanceNovelScene() {
     onWin: () => {
       const isFirst = completeStoryChapter(chRef);
       if (chRef.epilogue && chRef.epilogue.length > 0) {
-        setTimeout(() => startStoryChapter(chRef.id, true), 120);
+        setTimeout(() => {
+          startStoryChapter(chRef.id, true);
+          if (activeStory) activeStory.wasFirstClear = isFirst;
+        }, 120);
       } else {
         setTimeout(() => showStoryClearOverlay(chRef, isFirst), 180);
       }
@@ -453,29 +483,31 @@ function advanceNovelScene() {
 }
 
 function completeStoryChapter(ch) {
+  if (!ch || !state) return false;
   state.clearedStories = state.clearedStories || [];
   if (!state.clearedStories.includes(ch.id)) {
+    const rw = ch.reward || {};
     state.clearedStories.push(ch.id);
-    state.gems += ch.reward.gems;
-    state.credits += ch.reward.credits;
-    state.cardTickets = (state.cardTickets || 0) + 2;
-    state.expBooks = (state.expBooks || 0) + ch.reward.books;
-    state.cores = (state.cores || 0) + ch.reward.cores;
-    saveGame();
+    state.gems = Number(state.gems || 0) + Number(rw.gems || 0);
+    state.credits = Number(state.credits || 0) + Number(rw.credits || 0);
+    state.cardTickets = Number(state.cardTickets || 0) + 2;
+    state.expBooks = Number(state.expBooks || 0) + Number(rw.books || 0);
+    state.cores = Number(state.cores || 0) + Number(rw.cores || 0);
+    try { saveGame(); } catch (_) {}
+    try { renderTopBar(); } catch (_) {}
     let unlockMsg = "";
     if (ch.id === "ch1_ep3") unlockMsg = " ／ フレンド通信が利用可能に！";
     if (ch.id === "ch1_ep4") unlockMsg = " ／ キャンプ＆クラフト設備が稼働！";
-    if (ch.id === getChapterEndId(1)) unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
-    if (ch.id === getChapterEndId(2) && PUBLISHED_MAX_CHAPTER >= 3) unlockMsg = " ／ 『❄️第3章』解放！";
-    if (ch.id === getChapterEndId(3) && PUBLISHED_MAX_CHAPTER >= 4) unlockMsg = " ／ 『🔥第4章』解放！";
-    showToast(`📖 ${ch.chapter}踏破！💎+${ch.reward.gems} / 🎟️券+2${unlockMsg}`);
+    if (ch.id === getChapterEndIdSafe(1)) unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
+    if (ch.id === getChapterEndIdSafe(2) && PUBLISHED_MAX_CHAPTER >= 3) unlockMsg = " ／ 『❄️第3章』解放！";
+    if (ch.id === getChapterEndIdSafe(3) && PUBLISHED_MAX_CHAPTER >= 4) unlockMsg = " ／ 『🔥第4章』解放！";
+    try { showToast(`📖 ${ch.chapter}踏破！💎+${Number(rw.gems || 0)} / 🎟️券+2${unlockMsg}`); } catch (_) {}
     return true;
   }
   return false;
 }
 
 function closeNovelStage() { stopNovelTimers(); storyAutoOn = false; activeStory = null; closeStoryClearOverlay(); renderStoryView(); }
-
 
 // ---------- 分岐ルート開拓マップ ----------
 function renderExpeditionPanel() {
