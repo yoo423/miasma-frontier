@@ -1,9 +1,10 @@
 // =========================================================
-// 🎖️ 指揮官拡張モジュール（v2）
+// 🎖️ 指揮官拡張モジュール（完全版）
 //   1. ホーム中央「秘書官メインステージ」（左立ち絵＋右機能ドック／主人公対応）
 //   2. 自由移動・ピンチズーム対応 立ち絵拡大ビューア
 //   3. 元素共鳴（属性シナジー）＆ 小隊プリセット（5枠）
 //   4. 指揮官IDカード（スクショモード・URL共有・掲示板自動展開・名刺帳）
+//   5. 画面下部の空きスペース連動 QUICK ACCESS（最大3段＆自動拡大）
 // =========================================================
 let cfVoiceCursor = 0;
 let cfActiveIdCardTab = "mine";
@@ -130,7 +131,6 @@ function cfGetOwnedAllies() {
     .sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0) || (state?.charLevels?.[b.id] || 1) - (state?.charLevels?.[a.id] || 1));
 }
 
-// 主人公＋所持済み隊員（秘書官＆プリセット両対応）
 function cfGetOwnedPartyCandidates() {
   const protag = typeof getCharProfile === "function"
     ? getCharProfile("protagonist")
@@ -149,7 +149,6 @@ function cfEnsureState() {
   }
   if (!Array.isArray(state.friendIdCards)) state.friendIdCards = [];
 
-  // 主人公＋所持済み隊員のみ秘書官として許可
   const ownedSet = new Set(["protagonist", ...(state.ownedChars || [])]);
   if (!state.secretaryCharId || !ownedSet.has(state.secretaryCharId)) {
     const allies = cfGetOwnedAllies();
@@ -176,30 +175,17 @@ function cfEnsureState() {
 // 🔍 自由移動（ドラッグ）＆ ピンチズーム対応 立ち絵拡大ビューア
 // =========================================================
 let cfZoomState = {
-  charId: "protagonist",
-  scale: 1,
-  tx: 0,
-  ty: 0,
-  dragging: false,
-  pinching: false,
-  startX: 0,
-  startY: 0,
-  baseTx: 0,
-  baseTy: 0,
-  pinchDist: 0,
-  pinchScale: 1,
-  lastTap: 0
+  charId: "protagonist", scale: 1, tx: 0, ty: 0,
+  dragging: false, pinching: false,
+  startX: 0, startY: 0, baseTx: 0, baseTy: 0,
+  pinchDist: 0, pinchScale: 1, lastTap: 0
 };
 
 function cfApplyZoomTransform() {
   const el = document.getElementById("cf-zoom-target");
   const readout = document.getElementById("cf-zoom-pct");
-  if (el) {
-    el.style.transform = `translate3d(${cfZoomState.tx}px, ${cfZoomState.ty}px, 0) scale(${cfZoomState.scale})`;
-  }
-  if (readout) {
-    readout.textContent = `${Math.round(cfZoomState.scale * 100)}%`;
-  }
+  if (el) el.style.transform = `translate3d(${cfZoomState.tx}px, ${cfZoomState.ty}px, 0) scale(${cfZoomState.scale})`;
+  if (readout) readout.textContent = `${Math.round(cfZoomState.scale * 100)}%`;
 }
 
 function cfAdjustZoom(delta) {
@@ -258,9 +244,7 @@ function cfOpenFreeZoom(charId) {
     </div>
 
     <div id="cf-zoom-canvas" class="cf-zoom-canvas">
-      <div id="cf-zoom-target" class="cf-zoom-target">
-        ${art}
-      </div>
+      <div id="cf-zoom-target" class="cf-zoom-target">${art}</div>
     </div>
 
     <div class="cf-zoom-controls">
@@ -284,7 +268,6 @@ function cfBindZoomGestures() {
 
   const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
-  // タッチ（1本指パン・2本指ピンチ・ダブルタップ拡大）
   canvas.addEventListener("touchstart", (e) => {
     if (e.touches.length === 1) {
       const now = Date.now();
@@ -312,15 +295,12 @@ function cfBindZoomGestures() {
   canvas.addEventListener("touchmove", (e) => {
     e.preventDefault();
     if (e.touches.length === 1 && cfZoomState.dragging) {
-      const dx = e.touches[0].clientX - cfZoomState.startX;
-      const dy = e.touches[0].clientY - cfZoomState.startY;
-      cfZoomState.tx = cfZoomState.baseTx + dx;
-      cfZoomState.ty = cfZoomState.baseTy + dy;
+      cfZoomState.tx = cfZoomState.baseTx + (e.touches[0].clientX - cfZoomState.startX);
+      cfZoomState.ty = cfZoomState.baseTy + (e.touches[0].clientY - cfZoomState.startY);
       cfApplyZoomTransform();
     } else if (e.touches.length >= 2 && cfZoomState.pinching && cfZoomState.pinchDist > 10) {
       const dist = getDist(e.touches[0], e.touches[1]);
-      const ratio = dist / cfZoomState.pinchDist;
-      cfZoomState.scale = Math.max(0.85, Math.min(4.5, cfZoomState.pinchScale * ratio));
+      cfZoomState.scale = Math.max(0.85, Math.min(4.5, cfZoomState.pinchScale * (dist / cfZoomState.pinchDist)));
       cfApplyZoomTransform();
     }
   }, { passive: false });
@@ -339,7 +319,6 @@ function cfBindZoomGestures() {
     }
   }, { passive: true });
 
-  // PCマウス（ドラッグ＆ホイール）
   canvas.addEventListener("mousedown", (e) => {
     e.preventDefault();
     cfZoomState.dragging = true;
@@ -378,8 +357,7 @@ function cfCalcResonance(partyIds) {
     atkPct: 0, hpPct: 0, defPct: 0,
     turnHealPct: 0, staggerPct: 0, startIce: false,
     startEx: 0, exGainPct: 0,
-    startAp: 0, startDraw: 0,
-    startShieldPct: 0
+    startAp: 0, startDraw: 0, startShieldPct: 0
   };
 
   Object.keys(counts).forEach(el => {
@@ -387,44 +365,21 @@ function cfCalcResonance(partyIds) {
     if (cnt >= 2 && CF_RESONANCE_META[el]) {
       const m = CF_RESONANCE_META[el];
       let detail = m.desc;
-      if (el === "fire") {
-        const v = cnt >= 3 ? 22 : 15;
-        mods.atkPct += v;
-        detail = `小隊ATK +${v}%`;
-      } else if (el === "water") {
-        mods.hpPct += 18;
-        mods.turnHealPct += 5;
-        detail = "最大HP +18% / 毎T回復5%";
-      } else if (el === "ice") {
-        mods.staggerPct += 22;
-        mods.startIce = true;
-        detail = "体勢削り +22% / 開幕氷付着";
-      } else if (el === "volt") {
-        mods.startEx += 20;
-        mods.exGainPct += 25;
-        detail = "開幕EX +20% / EX獲得+25%";
-      } else if (el === "wind") {
-        mods.startAp += 1;
-        mods.startDraw += 1;
-        detail = "開幕AP +1 / 追加1ドロー";
-      } else if (el === "arc") {
-        mods.startShieldPct += 16;
-        mods.defPct += 20;
-        detail = "開幕防壁16% / DEF +20%";
-      }
+      if (el === "fire") { const v = cnt >= 3 ? 22 : 15; mods.atkPct += v; detail = `小隊ATK +${v}%`; }
+      else if (el === "water") { mods.hpPct += 18; mods.turnHealPct += 5; detail = "最大HP +18% / 毎T回復5%"; }
+      else if (el === "ice") { mods.staggerPct += 22; mods.startIce = true; detail = "体勢削り +22% / 開幕氷付着"; }
+      else if (el === "volt") { mods.startEx += 20; mods.exGainPct += 25; detail = "開幕EX +20% / EX獲得+25%"; }
+      else if (el === "wind") { mods.startAp += 1; mods.startDraw += 1; detail = "開幕AP +1 / 追加1ドロー"; }
+      else if (el === "arc") { mods.startShieldPct += 16; mods.defPct += 20; detail = "開幕防壁16% / DEF +20%"; }
       active.push({ id: el, icon: m.icon, name: m.name, color: m.color, detail, count: cnt });
     }
   });
 
-  const uniqueCount = Object.keys(counts).length;
-  if (ids.length >= 4 && uniqueCount >= 4) {
+  if (ids.length >= 4 && Object.keys(counts).length >= 4) {
     const rm = CF_RESONANCE_META.rainbow;
-    mods.atkPct += 10;
-    mods.hpPct += 10;
-    mods.defPct += 24;
+    mods.atkPct += 10; mods.hpPct += 10; mods.defPct += 24;
     active.push({ id: "rainbow", icon: rm.icon, name: rm.name, color: rm.color, detail: "全ステ+10% / 堅牢防御", count: 4 });
   }
-
   return { active, mods, counts };
 }
 
@@ -438,10 +393,7 @@ function cfApplyBattleResonance() {
 
   const m = res.mods;
   if (m.atkPct > 0) btl.members.forEach(mem => { mem.atk = Math.round(mem.atk * (1 + m.atkPct / 100)); });
-  if (m.hpPct > 0) {
-    btl.teamMaxHp = Math.round(btl.teamMaxHp * (1 + m.hpPct / 100));
-    btl.teamHp = btl.teamMaxHp;
-  }
+  if (m.hpPct > 0) { btl.teamMaxHp = Math.round(btl.teamMaxHp * (1 + m.hpPct / 100)); btl.teamHp = btl.teamMaxHp; }
   if (m.defPct > 0) btl.teamDef = Math.round((btl.teamDef || 0) * (1 + m.defPct / 100));
   if (m.startEx > 0) btl.exGauge = Math.min(95, (btl.exGauge || 0) + m.startEx);
   if (m.startShieldPct > 0) btl.shield = (btl.shield || 0) + Math.round(btl.teamMaxHp * (m.startShieldPct / 100));
@@ -577,9 +529,7 @@ function cfRenderPresetModal() {
       </div>
       <div style="font-size:10.5px; font-weight:900; margin-bottom:4px; text-align:left;">連動するマイデッキ枠：</div>
       <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-bottom:8px;">
-        ${[0, 1, 2, 3, 4].map(d => `
-          <button class="btn-xs ${Number(pr.deckIdx || 0) === d ? "btn-primary" : ""}" onclick="cfSetPresetDeck(${idx}, ${d})">デッキ${d + 1}</button>
-        `).join("")}
+        ${[0, 1, 2, 3, 4].map(d => `<button class="btn-xs ${Number(pr.deckIdx || 0) === d ? "btn-primary" : ""}" onclick="cfSetPresetDeck(${idx}, ${d})">デッキ${d + 1}</button>`).join("")}
       </div>
       <div style="font-size:10.5px; font-weight:900; margin-bottom:4px; text-align:left;">編成メンバー選択（${pr.party.length}/4名）：</div>
       <div class="cf-pick-grid">
@@ -607,14 +557,12 @@ function cfRenderPresetModal() {
           ? `<div style="display:flex; flex-direction:column; gap:4px;">${curRes.active.map(r => `<div class="cf-res-pill" style="border-color:${r.color};">${r.icon} <strong>${r.name}</strong>：${r.detail}</div>`).join("")}</div>`
           : `<div style="font-size:10.5px; opacity:0.8;">現在未発動（同属性2名以上、または4人全員異なる属性で発動！）</div>`}
       </div>
-
       <details style="text-align:left; font-size:10px; background:var(--surface-sub); border-radius:9px; padding:6px 8px; margin-bottom:8px;">
         <summary style="font-weight:900; cursor:pointer;">📖 全7種の元素共鳴効果一覧を見る</summary>
         <div style="margin-top:5px; line-height:1.55;">
           ${Object.values(CF_RESONANCE_META).map(m => `<div>${m.icon} <strong>${m.name}</strong>：${m.desc}</div>`).join("")}
         </div>
       </details>
-
       <div style="display:flex; flex-direction:column; gap:7px;">
         ${state.squadPresets.map((pr, i) => {
           const pRes = cfCalcResonance(pr.party);
@@ -696,26 +644,17 @@ function cfGetSecretaryVoicePool(ch) {
   }[slot.key]);
 
   const pool = [{ tag: slot.label, text: timeText }];
-
-  if (Array.isArray(ch.voiceLines)) {
-    ch.voiceLines.forEach(v => pool.push({ tag: "💬 隊員ボイス", text: v }));
-  }
+  if (Array.isArray(ch.voiceLines)) ch.voiceLines.forEach(v => pool.push({ tag: "💬 隊員ボイス", text: v }));
 
   if (key !== "protagonist") {
     const bLv = cfGetBondLvSafe(ch.id);
     if (bLv >= 3) {
       const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
-      pool.push({
-        tag: "💞 絆Lv.3特別ボイス",
-        text: lore?.l3 || `${pName}の指揮のもとで戦えるのが、今の私にとって一番の誇りです。`
-      });
+      pool.push({ tag: "💞 絆Lv.3特別ボイス", text: lore?.l3 || `${pName}の指揮のもとで戦えるのが、今の私にとって一番の誇りです。` });
     }
     if (bLv >= 5) {
       const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
-      pool.push({
-        tag: "👑 絆Lv.5極ボイス",
-        text: lore?.l5 || `どんな未来が待っていようと、ずっと${pName}の隣で戦い抜くと誓います。`
-      });
+      pool.push({ tag: "👑 絆Lv.5極ボイス", text: lore?.l5 || `どんな未来が待っていようと、ずっと${pName}の隣で戦い抜くと誓います。` });
     }
   }
   return pool;
@@ -744,7 +683,7 @@ function cfTapSecretary() {
 
 function cfOpenSecretaryPicker() {
   cfEnsureState();
-  const candidates = cfGetOwnedPartyCandidates(); // 主人公＋所持隊員
+  const candidates = cfGetOwnedPartyCandidates();
   let modal = document.getElementById("modal-cf-secretary");
   if (!modal) {
     modal = document.createElement("div");
@@ -791,10 +730,7 @@ function cfOpenSecretaryPicker() {
 function cfSetSecretary(charId) {
   cfEnsureState();
   const owned = new Set(["protagonist", ...(state.ownedChars || [])]);
-  if (!owned.has(charId)) {
-    showToast("未所持の隊員は秘書官に設定できません");
-    return;
-  }
+  if (!owned.has(charId)) { showToast("未所持の隊員は秘書官に設定できません"); return; }
   state.secretaryCharId = charId;
   cfVoiceCursor = 0;
   if (typeof saveGame === "function") saveGame();
@@ -813,37 +749,25 @@ function cfGetRewardHubBadgesSafe() {
   return { ach: 0, disp: 0, weekly: 0, total: 0 };
 }
 
-// ホーム画面：旧切替ステージ＆旧上部バーを廃止し、ド真ん中の秘書官メインステージへ統合
 function cfHideLegacyHomeStages(homeEl) {
   if (!homeEl) return;
   const keepSel = ".home-play-row, .home-main-dock";
 
-  // 下のメインボタン群（物語・討伐・デッキ・隊員・極限・タブレット）を確実に表示維持
   homeEl.querySelectorAll(keepSel).forEach(el => {
     el.style.display = "";
     Array.from(el.children).forEach(c => { c.style.display = ""; });
   });
 
-  // 秘書官ステージと下のボタン群以外の「旧切り替え画面」だけを非表示にする
   const prune = (container) => {
     Array.from(container.children).forEach(el => {
       if (!el || el.id === "cf-home-main-stage" || el.id === "cf-home-extra-dock") return;
-      if (el.matches(keepSel)) {
-        el.style.display = "";
-        return;
-      }
-      if (el.querySelector(keepSel)) {
-        el.style.display = "";
-        prune(el);
-        return;
-      }
+      if (el.matches(keepSel)) { el.style.display = ""; return; }
+      if (el.querySelector(keepSel)) { el.style.display = ""; prune(el); return; }
       el.style.display = "none";
     });
   };
-
   prune(homeEl);
 }
-
 
 function cfRenderHomeWidgets() {
   if (typeof state === "undefined" || !state) return;
@@ -927,7 +851,10 @@ function cfRenderHomeWidgets() {
       </div>
     `;
   } finally {
-    setTimeout(() => { cfDomLock = false; }, 0);
+    setTimeout(() => {
+      cfDomLock = false;
+      cfUpdateHomeExtraDock();
+    }, 0);
   }
 }
 
@@ -955,18 +882,14 @@ function cfBuildMyCardPayload() {
     r: Number(state.playerRank || 1),
     p: Math.round(totalPower),
     ml: maxCharLv,
-    s: secId,
-    sl: secLv,
-    sd: secDupe,
-    sb: secBond,
+    s: secId, sl: secLv, sd: secDupe, sb: secBond,
     st: String(state.styleId || "m_cool"),
     pe: String(typeof getCharProfile === "function" ? (getCharProfile("protagonist")?.element || "fire") : "fire"),
     sq: party,
     w: Number(state.arenaWins || 0),
     t3: Number(state.achStats?.tier3Clears || 0),
     t4: Number(state.achStats?.tier4Clears || 0),
-    b5: bondMaxCnt,
-    cd: cardCnt,
+    b5: bondMaxCnt, cd: cardCnt,
     cm: String(state.commanderBio || "").slice(0, 40)
   };
 }
@@ -988,11 +911,8 @@ function cfDecodeCard(rawText) {
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const obj = JSON.parse(new TextDecoder().decode(bytes));
-    if (!obj || !obj.n || !obj.c) return null;
-    return obj;
-  } catch (_) {
-    return null;
-  }
+    return (obj && obj.n && obj.c) ? obj : null;
+  } catch (_) { return null; }
 }
 
 function cfRenderIdCardPlateHtml(card, isForeign = false) {
@@ -1002,9 +922,7 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
     ? { id: "protagonist", name: card.n, rarity: "SR", element: card.pe || "fire", isProtagonist: true, styleId: card.st || "m_cool", emoji: "🧑‍✈️" }
     : (chars[card.s] || { id: card.s || "aoi", name: "アオイ", rarity: "SR", element: "water", emoji: "🛡️" });
   const el = window.MF_DATA?.ELEMENTS?.[secChar.element] || { icon: "✨", name: "煌", color: "#f3cf00" };
-  const portrait = window.MF_SPRITES?.portraitHTML
-    ? window.MF_SPRITES.portraitHTML(secChar, "contain")
-    : `<div style="font-size:64px;">${secChar.emoji || "👤"}</div>`;
+  const portrait = window.MF_SPRITES?.portraitHTML ? window.MF_SPRITES.portraitHTML(secChar, "contain") : `<div style="font-size:64px;">${secChar.emoji || "👤"}</div>`;
 
   const sqIds = Array.isArray(card.sq) ? card.sq.slice(0, 4) : ["protagonist"];
   const elCounts = {};
@@ -1022,12 +940,10 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
     <div class="cf-idcard-plate">
       <div class="cf-id-hazard"></div>
       <div class="cf-id-grid"></div>
-
       <div class="cf-id-top">
         <span class="ef-code">MIASMA FRONTIER // OPERATOR PASS</span>
         <span class="cf-id-serial">${cfEsc(card.c)}</span>
       </div>
-
       <div class="cf-id-main">
         <div class="cf-id-art-frame">
           ${portrait}
@@ -1036,7 +952,6 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
             <small>Lv.${card.sl || 1} ${stars} ${isProtagSec ? "👑隊長" : `💞${card.sb || 1}`}</small>
           </div>
         </div>
-
         <div class="cf-id-info">
           <div class="cf-id-title-pill">🏅 ${cfEsc(card.t)}</div>
           <div class="cf-id-name">${cfEsc(card.n)}</div>
@@ -1044,18 +959,15 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
             <span>開拓 <strong>Lv.${card.r}</strong></span>
             <span>小隊戦力 <strong>${Number(card.p || 0).toLocaleString()}</strong></span>
           </div>
-
           <div class="cf-id-metrics">
             <div class="cf-id-m"><span>最高Lv</span><strong>Lv.${card.ml || 1}</strong></div>
             <div class="cf-id-m"><span>終焉/災厄</span><strong>${card.t4 || 0} / ${card.t3 || 0}</strong></div>
             <div class="cf-id-m"><span>対人勝利</span><strong>${card.w || 0}勝</strong></div>
             <div class="cf-id-m"><span>絆MAX/札</span><strong>${card.b5 || 0}名 / ${card.cd || 0}</strong></div>
           </div>
-
           <div class="cf-id-bio">「${cfEsc(card.cm || "第7クリアラー小隊、前線開拓中！")}」</div>
         </div>
       </div>
-
       <div class="cf-id-squad-row">
         <div class="cf-id-squad-icons">
           ${sqIds.map(id => {
@@ -1069,7 +981,6 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
           ${resBadges.length ? resBadges.map(b => `<span>${b}</span>`).join("") : `<span>SQUAD READY</span>`}
         </div>
       </div>
-
       <div class="cf-id-footer">
         <span>AUTH // ${isForeign ? "VISITOR RECORD" : "VERIFIED COMMANDER"}</span>
         <span class="cf-barcode">||| || ||| | |||| || |</span>
@@ -1087,16 +998,14 @@ function cfCopyText(txt, msg) {
 }
 
 function cfCopyMyCardUrl() {
-  const code = cfEncodeCard(cfBuildMyCardPayload());
-  const raw = code.replace(/^MFCARD:/, "");
+  const raw = cfEncodeCard(cfBuildMyCardPayload()).replace(/^MFCARD:/, "");
   const url = `${window.location.origin}${window.location.pathname}?idcard=${raw}`;
   cfCopyText(`🪪『ミアズマ・フロンティア』私の指揮官IDカードです！開くとプロフィールが見られます✨\n${url}`, "🔗 共有リンクをコピーしました！友達へ送れます");
 }
 
 function cfCopyMyCardForBoard() {
   const p = cfBuildMyCardPayload();
-  const code = cfEncodeCard(p);
-  cfCopyText(`🪪【指揮官名刺】${p.n}（開拓Lv.${p.r} / 戦力${p.p}）よろしくお願いします！\n${code}`, "📋 掲示板貼り付け用の名刺テキストをコピーしました！");
+  cfCopyText(`🪪【指揮官名刺】${p.n}（開拓Lv.${p.r} / 戦力${p.p}）よろしくお願いします！\n${cfEncodeCard(p)}`, "📋 掲示板貼り付け用の名刺テキストをコピーしました！");
 }
 
 function cfEditCommanderBio() {
@@ -1138,8 +1047,7 @@ function cfSaveForeignCardToBook(cardObj) {
   const list = state.friendIdCards;
   const idx = list.findIndex(x => x.c === cardObj.c);
   const stamped = { ...cardObj, savedAt: Date.now() };
-  if (idx >= 0) list[idx] = stamped;
-  else list.unshift(stamped);
+  if (idx >= 0) list[idx] = stamped; else list.unshift(stamped);
   if (list.length > 30) list.length = 30;
   if (typeof saveGame === "function") saveGame();
   if (typeof playSfx === "function") playSfx("gift");
@@ -1156,10 +1064,7 @@ function cfDeleteForeignCard(serial) {
 
 function cfOpenForeignCardModal(rawOrObj) {
   const card = typeof rawOrObj === "string" ? cfDecodeCard(rawOrObj) : rawOrObj;
-  if (!card) {
-    showToast("名刺コードまたは共有URLを正しく読み取れませんでした");
-    return;
-  }
+  if (!card) { showToast("名刺コードまたは共有URLを正しく読み取れませんでした"); return; }
   cfViewingForeignCard = card;
   cfActiveIdCardTab = "lookup";
   cfOpenIdCardModal("lookup");
@@ -1190,9 +1095,8 @@ function cfRenderIdCardModal() {
 
   let bodyHtml = "";
   if (cfActiveIdCardTab === "mine") {
-    const myCard = cfBuildMyCardPayload();
     bodyHtml = `
-      ${cfRenderIdCardPlateHtml(myCard, false)}
+      ${cfRenderIdCardPlateHtml(cfBuildMyCardPayload(), false)}
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:9px;">
         <button class="btn-accent2" style="padding:9px 4px; font-size:11px;" onclick="cfOpenPhotoMode(false)">📸 スクショ専用表示</button>
         <button class="btn-primary" style="padding:9px 4px; font-size:11px;" onclick="cfCopyMyCardUrl()">🔗 友達へ共有リンク</button>
@@ -1200,9 +1104,6 @@ function cfRenderIdCardModal() {
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px;">
         <button class="btn-xs" style="padding:7px;" onclick="cfCopyMyCardForBoard()">💬 掲示板用コードコピー</button>
         <button class="btn-xs" style="padding:7px;" onclick="cfEditCommanderBio()">✏️ ひとこと編集</button>
-      </div>
-      <div style="font-size:10px; color:var(--muted); margin-top:7px; text-align:left; line-height:1.45;">
-        ※共有リンクを送ると友達があなたのIDカードを見られます。『掲示板用コード』をゲーム内掲示板へ貼ると、他の全員がワンタップであなたの名刺を見られます！
       </div>
     `;
   } else if (cfActiveIdCardTab === "book") {
@@ -1243,7 +1144,7 @@ function cfRenderIdCardModal() {
         </div>
       ` : `
         <div style="font-size:11px; color:var(--muted); padding:16px 8px; background:var(--surface-sub); border-radius:10px;">
-          友達から送られた共有URLや、掲示板の <code>MFCARD:...</code> コードを上の欄に貼って『読込』を押すと、相手の指揮官IDカードを表示できます。
+          友達から送られた共有URLや、掲示板の <code>MFCARD:...</code> コードを上の欄に貼って『読込』を押すと表示できます。
         </div>
       `}
     `;
@@ -1264,6 +1165,115 @@ function cfRenderIdCardModal() {
       ${bodyHtml}
     </div>
   `;
+}
+
+// =========================================================
+// 4. 📱 画面下部の空きスペース連動 QUICK ACCESS（最大3段＆自動拡大）
+// =========================================================
+const CF_EXTRA_SHORTCUTS = [
+  { label: "スカウト", icon: "🛰️", views: ["gacha", "scout"], accent: "gold" },
+  { label: "絆", icon: "💞", views: ["bonds", "bond"], accent: "pink", badgeFn: () => {
+    if (typeof boGetOwnedBondChars === "function" && typeof boHasUnreadEp === "function") {
+      return boGetOwnedBondChars().filter(c => boHasUnreadEp(c.id)).length;
+    }
+    return 0;
+  }},
+  { label: "ショップ", icon: "🏪", views: ["shop", "store"], accent: "mint" },
+  { label: "アリーナ", icon: "🏆", views: ["arena", "pvp"], accent: "cyan" },
+  { label: "任務", icon: "📋", views: ["missions", "mission"], accent: "mint" },
+  { label: "キャンプ", icon: "🏕️", views: ["camp"], accent: "gold" },
+  { label: "イベント", icon: "🎪", views: ["events", "event"], accent: "pink" },
+  { label: "掲示板", icon: "💬", views: ["board", "bbs"], accent: "cyan" },
+  { label: "調査ノート", icon: "📓", views: ["bestiary", "dex", "book", "huntlog"], accent: "gold" },
+  { label: "倉庫・素材", icon: "🎒", views: ["inventory", "bag", "items"], accent: "mint" },
+  { label: "フレンド", icon: "👥", views: ["friends", "friend"], accent: "cyan" },
+  { label: "Wiki", icon: "📚", views: ["wiki", "glossary", "guide"], accent: "pink" },
+  { label: "クレスト交換", icon: "💠", actionName: "openCrestShopModal", accent: "gold" }
+];
+
+function cfResolveExistingView(candidates) {
+  if (!Array.isArray(candidates)) return "";
+  for (const id of candidates) {
+    if (document.getElementById(`view-${id}`)) return id;
+  }
+  return "";
+}
+
+function cfOpenExtraShortcut(viewId, actionName = "") {
+  if (typeof playSfx === "function") playSfx("tap");
+  if (actionName && typeof window[actionName] === "function") { window[actionName](); return; }
+  if (viewId && typeof switchView === "function") switchView(viewId);
+}
+
+function cfUpdateHomeExtraDock() {
+  const home = document.getElementById("view-home");
+  if (!home || !home.classList.contains("active")) return;
+
+  cfDomLock = true;
+  try {
+    let dock = document.getElementById("cf-home-extra-dock");
+    if (!dock) {
+      dock = document.createElement("div");
+      dock.id = "cf-home-extra-dock";
+      dock.className = "cf-extra-dock";
+      home.appendChild(dock);
+    }
+
+    dock.style.display = "none";
+
+    let maxBottom = 0;
+    home.querySelectorAll("#cf-home-main-stage, .home-play-row, .home-main-dock").forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > maxBottom) maxBottom = rect.bottom;
+    });
+
+    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const freePx = Math.floor(viewportH - maxBottom - 12);
+
+    const available = CF_EXTRA_SHORTCUTS
+      .map(item => {
+        const targetView = cfResolveExistingView(item.views);
+        const hasAction = !!(item.actionName && typeof window[item.actionName] === "function");
+        return { ...item, targetView, ok: Boolean(targetView || hasAction) };
+      })
+      .filter(item => item.ok);
+
+    if (freePx < 56 || !available.length) {
+      dock.style.display = "none";
+      return;
+    }
+
+    let rows = 1;
+    if (freePx >= 198 && available.length >= 12) rows = 3;
+    else if (freePx >= 116 && available.length >= 8) rows = 2;
+
+    const shown = available.slice(0, rows * 4);
+    const actualRows = Math.ceil(shown.length / 4);
+    const overhead = 32 + Math.max(0, actualRows - 1) * 6;
+    const rawBtnH = Math.floor((freePx - overhead) / actualRows);
+    const btnH = Math.max(48, Math.min(76, rawBtnH));
+
+    dock.classList.toggle("is-tall", btnH >= 60);
+    dock.innerHTML = `
+      <div class="cf-extra-dock-label">QUICK ACCESS // タブレット主要機能</div>
+      <div class="cf-extra-dock-grid" style="grid-auto-rows:${btnH}px;">
+        ${shown.map(item => {
+          const badge = typeof item.badgeFn === "function" ? item.badgeFn() : 0;
+          const actArg = item.actionName ? `'${item.actionName}'` : "''";
+          return `
+            <button class="cf-extra-btn acc-${item.accent}" onclick="cfOpenExtraShortcut('${item.targetView}', ${actArg})">
+              <span class="cf-extra-ico">${item.icon}</span>
+              <span class="cf-extra-lbl">${cfEsc(item.label)}</span>
+              ${badge > 0 ? `<b class="cf-extra-badge">${badge}</b>` : ""}
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+    dock.style.display = "block";
+  } finally {
+    setTimeout(() => { cfDomLock = false; }, 0);
+  }
 }
 
 function cfRenderAllBars() {
@@ -1325,16 +1335,13 @@ function cfEnhanceBoardCardLinks() {
   if (!board) return;
   cfDomLock = true;
   try {
-    const candidates = board.querySelectorAll("div, p, li, article");
-    candidates.forEach(el => {
+    board.querySelectorAll("div, p, li, article").forEach(el => {
       if (el.dataset.mfCardParsed || el.children.length > 4) return;
-      const txt = el.textContent || "";
-      const m = txt.match(/MFCARD:[A-Za-z0-9_-]+/);
+      const m = (el.textContent || "").match(/MFCARD:[A-Za-z0-9_-]+/);
       if (!m) return;
       const parsed = cfDecodeCard(m[0]);
       if (!parsed) return;
       el.dataset.mfCardParsed = "1";
-
       const btn = document.createElement("button");
       btn.className = "btn-xs btn-accent2 cf-board-card-btn";
       btn.textContent = `🪪 ${parsed.n}（開拓Lv.${parsed.r}）のIDカードを見る`;
@@ -1348,10 +1355,7 @@ function cfEnhanceBoardCardLinks() {
 
 // ---------- 🔗 安全フック ----------
 (function installCommanderHooks() {
-  // 既存の画像拡大呼び出しもすべて「自由移動＆ピンチズーム版」へ統一
-  window.openPortraitZoom = function(charId) {
-    cfOpenFreeZoom(charId);
-  };
+  window.openPortraitZoom = function(charId) { cfOpenFreeZoom(charId); };
 
   if (typeof window.startBattle === "function" && !window.startBattle._cfHooked) {
     const origStart = window.startBattle;
@@ -1372,12 +1376,10 @@ function cfEnhanceBoardCardLinks() {
       if (typeof btl !== "undefined" && btl && !btl.finished && btl.resonance?.mods) {
         const mods = btl.resonance.mods;
         if (mods.staggerPct > 0 && card?.power && !btl.stunned && btl.stagger > prevStag) {
-          const extraS = Math.max(1, Math.round((btl.stagger - prevStag) * (mods.staggerPct / 100)));
-          btl.stagger = Math.min(btl.maxStagger, btl.stagger + extraS);
+          btl.stagger = Math.min(btl.maxStagger, btl.stagger + Math.max(1, Math.round((btl.stagger - prevStag) * (mods.staggerPct / 100))));
         }
         if (mods.exGainPct > 0 && !card?.isUlt && btl.exGauge > prevEx && btl.exGauge < 100) {
-          const extraE = Math.max(1, Math.round((btl.exGauge - prevEx) * (mods.exGainPct / 100)));
-          btl.exGauge = Math.min(99, btl.exGauge + extraE);
+          btl.exGauge = Math.min(99, btl.exGauge + Math.max(1, Math.round((btl.exGauge - prevEx) * (mods.exGainPct / 100))));
         }
       }
       return r;
@@ -1401,7 +1403,6 @@ function cfEnhanceBoardCardLinks() {
     window.renderBattleHUD._cfHooked = true;
   }
 
-  // reward_hub のバッジ更新時にもホーム右側のボタンバッジを自動同期
   if (window.MF_REWARD_HUB?.renderEntryBanners && !window.MF_REWARD_HUB._cfHooked) {
     const origRh = window.MF_REWARD_HUB.renderEntryBanners;
     window.MF_REWARD_HUB.renderEntryBanners = function() {
@@ -1416,10 +1417,7 @@ function cfEnhanceBoardCardLinks() {
     const origSwitch = window.switchView;
     window.switchView = function() {
       const r = origSwitch.apply(this, arguments);
-      setTimeout(() => {
-        cfRenderAllBars();
-        cfEnhanceBoardCardLinks();
-      }, 45);
+      setTimeout(() => { cfRenderAllBars(); cfEnhanceBoardCardLinks(); }, 45);
       return r;
     };
     window.switchView._cfHooked = true;
@@ -1436,20 +1434,26 @@ function cfEnhanceBoardCardLinks() {
     }, 120);
   });
 
+  const scheduleResize = () => {
+    requestAnimationFrame(() => cfUpdateHomeExtraDock());
+    setTimeout(() => cfUpdateHomeExtraDock(), 160);
+  };
+  window.addEventListener("resize", scheduleResize);
+  window.addEventListener("orientationchange", scheduleResize);
+
   const boot = () => {
     setTimeout(() => {
       cfRenderAllBars();
+      scheduleResize();
       if (document.body) obs.observe(document.body, { childList: true, subtree: true });
-
       try {
-        const params = new URLSearchParams(window.location.search);
-        const raw = params.get("idcard");
+        const raw = new URLSearchParams(window.location.search).get("idcard");
         if (raw) {
           const card = cfDecodeCard("MFCARD:" + raw);
           if (card) setTimeout(() => cfOpenForeignCardModal(card), 900);
         }
       } catch (_) {}
-    }, 260);
+    }, 240);
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
@@ -1487,226 +1491,5 @@ window.cfEditCommanderBio = cfEditCommanderBio;
 window.cfOpenPhotoMode = cfOpenPhotoMode;
 window.cfSaveForeignCardToBook = cfSaveForeignCardToBook;
 window.cfDeleteForeignCard = cfDeleteForeignCard;
-// =========================================================
-// 📱 画面下部の空きスペース連動・タブレット重要ショートカット
-// =========================================================
-const CF_EXTRA_SHORTCUTS = [
-  // 1段目（最重要・空き56px以上で表示）
-  { label: "スカウト", icon: "🛰️", views: ["gacha", "scout"],        accent: "gold" },
-  { label: "絆",       icon: "💞", views: ["bonds", "bond"],         accent: "pink", badgeFn: () => {
-    if (typeof boGetOwnedBondChars === "function" && typeof boHasUnreadEp === "function") {
-      return boGetOwnedBondChars().filter(c => boHasUnreadEp(c.id)).length;
-    }
-    return 0;
-  }},
-  { label: "ショップ", icon: "🏪", views: ["shop", "store"],         accent: "mint" },
-  { label: "アリーナ", icon: "🏆", views: ["arena", "pvp"],          accent: "cyan" },
-  // 2段目（空き118px以上で追加表示）
-  { label: "任務",     icon: "📋", views: ["missions", "mission"],   accent: "mint" },
-  { label: "キャンプ", icon: "🏕️", views: ["camp"],                  accent: "gold" },
-  { label: "イベント", icon: "🎪", views: ["events", "event"],       accent: "pink" },
-  { label: "掲示板",   icon: "💬", views: ["board", "bbs"],          accent: "cyan" }
-];
-
-function cfResolveExistingView(candidates) {
-  for (const id of candidates) {
-    if (document.getElementById(`view-${id}`)) return id;
-  }
-  return candidates[0];
-}
-
-function cfOpenExtraShortcut(viewId) {
-  if (typeof playSfx === "function") playSfx("tap");
-  if (typeof switchView === "function") switchView(viewId);
-}
-
-function cfUpdateHomeExtraDock() {
-  const home = document.getElementById("view-home");
-  if (!home || !home.classList.contains("active")) return;
-
-  cfDomLock = true;
-  try {
-    let dock = document.getElementById("cf-home-extra-dock");
-    if (!dock) {
-      dock = document.createElement("div");
-      dock.id = "cf-home-extra-dock";
-      dock.className = "cf-extra-dock";
-      home.appendChild(dock);
-    }
-
-    // 自分自身を一旦隠して、既存ホームUIの最下端と画面下端の空きスペースを正確に計測
-    dock.style.display = "none";
-
-    let maxBottom = 0;
-    home.querySelectorAll("#cf-home-main-stage, .home-play-row, .home-main-dock").forEach(el => {
-      const rect = el.getBoundingClientRect();
-      if (rect.height > 0 && rect.bottom > maxBottom) maxBottom = rect.bottom;
-    });
-
-    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const freePx = Math.floor(viewportH - maxBottom - 10);
-
-    // 機種ごとの空きスペースに応じて 0段 / 1段(4個) / 2段(8個) を自動決定
-    const rows = freePx >= 118 ? 2 : (freePx >= 56 ? 1 : 0);
-    if (rows === 0) {
-      dock.style.display = "none";
-      return;
-    }
-
-    const available = CF_EXTRA_SHORTCUTS
-      .map(item => ({ ...item, targetView: cfResolveExistingView(item.views) }))
-      .filter(item => document.getElementById(`view-${item.targetView}`));
-
-    const shown = available.slice(0, rows * 4);
-    if (!shown.length) {
-      dock.style.display = "none";
-      return;
-    }
-
-    dock.innerHTML = `
-      <div class="cf-extra-dock-label">QUICK ACCESS // タブレット主要機能</div>
-      <div class="cf-extra-dock-grid">
-// =========================================================
-// 📱 画面下部の空きスペース連動・タブレット主要ショートカット（最大3段＆自動拡大）
-// =========================================================
-const CF_EXTRA_SHORTCUTS = [
-  // 1段目（最重要）
-  { label: "スカウト", icon: "🛰️", views: ["gacha", "scout"], accent: "gold" },
-  { label: "絆", icon: "💞", views: ["bonds", "bond"], accent: "pink", badgeFn: () => {
-    if (typeof boGetOwnedBondChars === "function" && typeof boHasUnreadEp === "function") {
-      return boGetOwnedBondChars().filter(c => boHasUnreadEp(c.id)).length;
-    }
-    return 0;
-  }},
-  { label: "ショップ", icon: "🏪", views: ["shop", "store"], accent: "mint" },
-  { label: "アリーナ", icon: "🏆", views: ["arena", "pvp"], accent: "cyan" },
-  // 2段目
-  { label: "任務", icon: "📋", views: ["missions", "mission"], accent: "mint" },
-  { label: "キャンプ", icon: "🏕️", views: ["camp"], accent: "gold" },
-  { label: "イベント", icon: "🎪", views: ["events", "event"], accent: "pink" },
-  { label: "掲示板", icon: "💬", views: ["board", "bbs"], accent: "cyan" },
-  // 3段目（縦長スマホ向け・余白が広い端末で自動追加）
-  { label: "調査ノート", icon: "📓", views: ["bestiary", "dex", "book", "huntlog"], accent: "gold" },
-  { label: "倉庫・素材", icon: "🎒", views: ["inventory", "bag", "items"], accent: "mint" },
-  { label: "フレンド", icon: "👥", views: ["friends", "friend"], accent: "cyan" },
-  { label: "Wiki", icon: "📚", views: ["wiki", "glossary", "guide"], accent: "pink" },
-  // 上記ビューが見つからない環境向けの予備ショートカット
-  { label: "クレスト交換", icon: "💠", actionName: "openCrestShopModal", accent: "gold" }
-];
-
-function cfResolveExistingView(candidates) {
-  if (!Array.isArray(candidates)) return "";
-  for (const id of candidates) {
-    if (document.getElementById(`view-${id}`)) return id;
-  }
-  return "";
-}
-
-function cfOpenExtraShortcut(viewId, actionName = "") {
-  if (typeof playSfx === "function") playSfx("tap");
-  if (actionName && typeof window[actionName] === "function") {
-    window[actionName]();
-    return;
-  }
-  if (viewId && typeof switchView === "function") switchView(viewId);
-}
-
-function cfUpdateHomeExtraDock() {
-  const home = document.getElementById("view-home");
-  if (!home || !home.classList.contains("active")) return;
-
-  cfDomLock = true;
-  try {
-    let dock = document.getElementById("cf-home-extra-dock");
-    if (!dock) {
-      dock = document.createElement("div");
-      dock.id = "cf-home-extra-dock";
-      dock.className = "cf-extra-dock";
-      home.appendChild(dock);
-    }
-
-    // 一旦非表示にして既存ホームUI下の空きスペースを正確に計測
-    dock.style.display = "none";
-
-    let maxBottom = 0;
-    home.querySelectorAll("#cf-home-main-stage, .home-play-row, .home-main-dock").forEach(el => {
-      const rect = el.getBoundingClientRect();
-      if (rect.height > 0 && rect.bottom > maxBottom) maxBottom = rect.bottom;
-    });
-
-    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const freePx = Math.floor(viewportH - maxBottom - 12);
-
-    const available = CF_EXTRA_SHORTCUTS
-      .map(item => {
-        const targetView = cfResolveExistingView(item.views);
-        const hasAction = !!(item.actionName && typeof window[item.actionName] === "function");
-        return { ...item, targetView, ok: Boolean(targetView || hasAction) };
-      })
-      .filter(item => item.ok);
-
-    if (freePx < 56 || !available.length) {
-      dock.style.display = "none";
-      return;
-    }
-
-    // 空きスペースに応じて 1段(4個) / 2段(8個) / 3段(12個) を決定
-    let rows = 1;
-    if (freePx >= 198 && available.length >= 12) rows = 3;
-    else if (freePx >= 116 && available.length >= 8) rows = 2;
-
-    const shown = available.slice(0, rows * 4);
-    const actualRows = Math.ceil(shown.length / 4);
-
-    // 残りの余白に合わせてボタン高さ（48px〜76px）を自動調整し、縦長スマホの隙間を綺麗に埋める
-    const overhead = 32 + Math.max(0, actualRows - 1) * 6;
-    const rawBtnH = Math.floor((freePx - overhead) / actualRows);
-    const btnH = Math.max(48, Math.min(76, rawBtnH));
-    const isTall = btnH >= 60;
-
-    dock.classList.toggle("is-tall", isTall);
-    dock.innerHTML = `
-      <div class="cf-extra-dock-label">QUICK ACCESS // タブレット主要機能</div>
-      <div class="cf-extra-dock-grid" style="grid-auto-rows:${btnH}px;">
-        ${shown.map(item => {
-          const badge = typeof item.badgeFn === "function" ? item.badgeFn() : 0;
-          const actArg = item.actionName ? `'${item.actionName}'` : "''";
-          return `
-            <button class="cf-extra-btn acc-${item.accent}" onclick="cfOpenExtraShortcut('${item.targetView}', ${actArg})">
-              <span class="cf-extra-ico">${item.icon}</span>
-              <span class="cf-extra-lbl">${cfEsc(item.label)}</span>
-              ${badge > 0 ? `<b class="cf-extra-badge">${badge}</b>` : ""}
-            </button>
-          `;
-        }).join("")}
-      </div>
-    `;
-    dock.style.display = "block";
-  } finally {
-    setTimeout(() => { cfDomLock = false; }, 0);
-  }
-}
-
 window.cfOpenExtraShortcut = cfOpenExtraShortcut;
 window.cfUpdateHomeExtraDock = cfUpdateHomeExtraDock;
-
-(function hookHomeExtraDock() {
-  const schedule = () => {
-    requestAnimationFrame(() => cfUpdateHomeExtraDock());
-    setTimeout(() => cfUpdateHomeExtraDock(), 160);
-  };
-
-  if (typeof window.cfRenderHomeWidgets === "function" && !window.cfRenderHomeWidgets._extraHooked) {
-    const orig = window.cfRenderHomeWidgets;
-    window.cfRenderHomeWidgets = function() {
-      const r = orig.apply(this, arguments);
-      schedule();
-      return r;
-    };
-    window.cfRenderHomeWidgets._extraHooked = true;
-  }
-
-  window.addEventListener("resize", schedule);
-  window.addEventListener("orientationchange", schedule);
-  setTimeout(schedule, 420);
-})();
