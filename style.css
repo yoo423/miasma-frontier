@@ -1435,3 +1435,23 @@ body.theme-tactical .battle-stage::before {
   border-radius: 9px; padding: 7px 8px;
 }
 .cf-board-card-btn { display: block; margin-top: 5px; width: 100%; padding: 6px !important; }
+/* ===== 🏛️ 開拓本部 施設拡張 ＆ 関門ガーディアン ===== */
+.pio-hq-upgrade {
+  background: var(--surface-sub); border: 1.5px solid #f3cf00;
+  border-radius: 10px; padding: 8px 9px; margin-bottom: 8px; text-align: left;
+}
+.pio-region-card {
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 9px; margin-bottom: 7px; text-align: left;
+}
+.pio-region-card.gate-alert {
+  border-color: #ff4d5a; background: rgba(255, 77, 90, 0.11);
+}
+.pio-region-card.is-max {
+  border-color: #f3cf00;
+}
+.pio-gate-btn {
+  background: linear-gradient(135deg, #ff2e4c, #b80f2e) !important;
+  color: #fff !important; border: 1.5px solid #f3cf00 !important;
+  font-weight: 900 !important;
+}
