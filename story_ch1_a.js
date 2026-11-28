@@ -218,7 +218,7 @@ window.MF_STORY_CH1_A = [
       { bg: "forest_mist", speaker: "lunaria", text: "なるほど、牙を折っちまえばいいのね！それに、あんな大振りの突進、見切ってカウンターを合わせれば逆に大チャンスじゃない！" },
       { bg: "forest_mist", speaker: "aoi", text: "敵の攻撃力が尋常ではありません！隊員たちの育成と装備の力、すべてを出し切る時です！" },
       {
-        bg: "forest_mist", speaker: "protagonist", text: "大猪が前脚で地面を掻き、猛烈な突進の構えに入った。第1章前編の試練を越えるぞ！",
+        bg: "forest_mist", speaker: "protagonist", text: "大猪が前脚で地面を掻き、猛烈な突進の構えに入った。この試練を越えるぞ！",
         choices: [
           { label: "「ターゲットは『硬質の大牙』！集中砲火で叩き折る！」", replySpeaker: "koharu", reply: "よっし！砕いた牙から最高の武器を鍛えてあげるから、気合入れていこう！", bondChar: "koharu" },
           { label: "「突進を防御とカウンターで受け止め、元素連携で逆転する！」", replySpeaker: "mikoto", reply: "見事な策ですわ。暴走する力ほど、受け流した時の反動は大きくなります。", bondChar: "mikoto" }
