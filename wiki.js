@@ -7,6 +7,7 @@ const WIKI_TABS = [
   { id: "deck",     label: "🃏 デッキ・武器" },
   { id: "growth",   label: "👑 育成・限定SSR" },
   { id: "contents", label: "🗼 極限・イベント" },
+  { id: "glossary", label: "📖 用語集" },
   { id: "faq",      label: "❓ FAQ・機能" }
 ];
 
@@ -226,6 +227,45 @@ function getWikiSections() {
       }
     ],
 
+    glossary: [
+      {
+        title: "🌍 世界観・ストーリー用語集",
+        tags: "用語集 世界観 ミアズマ 瘴霧 アーク 方舟都市 リベルタ クリアラー 第7小隊 霧獣 主霧獣 融光種 浄化ビーコン 軌道ポッド",
+        html: `
+          <div class="wk-table">
+            <div class="wk-tr wk-th"><span>用語</span><span>解説</span></div>
+            <div class="wk-tr"><span>🟣 ミアズマ<br><small>（瘴霧）</small></span><span>百年前に地上を覆った紫の霧。生物を凶暴化させ、通常の人間は長時間吸い込むと活動できない。</span></div>
+            <div class="wk-tr"><span>💎 アーク結晶</span><span>旧文明が発見した未知のエネルギー結晶。都市の動力源であり、隊員の武器や戦術カードの力にも使われる。</span></div>
+            <div class="wk-tr"><span>🏙️ 方舟都市<br><small>リベルタ</small></span><span>瘴霧から逃れた人類が築いた天空の避難都市。中央アーク炉の寿命が迫り、地上奪還計画が始動した。</span></div>
+            <div class="wk-tr"><span>🛡️ 第7クリアラー<br><small>小隊</small></span><span>プレイヤーが隊長を務める地上開拓の精鋭部隊。浄化ビーコンを設置し、霧に閉ざされた大地を切り拓く。</span></div>
+            <div class="wk-tr"><span>👾 霧獣<br><small>ミアズマ・ビースト</small></span><span>ミアズマと結晶を取り込んで変異した地上の怪物。強大な個体は『主霧獣』と呼ばれ領域を支配している。</span></div>
+            <div class="wk-tr"><span>👑 融光種<br><small>ラディアント</small></span><span>超高純度の黄金アークと融合し暴走した特異個体。通常の主霧獣を遥かに凌ぐ戦闘力を持つ。</span></div>
+            <div class="wk-tr"><span>📡 浄化ビーコン</span><span>周囲の瘴霧を吹き払い、前線キャンプや安全地帯を確保するための開拓装置。</span></div>
+            <div class="wk-tr"><span>🛰️ 軌道ポッド</span><span>方舟都市から地上の前線へ、増援隊員や戦術物資を高速投下する降下カプセル（スカウト演出）。</span></div>
+          </div>
+        `
+      },
+      {
+        title: "⚔️ バトル・システム用語集",
+        tags: "用語集 AP コスト チェイン EX ブレイク 体勢 部位破壊 装甲硬化 チャージ オーバードライブ 凸 昇格 予備EN",
+        html: `
+          <div class="wk-table">
+            <div class="wk-tr wk-th"><span>用語</span><span>意味・ルール</span></div>
+            <div class="wk-tr"><span>🔵 AP</span><span>カードを使うための行動ポイント。毎ターン基本4回復し、一部カードの『AP+1』効果でさらに伸ばせる。</span></div>
+            <div class="wk-tr"><span>🔥 3連チェイン</span><span>プレイマットの3枠すべてにカードを並べて発動すること。3枚目の威力が大幅UPし、EXゲージも追加上昇。</span></div>
+            <div class="wk-tr"><span>🌟 EX必殺札</span><span>EXゲージ100%で手札に自動生成されるコスト0の超必殺カード。1度使うと消滅する切り札。</span></div>
+            <div class="wk-tr"><span>💫 ブレイク<br><small>（体勢崩し）</small></span><span>敵の黄色い『体勢ゲージ』を満タンにすると発生。敵の行動を1ターン完全に止められる。</span></div>
+            <div class="wk-tr"><span>🛡️ 装甲硬化</span><span>敵の防御構え。通常攻撃は半減されるが、【💥崩し】カードを当てると特効大ダメージ＆即ブレイク！</span></div>
+            <div class="wk-tr"><span>💥 部位破壊</span><span>ボスの角や翼など特定部位のHPを0にすること。敵が弱体化し、武器鍛造用のレア素材が落ちる。</span></div>
+            <div class="wk-tr"><span>💢 怒り覚醒</span><span>ボスのHPが50%以下で発動するオーバードライブ状態。敵の攻撃力が1.35倍に跳ね上がる。</span></div>
+            <div class="wk-tr"><span>☠️ Lv差圧倒</span><span>育成クエスト中級・上級などで小隊平均Lvが基準未満の時に発動するペナルティ。育成すれば解除される。</span></div>
+            <div class="wk-tr"><span>⭐ 凸（限界突破）</span><span>スカウトで所持済み隊員を再獲得した際の自動強化（最大凸＋5）。基礎戦力が大きく上昇する。</span></div>
+            <div class="wk-tr"><span>⚡ 予備EN</span><span>上限160から溢れたスタミナが自動で貯まるタンク（最大1,000）。EN不足時に自動で補填される。</span></div>
+          </div>
+        `
+      }
+    ],
+
     faq: [
       {
         title: "❓ 戦術パック券（🎟️）はどこで集められる？",
@@ -299,7 +339,7 @@ function renderWikiView() {
   bodyEl.innerHTML = `
     <div style="display:flex; gap:5px; margin-bottom:10px;">
       <input type="text" id="wiki-search-input" value="${escapeHtml(wikiSearchQuery)}"
-             placeholder="🔍 キーワード検索（例：融解 / ミコト / 40枚 / コード）"
+             placeholder="🔍 キーワード検索（例：融解 / 融光種 / AP / ミコト）"
              oninput="setWikiSearch(this.value)"
              style="flex:1; font-size:12px; padding:7px 10px;" />
       <button class="btn-xs" onclick="clearWikiSearch()">✕</button>
