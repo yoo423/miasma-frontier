@@ -134,7 +134,7 @@ window.MF_STORY_CH2_B = [
           { label: "「誰一人欠けるな。冷静に読み勝ち、最高の連携で討ち果たす！」", replySpeaker: "celestia", reply: "了解しました、隊長。……全弾、確実に撃ち抜きます。", bondChar: "celestia" }
         ]
       },
-      { bg: "gold_storm", sfx: "boom", fx: "flash", speaker: "narrator", text: "黄金の稲妻と第7小隊の戦術光が激突する。第2章、最終決戦の幕が上がった。" }
+      { bg: "gold_storm", sfx: "boom", fx: "flash", speaker: "narrator", text: "黄金の稲妻と第7小隊の戦術光が激突する。決戦の幕が上がった。" }
     ]
   },
   {
@@ -152,7 +152,7 @@ window.MF_STORY_CH2_B = [
       { bg: "verde_morning", speaker: "celestia", text: "……ありがとう、隊長。あなたのおかげで、ようやく前を向くことができました。" },
       { bg: "verde_morning", speaker: "momo", text: "わぁ〜っ、峡谷の向こうに真っ白な雪山が見えるよ！すごい綺麗！" },
       { bg: "ark_night", bgm: "tension", sfx: "comm", speaker: "chloe", text: "皆さん、大勝利のあとに緊急速報です！先ほど割り込んできた謎の通信の発信源を、ついに完全逆探知しました！" },
-      { bg: "ark_night", speaker: "chloe", text: "座標は北の極寒地帯——第3エリア『白銀の研究所・フロストヘイヴン』。百年前に閉鎖されたはずの中央研究棟から、今も誰かが融光種を操っています！" },
+      { bg: "ark_night", speaker: "chloe", text: "座標は北の極寒地帯——『白銀の研究所・フロストヘイヴン』。百年前に閉鎖されたはずの中央研究棟から、今も誰かが融光種を操っています！" },
       { bg: "verde_morning", bgm: "story", speaker: "mikoto", text: "白銀の研究所……凍てつく雪原の奥に、すべての黒幕が潜んでいるのですね。隊長殿、次なる舞台へ向けて、小隊をさらに鍛え上げましょう。" }
     ]
   }
