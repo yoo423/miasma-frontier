@@ -174,14 +174,14 @@ window.MF_STORY_CH2_A = [
       { bg: "powerplant", bgm: "tension", sfx: "boom", fx: "flash", speaker: "narrator", text: "予備発電室に飛び込んだ小隊の目に映ったのは、青白い稲妻を全身に纏い、予備炉へ巨大なハサミを突き立てるスカラベの姿だった。" },
       { bg: "powerplant", speaker: "melissa", text: "このまま予備炉が破壊されたら、蓄積されていた超高圧エネルギーが一気に空へ噴き上がっちゃうわ！絶対に止めないと！" },
       { bg: "powerplant", speaker: "sylphy", text: "上等だ！こいつを片付けて、峡谷の半分は俺たちの手で完全に押さえてやろうぜ！" },
-      { bg: "powerplant", speaker: "valeria", text: "第2章前編の正念場ですわね。一糸乱れぬ連携で仕留めましょう！" },
+      { bg: "powerplant", speaker: "valeria", text: "ここが正念場ですわね。一糸乱れぬ連携で仕留めましょう！" },
       { bg: "danger", sfx: "roar", fx: "redflash", speaker: "protagonist", text: "予備炉を守り抜け！暴走スカラベ、完全討伐開始！" }
     ],
     epilogue: [
       { bg: "canyon_storm", bgm: "tension", sfx: "boom", fx: "flash", speaker: "narrator", text: "スカラベが砕け散り、発電所の暴走回路は完全に沈黙した。……だがその直後、峡谷の空そのものが真っ二つに裂けるほどの轟音が響いた。" },
       { bg: "gold_storm", sfx: "roar", fx: "shake", speaker: "narrator", text: "紫電の雲を突き破って舞い降りたのは、翼長四十メートルを超える蒼雷の巨竜——第2エリアの主霧獣『サンダー・ワイバーン』だった。" },
       { bg: "gold_storm", speaker: "celestia", text: "……来ましたね。しかも翼の先端が、すでにうっすらと黄金色に染まり始めています。" },
-      { bg: "gold_storm", speaker: "chloe", text: "発電所を止めたことで、奴は怒り狂って最深部の巣『雷竜の頂』へ移動しました！第7小隊、いよいよ第2章・後編——天空決戦の準備を！" }
+      { bg: "gold_storm", speaker: "chloe", text: "発電所を止めたことで、奴は怒り狂って最深部の巣『雷竜の頂』へ移動しました！第7小隊、天空決戦の準備を！" }
     ]
   }
 ];
