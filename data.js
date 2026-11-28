@@ -151,6 +151,6 @@ window.MF_DATA = {
   ],
 
   SERIAL_CODES: {
-    "FRONTIER2026": { label: "開発テストパック", gems: 1600, credits: 10000, en: 60, books: 25, cores: 5 }
+    "FRONTIER2026": { label: "正式リリース記念パック！", gems: 2000, credits: 10000, en: 60, books: 30, cores: 10 }
   }
 };
