@@ -1,7 +1,7 @@
 // =========================================================
 // 💬 CboxのURL（または埋め込みHTML）を下の "" の中に貼るだけ
 // =========================================================
-window.MF_CBOX_URL = "<iframe src="https://www3.cbox.ws/box/?boxid=3562495&boxtag=Vjcvvr" width="100%" height="450" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>	";
+window.MF_CBOX_URL = "https://www3.cbox.ws/box/?boxid=3562495&boxtag=Vjcvvr" width="100%" height="450" allowtransparency="yes" allow="autoplay" frameborder="0" marginheight="0" marginwidth="0" scrolling="auto"></iframe>	";
 
 function extractCboxUrl(raw) {
   let s = String(raw || "").trim();
