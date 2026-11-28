@@ -827,7 +827,7 @@ function cfHideLegacyHomeStages(homeEl) {
   // 秘書官ステージと下のボタン群以外の「旧切り替え画面」だけを非表示にする
   const prune = (container) => {
     Array.from(container.children).forEach(el => {
-      if (!el || el.id === "cf-home-main-stage") return;
+      if (!el || el.id === "cf-home-main-stage" || el.id === "cf-home-extra-dock") return;
       if (el.matches(keepSel)) {
         el.style.display = "";
         return;
@@ -1487,3 +1487,124 @@ window.cfEditCommanderBio = cfEditCommanderBio;
 window.cfOpenPhotoMode = cfOpenPhotoMode;
 window.cfSaveForeignCardToBook = cfSaveForeignCardToBook;
 window.cfDeleteForeignCard = cfDeleteForeignCard;
+// =========================================================
+// 📱 画面下部の空きスペース連動・タブレット重要ショートカット
+// =========================================================
+const CF_EXTRA_SHORTCUTS = [
+  // 1段目（最重要・空き56px以上で表示）
+  { label: "スカウト", icon: "🛰️", views: ["gacha", "scout"],        accent: "gold" },
+  { label: "絆",       icon: "💞", views: ["bonds", "bond"],         accent: "pink", badgeFn: () => {
+    if (typeof boGetOwnedBondChars === "function" && typeof boHasUnreadEp === "function") {
+      return boGetOwnedBondChars().filter(c => boHasUnreadEp(c.id)).length;
+    }
+    return 0;
+  }},
+  { label: "ショップ", icon: "🏪", views: ["shop", "store"],         accent: "mint" },
+  { label: "アリーナ", icon: "🏆", views: ["arena", "pvp"],          accent: "cyan" },
+  // 2段目（空き118px以上で追加表示）
+  { label: "任務",     icon: "📋", views: ["missions", "mission"],   accent: "mint" },
+  { label: "キャンプ", icon: "🏕️", views: ["camp"],                  accent: "gold" },
+  { label: "イベント", icon: "🎪", views: ["events", "event"],       accent: "pink" },
+  { label: "掲示板",   icon: "💬", views: ["board", "bbs"],          accent: "cyan" }
+];
+
+function cfResolveExistingView(candidates) {
+  for (const id of candidates) {
+    if (document.getElementById(`view-${id}`)) return id;
+  }
+  return candidates[0];
+}
+
+function cfOpenExtraShortcut(viewId) {
+  if (typeof playSfx === "function") playSfx("tap");
+  if (typeof switchView === "function") switchView(viewId);
+}
+
+function cfUpdateHomeExtraDock() {
+  const home = document.getElementById("view-home");
+  if (!home || !home.classList.contains("active")) return;
+
+  cfDomLock = true;
+  try {
+    let dock = document.getElementById("cf-home-extra-dock");
+    if (!dock) {
+      dock = document.createElement("div");
+      dock.id = "cf-home-extra-dock";
+      dock.className = "cf-extra-dock";
+      home.appendChild(dock);
+    }
+
+    // 自分自身を一旦隠して、既存ホームUIの最下端と画面下端の空きスペースを正確に計測
+    dock.style.display = "none";
+
+    let maxBottom = 0;
+    home.querySelectorAll("#cf-home-main-stage, .home-play-row, .home-main-dock").forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > maxBottom) maxBottom = rect.bottom;
+    });
+
+    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const freePx = Math.floor(viewportH - maxBottom - 10);
+
+    // 機種ごとの空きスペースに応じて 0段 / 1段(4個) / 2段(8個) を自動決定
+    const rows = freePx >= 118 ? 2 : (freePx >= 56 ? 1 : 0);
+    if (rows === 0) {
+      dock.style.display = "none";
+      return;
+    }
+
+    const available = CF_EXTRA_SHORTCUTS
+      .map(item => ({ ...item, targetView: cfResolveExistingView(item.views) }))
+      .filter(item => document.getElementById(`view-${item.targetView}`));
+
+    const shown = available.slice(0, rows * 4);
+    if (!shown.length) {
+      dock.style.display = "none";
+      return;
+    }
+
+    dock.innerHTML = `
+      <div class="cf-extra-dock-label">QUICK ACCESS // タブレット主要機能</div>
+      <div class="cf-extra-dock-grid">
+        ${shown.map(item => {
+          const badge = typeof item.badgeFn === "function" ? item.badgeFn() : 0;
+          return `
+            <button class="cf-extra-btn acc-${item.accent}" onclick="cfOpenExtraShortcut('${item.targetView}')">
+              <span class="cf-extra-ico">${item.icon}</span>
+              <span class="cf-extra-lbl">${cfEsc(item.label)}</span>
+              ${badge > 0 ? `<b class="cf-extra-badge">${badge}</b>` : ""}
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+    dock.style.display = "block";
+  } finally {
+    setTimeout(() => { cfDomLock = false; }, 0);
+  }
+}
+
+window.cfOpenExtraShortcut = cfOpenExtraShortcut;
+window.cfUpdateHomeExtraDock = cfUpdateHomeExtraDock;
+
+// ホーム描画・リサイズ・画面回転時に自動で空きスペースを再計算
+(function hookHomeExtraDock() {
+  const schedule = () => {
+    requestAnimationFrame(() => cfUpdateHomeExtraDock());
+    setTimeout(() => cfUpdateHomeExtraDock(), 160);
+  };
+
+  if (typeof window.cfRenderHomeWidgets === "function" && !window.cfRenderHomeWidgets._extraHooked) {
+    const orig = window.cfRenderHomeWidgets;
+    window.cfRenderHomeWidgets = function() {
+      const r = orig.apply(this, arguments);
+      schedule();
+      return r;
+    };
+    window.cfRenderHomeWidgets._extraHooked = true;
+  }
+
+  window.addEventListener("resize", schedule);
+  window.addEventListener("orientationchange", schedule);
+  setTimeout(schedule, 420);
+})();
