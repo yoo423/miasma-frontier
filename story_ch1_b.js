@@ -167,7 +167,7 @@ window.MF_STORY_CH1_B = [
       { bg: "verde_morning", speaker: "mikoto", text: "ですが……喜びも束の間、北の空に不穏な雷雲が立ち上っておりますね。" },
       { bg: "camp_dusk", bgm: "tension", sfx: "comm", speaker: "sylphy", text: "おう、派手にやってくれたじゃねぇか新人隊長！嵐の峡谷の狩人、シルフィだ。……悪いが、祝勝会は手短に済ませてくれ。" },
       { bg: "camp_dusk", speaker: "sylphy", text: "北の『ヴォルト・キャニオン』で、黄金の雷を纏ったとんでもねぇ竜が暴れ始めた。……あんたらの力が必要だぜ。" },
-      { bg: "verde_morning", bgm: "story", speaker: "chloe", text: "これにて第1章『新緑の廃墟』完全踏破です！……そして物語は、雷鳴轟く第2章『ヴォルト・キャニオン』へと続きます！" }
+      { bg: "verde_morning", bgm: "story", speaker: "chloe", text: "ひとまず新緑の廃墟は完全踏破です！……ですが、雷鳴轟くヴォルト・キャニオンへと向かう必要がありそうですね……" }
     ]
   }
 ];
