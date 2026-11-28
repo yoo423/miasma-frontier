@@ -1,13 +1,7 @@
 // =========================================================
 // 💬 CboxのURL（または埋め込みHTML）を下の "" の中に貼るだけ
 // =========================================================
-window.MF_CBOX_URL = "<script>
-window['CboxReady'] = function (Cbox) {
-	Cbox('button', '3-3562495-Vjcvvr');
-}
-</script>
-<script src="https://static.cbox.ws/embed/2.js" async></script>
-	";
+window.MF_CBOX_URL = "https://www3.cbox.ws/box/?boxid=3562495&boxtag=Vjcvvr";
 
 function extractCboxUrl(raw) {
   let s = String(raw || "").trim();
