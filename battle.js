@@ -122,7 +122,7 @@ function pickNextEnemyIntent(turn, prevType, enemy, enraged) {
   if (prevType === "charge") return { type: "heavy", icon: "☄️", name: enraged ? "【怒り】極・ミアズマ崩壊" : "ミアズマ大崩壊", dmg: Math.round(enemy.atk * 2.25 * mult), hint: "致命級の大技！防御・カウンター・凍結がないと全滅の危機！" };
   const r = Math.random();
   if (turn >= 2 && r < (enraged ? 0.35 : 0.25)) return { type: "charge", icon: "⚡", name: "必殺チャージ中", dmg: 0, hint: "次ターン特大技！【崩し】カードで必ず中断させろ！" };
-  if (r < 0.55) return { type: "guard", icon: "🛡️", name: "装甲硬化・反撃構え", dmg: Math.round(enemy.atk * 0.8 * mult), hint: "通常攻撃半減！【崩し】カードで装甲粉砕チャンス！" };
+  if (r < 0.55) return { type: "guard", icon: "🛡️", name: "装甲硬化・反撃構え", dmg: Math.round(enemy.atk * 0.8 * mult), hint: "通常攻撃半減！【崩し】カードで装甲粉砕＆体勢大削り！" };
   if (r < 0.8) return { type: "heavy", icon: "💢", name: "猛襲叩きつけ", dmg: Math.round(enemy.atk * 1.55 * mult), hint: "痛恨の強攻撃！【防御】や【カウンター】で迎え撃て！" };
   return { type: "attack", icon: "⚔️", name: "霧獣の連撃", dmg: Math.round(enemy.atk * mult), hint: "通常攻撃。元素反応で削るかカウンターを狙え！" };
 }
@@ -176,12 +176,18 @@ function startBattle(enemyId, opts = null) {
   const isRaid = !!opts?.isRaid;
   const hpMult = opts?.hpMult || 1.0;
   const atkMultEn = opts?.atkMult || 1.0;
+  const isBoss = isRaid || baseTemplate.isRadiant || baseTemplate.parts.length >= 2 || hpMult >= 1.8;
+
+  // 体勢ゲージをやり応えのある数値へ強化（通常1.6倍／ボス・融光種2.1倍）
+  const stagScale = isBoss ? 2.1 : 1.6;
+  const scaledMaxStagger = Math.round(baseTemplate.maxStagger * stagScale * Math.sqrt(hpMult));
+
   const template = {
     ...baseTemplate,
     name: opts?.questTitle ? `${baseTemplate.name}（${opts.questTitle.replace(/.*【/, "【")}）` : baseTemplate.name,
     maxHp: isRaid ? 999999 : Math.round(baseTemplate.maxHp * hpMult),
     atk: isRaid ? Math.round(baseTemplate.atk * 0.72) : Math.round(baseTemplate.atk * atkMultEn),
-    maxStagger: Math.round(baseTemplate.maxStagger * Math.sqrt(hpMult))
+    maxStagger: scaledMaxStagger
   };
 
   const avgLv = typeof getPartyAvgLevel === "function" ? getPartyAvgLevel() : 1;
@@ -192,7 +198,6 @@ function startBattle(enemyId, opts = null) {
   document.body.classList.add("theme-tactical");
   battleAutoMode = false;
 
-  const isBoss = isRaid || template.isRadiant || template.parts.length >= 2 || hpMult >= 1.8;
   if (window.MF_AUDIO) window.MF_AUDIO.playBgm(isBoss ? "boss" : "battle");
   playSfx(isBoss ? "roar" : "switch");
 
@@ -217,7 +222,8 @@ function startBattle(enemyId, opts = null) {
     totalDamageDealt: 0,
     enraged: false, avgLv, minReqLv, lvGap,
     hp: template.maxHp, maxHp: template.maxHp,
-    stagger: 0, maxStagger: template.maxStagger, stunned: false,
+    stagger: 0, maxStagger: template.maxStagger, baseMaxStagger: template.maxStagger, breakCount: 0,
+    stunned: false,
     attachedElement: null, shredTurns: 0, electroTurns: 0,
     parts, targetPartIdx: parts.length > 0 ? 0 : -1,
     members, teamHp: totalMaxHp, teamMaxHp: totalMaxHp,
@@ -444,21 +450,25 @@ function resolveSingleCard(card, isThirdChain) {
     const chainMult = isThirdChain ? ((state.party || []).includes("iris") ? 1.55 : 1.3) : 1.0;
     let dmg = Math.round(member.atk * card.power * btl.nextAtkMult * chainMult);
     btl.nextAtkMult = 1.0;
-    let stag = card.stagger || 12;
+
+    // 通常攻撃は体勢削り控えめ(0.55倍)にし、【崩し】札(0.85倍)の価値を高める
+    const isBreakCard = card.type === "break" || card.type === "ult" || !!card.guardBreakMult;
+    let stag = Math.round((card.stagger || 12) * (isBreakCard ? 0.85 : 0.55));
 
     if (btl.intent.type === "guard") {
-      if (card.type === "break" || card.type === "ult" || card.guardBreakMult) {
-        dmg = Math.round(dmg * (card.guardBreakMult || 2.2)); stag += 35;
-        if (btl.lvGap < 5) btl.stunned = true;
-        playSfx("break"); triggerBattleFx("#ffd000", "💥"); spawnBattleFloat("💥 装甲粉砕!", "#ffd000"); pushBattleLog(`💥 【装甲粉砕】${card.name}！`);
+      if (isBreakCard) {
+        dmg = Math.round(dmg * (card.guardBreakMult || 2.2));
+        stag += 25;
+        playSfx("break"); triggerBattleFx("#ffd000", "💥"); spawnBattleFloat("💥 装甲粉砕!", "#ffd000"); pushBattleLog(`💥 【装甲粉砕】${card.name}！大ダメージ＆体勢大削り！`);
       } else { dmg = Math.round(dmg * 0.5); }
-    } else if (btl.intent.type === "charge" && (card.type === "break" || card.type === "ult" || card.guardBreakMult)) {
-      dmg = Math.round(dmg * 1.8); stag += 40;
+    } else if (btl.intent.type === "charge" && isBreakCard) {
+      dmg = Math.round(dmg * 1.8); stag += 20;
       if (btl.lvGap < 5) btl.stunned = true;
       playSfx("break"); triggerBattleFx("#ffd000", "⚡"); spawnBattleFloat("⚡ チャージ中断!", "#ffd000"); pushBattleLog("⚡ 【チャージ中断】大技阻止！");
     }
 
     if (btl.shredTurns > 0) dmg = Math.round(dmg * 1.35);
+    if (btl.stunned) dmg = Math.round(dmg * 1.25); // ブレイク・行動不能中は被ダメ1.25倍！
     if (btl.attachedElement && btl.attachedElement !== card.element) {
       dmg = applyElementReaction(btl.attachedElement, card.element, dmg); btl.attachedElement = null;
     } else { btl.attachedElement = card.element; }
@@ -486,10 +496,18 @@ function resolveSingleCard(card, isThirdChain) {
       }
     }
 
-    btl.stagger = Math.min(btl.maxStagger, btl.stagger + stag);
-    if (btl.stagger >= btl.maxStagger) {
-      btl.stagger = 0; btl.stunned = true; playSfx("break");
-      spawnBattleFloat("💫 BREAK!", "#ffd000"); pushBattleLog("💫 体勢ブレイク！敵は行動不能！");
+    // 行動不能中でなければ体勢ゲージ蓄積（ブレイクごとに耐性+35%アップ）
+    if (!btl.stunned) {
+      btl.stagger = Math.min(btl.maxStagger, btl.stagger + stag);
+      if (btl.stagger >= btl.maxStagger) {
+        btl.stagger = 0;
+        btl.stunned = true;
+        btl.breakCount = (btl.breakCount || 0) + 1;
+        btl.maxStagger = Math.round(btl.baseMaxStagger * (1 + btl.breakCount * 0.35));
+        playSfx("break");
+        spawnBattleFloat("💫 BREAK! 与ダメ1.25倍", "#ffd000");
+        pushBattleLog(`💫 体勢ブレイク！行動不能＆被ダメ1.25倍！（次耐性 ${btl.maxStagger}）`);
+      }
     }
 
     if (!btl.isRaid && !btl.enraged && btl.hp > 0 && btl.hp <= btl.maxHp * 0.5 && (btl.isBoss || btl.parts.length > 0)) {
@@ -499,7 +517,6 @@ function resolveSingleCard(card, isThirdChain) {
     }
   }
 
-  // 攻撃後に次撃バフを乗せるカード（イリス・マリナ・セレスティア等）に対応
   if (card.nextAtkMult) {
     btl.nextAtkMult *= card.nextAtkMult;
     triggerBattleFx("#ff7b39", "🔥");
@@ -510,7 +527,6 @@ function resolveSingleCard(card, isThirdChain) {
     btl.exGauge = Math.min(100, btl.exGauge + (card.exGain || 14) + (isThirdChain ? 15 : 0));
     if (btl.exGauge >= 100) {
       btl.exGauge = 0;
-      // 限定SSRがパーティにいれば優先してその限定EX札を召喚！
       const ultOwner = (state.party || []).find(id => window.MF_DATA.CHARACTERS[id]?.limited) || state.party[0] || "protagonist";
       const ultCard = { ...window.MF_CARDS.getUltCard(ultOwner), uid: btlUidSeq++ };
       btl.hand.push(ultCard); playSfx("gift");
@@ -525,7 +541,7 @@ function applyElementReaction(elA, elB, dmg) {
   if (p.includes("arc")) { const sh = Math.round(btl.teamMaxHp * 0.2); btl.shield += sh; out = Math.round(dmg * 1.3); txt = "✨結晶化"; }
   else if (p.includes("fire") && p.includes("water")) { out = Math.round(dmg * 2.0); txt = "💧🔥蒸発 2.0倍!"; }
   else if (p.includes("fire") && p.includes("ice")) { out = Math.round(dmg * 2.2); txt = "❄️🔥融解 2.2倍!"; }
-  else if (p.includes("fire") && p.includes("volt")) { out = Math.round(dmg * 1.65); btl.stagger += 30; txt = "⚡🔥過負荷!"; }
+  else if (p.includes("fire") && p.includes("volt")) { out = Math.round(dmg * 1.65); if (!btl.stunned) btl.stagger += 18; txt = "⚡🔥過負荷!"; }
   else if (p.includes("water") && p.includes("ice")) { out = Math.round(dmg * 1.3); if (btl.lvGap < 5) btl.stunned = true; txt = "💧❄️凍結!"; }
   else if (p.includes("volt") && p.includes("ice")) { out = Math.round(dmg * 1.45); btl.shredTurns = 2; txt = "⚡❄️超電導!"; }
   else if (p.includes("water") && p.includes("volt")) { out = Math.round(dmg * 1.5); btl.electroTurns = 2; txt = "💧⚡感電!"; }
@@ -580,10 +596,8 @@ function resolveEnemyTurn() {
     if (!btl || btl.finished) return;
     btl.turn += 1; if (btl.shredTurns > 0) btl.shredTurns -= 1;
     btl.ap = btl.maxAp;
-    // リリィ編成時はバリア維持率を50%→75%へ強化
     const keepRatio = (state.party || []).includes("lily") ? 0.75 : 0.5;
     btl.shield = Math.floor(btl.shield * keepRatio);
-    // セリーナ編成時は毎ターン開始時にHP10%回復＆EX+12%
     if ((state.party || []).includes("serina")) {
       const h = Math.round(btl.teamMaxHp * 0.1);
       btl.teamHp = Math.min(btl.teamMaxHp, btl.teamHp + h);
@@ -731,6 +745,7 @@ function renderBattleHUD() {
   const elTag = btl.attachedElement ? `${window.MF_DATA.ELEMENTS[btl.attachedElement].icon}付着中` : "無付着";
   const debuffs = [elTag];
   if (btl.isRaid) debuffs.push(`☄️累計 ${btl.totalDamageDealt.toLocaleString()} DMG`);
+  if (btl.stunned) debuffs.push("💫ブレイク中(被ダメ1.25倍)");
   if (btl.lvGap > 0) debuffs.push(`☠️Lv差圧倒(平均Lv${btl.avgLv}/要Lv${btl.minReqLv})`);
   if (btl.enraged) debuffs.push("💢怒り(ATK1.35倍)");
   if (btl.shredTurns > 0) debuffs.push(`🎯防御DOWN(${btl.shredTurns}T)`);
@@ -741,8 +756,8 @@ function renderBattleHUD() {
   document.getElementById("btl-hp-text").textContent = btl.isRaid
     ? `☄️ 総ダメージ：${btl.totalDamageDealt.toLocaleString()} DMG`
     : `HP ${btl.hp.toLocaleString()} / ${btl.maxHp.toLocaleString()}`;
-  document.getElementById("btl-stagger-fill").style.width = `${Math.round((btl.stagger / btl.maxStagger) * 100)}%`;
-  document.getElementById("btl-stagger-text").textContent = `体勢 ${btl.stagger}/${btl.maxStagger}`;
+  document.getElementById("btl-stagger-fill").style.width = btl.stunned ? "100%" : `${Math.round((btl.stagger / btl.maxStagger) * 100)}%`;
+  document.getElementById("btl-stagger-text").textContent = btl.stunned ? "💫 BREAK中！(与ダメ1.25倍)" : `体勢 ${btl.stagger}/${btl.maxStagger}`;
 
   const it = btl.intent;
   const estDmg = it.dmg > 0 ? Math.round(it.dmg * getLvGapInMult()) : 0;
