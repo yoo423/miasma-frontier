@@ -256,6 +256,8 @@ Object.assign(window.MF_CARDS, {
 });
 
 let deckElFilter = "ALL";
+let deckTypeFilter = "ALL";
+let deckShowCharCards = false;
 let dexRarityFilter = "ALL";
 let dexElFilter = "ALL";
 
@@ -275,6 +277,12 @@ function renameCurrentDeck() {
   slot.name = next.trim().slice(0, 12);
   saveGame(); playSfx("tap"); renderDeckView();
   showToast(`✏️ デッキ名を『${slot.name}』に変更しました`);
+}
+
+function toggleDeckCharFold() {
+  deckShowCharCards = !deckShowCharCards;
+  playSfx("tap");
+  renderDeckView();
 }
 
 function openCardDetailModal(card) {
@@ -318,6 +326,7 @@ function renderDeckView() {
   state.ownedCards = state.ownedCards || { ...window.MF_CARDS.STARTER_OWNED_CARDS };
   const activeSlot = window.MF_CARDS.ensureDeckSlots();
 
+  // デッキスロット5枠タブ
   const slotBar = document.getElementById("deck-slot-tabs");
   if (slotBar) {
     slotBar.innerHTML = state.deckSlots.map((sl, i) => `
@@ -329,68 +338,162 @@ function renderDeckView() {
   const slotTitle = document.getElementById("deck-active-name");
   if (slotTitle) slotTitle.textContent = `選択中：#${state.activeDeckIdx + 1}『${activeSlot.name}』`;
 
-  document.getElementById("deck-char-cards").innerHTML = state.party.map(id => {
+  // 小隊4人の自動固有カード12枚（折りたたみ切替でスッキリ見やすく）
+  const charCardsAll = [];
+  state.party.forEach(id => charCardsAll.push(...window.MF_CARDS.getCharCards(id)));
+
+  const charFoldHeader = `
+    <div class="top-row" style="background:var(--surface-sub); padding:7px 9px; border-radius:10px; cursor:pointer;" onclick="toggleDeckCharFold()">
+      <strong style="font-size:11.5px;">🛡️ 編成隊員の固定カード（自動12枚）</strong>
+      <span class="btn-xs">${deckShowCharCards ? "▲ 閉じる" : "▼ 中身を見る"}</span>
+    </div>
+  `;
+  const charDetailHtml = deckShowCharCards ? `<div style="margin-top:6px;">${state.party.map(id => {
     const ch = getCharProfile(id);
     const el = window.MF_DATA.ELEMENTS[ch.element] || { icon: "✨", name: "煌" };
     const cards = window.MF_CARDS.getCharCards(id);
-    const limBadge = ch.limited ? `<span class="tag" style="background:#ffd13b; color:#121318;">👑限定SSR</span>` : "";
-    const borderCol = ch.limited ? "border-color:#ffd000;" : "";
+    const limBadge = ch.limited ? `<span class="tag" style="background:#ffd13b; color:#121318;">👑限定</span>` : "";
     return `
-      <div class="card" style="padding:8px; margin-bottom:6px; ${borderCol}">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+      <div style="background:var(--surface-sub); border:1.5px solid ${ch.limited ? "#ffd000" : "var(--border)"}; border-radius:10px; padding:7px; margin-bottom:5px;">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:5px;">
           ${window.MF_SPRITES.portraitHTML(ch, "icon")}
-          <div>
-            <strong style="font-size:12px;">${escapeHtml(ch.name)}（${el.icon}${el.name}）${limBadge}</strong>
-            <div style="font-size:10px; color:var(--muted);">固有カード3枚（タップで詳細確認）</div>
-          </div>
+          <strong style="font-size:11.5px;">${escapeHtml(ch.name)} ${el.icon} ${limBadge}</strong>
         </div>
-        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          ${cards.map((c, idx) => `<button class="btn-xs" style="font-size:10px; padding:3px 6px;" onclick="openCharCardDetail('${id}', ${idx})">${c.icon}${escapeHtml(c.name)}(AP${c.cost})</button>`).join("")}
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:4px;">
+          ${cards.map((c, idx) => `
+            <button class="deck-mini-pill el-pat-${c.element}" onclick="openCharCardDetail('${id}', ${idx})">
+              <span>${c.icon} AP${c.cost}</span>
+              <strong>${escapeHtml(c.name)}</strong>
+            </button>
+          `).join("")}
         </div>
       </div>
     `;
-  }).join("");
+  }).join("")}</div>` : "";
+  document.getElementById("deck-char-cards").innerHTML = charFoldHeader + charDetailHtml;
 
-  const tLen = activeSlot.cards.length;
+  // デッキ全体の直感ステータス集計（合計枚数・平均AP・役割バランス）
+  const tCards = activeSlot.cards.map(tid => pool[tid]).filter(Boolean);
+  const fullDeck = [...charCardsAll, ...tCards];
+  const tLen = tCards.length;
   const totalDeck = 12 + tLen;
-  const validNote = tLen < 8 ? ` ⚠️あと${8 - tLen}枚必要` : " ✅出撃OK";
-  document.getElementById("deck-tactic-count").textContent = `合計 ${totalDeck} / 40枚（戦術 ${tLen}/28枚）${validNote}`;
+  const avgAp = (fullDeck.reduce((s, c) => s + (Number(c.cost) || 0), 0) / Math.max(1, fullDeck.length)).toFixed(2);
+  const cntAtk = fullDeck.filter(c => c.type === "attack").length;
+  const cntBrk = fullDeck.filter(c => c.type === "break").length;
+  const cntGrd = fullDeck.filter(c => c.type === "guard").length;
+  const cntSup = fullDeck.filter(c => c.type === "buff" || c.type === "heal").length;
+  const pctFill = Math.min(100, Math.round((totalDeck / 40) * 100));
 
+  const validNote = tLen < 8
+    ? `<span style="color:#ff4d5a;">⚠️ あと${8 - tLen}枚追加で出撃OK</span>`
+    : `<span style="color:#18b88a;">✅ 出撃OK</span>`;
+  document.getElementById("deck-tactic-count").innerHTML = `合計 ${totalDeck} / 40枚 ${validNote}`;
+
+  // 採用中の戦術カードを属性色付きビジュアルチップ＋バランスゲージで表示
   const grouped = {};
   activeSlot.cards.forEach(tid => { grouped[tid] = (grouped[tid] || 0) + 1; });
-  document.getElementById("deck-current-tactics").innerHTML = Object.entries(grouped).map(([tid, cnt]) => {
-    const c = pool[tid];
-    return c ? `<button class="btn-xs" style="background:var(--surface-sub);" onclick="removeTacticCardById('${tid}')">${c.icon}${escapeHtml(c.name)} ×${cnt} ✕</button>` : "";
-  }).join("");
 
-  const elButtons = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS || {}).map(e => ({ id: e.id, label: `${e.icon}${e.name}` }))];
-  document.getElementById("deck-el-filters").innerHTML = elButtons.map(b => `
-    <button class="btn-xs ${deckElFilter === b.id ? "btn-primary" : ""}" onclick="deckElFilter='${b.id}'; playSfx('tap'); renderDeckView();">${b.label}</button>
-  `).join("");
+  const statsHtml = `
+    <div style="width:100%; background:var(--surface-sub); border-radius:10px; padding:7px 9px; margin-bottom:6px;">
+      <div class="gauge-bar" style="height:7px; margin-bottom:5px;">
+        <div style="background:${tLen < 8 ? "#ff4d5a" : "linear-gradient(90deg,#18b88a,#ffd000)"}; width:${pctFill}%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px; font-size:10px; font-weight:900;">
+        <span>⚔️攻撃:${cntAtk}</span>
+        <span>💥崩し:${cntBrk}</span>
+        <span>🛡️防御:${cntGrd}</span>
+        <span>💚支援:${cntSup}</span>
+        <span style="color:var(--accent);">平均AP ${avgAp}</span>
+      </div>
+    </div>
+  `;
 
+  const chipsHtml = Object.keys(grouped).length === 0
+    ? `<div style="width:100%; text-align:center; font-size:11px; color:var(--muted); padding:8px;">下のカード一覧の「＋」ボタンから戦術カードを選んでください</div>`
+    : Object.entries(grouped).map(([tid, cnt]) => {
+        const c = pool[tid];
+        if (!c) return "";
+        return `
+          <button class="deck-chip el-pat-${c.element}" onclick="removeTacticCardById('${tid}')">
+            <span class="deck-chip-cnt">×${cnt}</span>
+            <span style="font-size:15px;">${c.icon}</span>
+            <span class="deck-chip-name">${escapeHtml(c.name)}</span>
+            <span class="deck-chip-del">－外す</span>
+          </button>
+        `;
+      }).join("");
+
+  document.getElementById("deck-current-tactics").innerHTML = statsHtml + chipsHtml;
+
+  // 役割フィルター ＋ 属性フィルター
+  const typeBtns = [
+    { id: "ALL", label: "全役割" },
+    { id: "attack", label: "⚔️攻撃" },
+    { id: "break", label: "💥崩し" },
+    { id: "guard", label: "🛡️防御" },
+    { id: "support", label: "💚回復/支援" }
+  ];
+  const elButtons = [{ id: "ALL", label: "全属性" }, ...Object.values(window.MF_DATA.ELEMENTS || {}).map(e => ({ id: e.id, label: e.icon }))];
+
+  document.getElementById("deck-el-filters").innerHTML = `
+    <div style="width:100%; display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;">
+      ${typeBtns.map(b => `<button class="btn-xs ${deckTypeFilter === b.id ? "btn-accent2" : ""}" onclick="deckTypeFilter='${b.id}'; playSfx('tap'); renderDeckView();">${b.label}</button>`).join("")}
+    </div>
+    <div style="width:100%; display:flex; gap:4px; flex-wrap:wrap;">
+      ${elButtons.map(b => `<button class="btn-xs ${deckElFilter === b.id ? "btn-primary" : ""}" onclick="deckElFilter='${b.id}'; playSfx('tap'); renderDeckView();">${b.label}</button>`).join("")}
+    </div>
+  `;
+
+  // 所持カードプールを「バトルと同じ属性カラーの2列ビジュアルカード＋『− / 枚数 / ＋』ステッパー」で描画
   const rarOrd = { SSR: 0, SR: 1, R: 2, N: 3 };
   const ownedList = Object.values(pool)
-    .filter(c => window.MF_CARDS.getCardLevel(c.id) > 0 && (deckElFilter === "ALL" || c.element === deckElFilter))
-    .sort((a, b) => (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9));
+    .filter(c => {
+      if (window.MF_CARDS.getCardLevel(c.id) <= 0) return false;
+      if (deckElFilter !== "ALL" && c.element !== deckElFilter) return false;
+      if (deckTypeFilter === "support") return c.type === "buff" || c.type === "heal";
+      if (deckTypeFilter !== "ALL" && c.type !== deckTypeFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const inA = activeSlot.cards.includes(a.id) ? 0 : 1;
+      const inB = activeSlot.cards.includes(b.id) ? 0 : 1;
+      return (rarOrd[a.rarity] ?? 9) - (rarOrd[b.rarity] ?? 9) || inA - inB;
+    });
 
-  document.getElementById("deck-tactic-pool").innerHTML = ownedList.map(c => {
+  const poolEl = document.getElementById("deck-tactic-pool");
+  if (ownedList.length === 0) {
+    poolEl.innerHTML = `<div style="text-align:center; padding:14px; font-size:11.5px; color:var(--muted);">条件に合う所持カードがありません</div>`;
+    return;
+  }
+
+  poolEl.innerHTML = `<div class="deck-card-grid">${ownedList.map(c => {
     const el = window.MF_DATA.ELEMENTS[c.element] || { icon: "✨", name: "煌" };
     const lv = window.MF_CARDS.getCardLevel(c.id);
     const inDeck = activeSlot.cards.filter(id => id === c.id).length;
     const canAdd = activeSlot.cards.length < window.MF_CARDS.MAX_TACTIC_SIZE && inDeck < window.MF_CARDS.MAX_COPIES;
+    const canRem = inDeck > 0;
+    const typeLabel = { attack: "攻撃", break: "崩し", guard: "防御", buff: "戦術", heal: "回復" }[c.type] || "";
+
     return `
-      <div class="card" style="padding:8px; margin-bottom:6px;">
-        <div class="top-row">
-          <strong style="font-size:12px;" onclick="openTacticCardDetail('${c.id}')"><span class="rank-pill" style="font-size:9px;">${c.rarity}</span> ${c.icon} ${escapeHtml(c.name)} Lv.${lv}</strong>
-          <div style="display:flex; gap:4px;">
-            <button class="btn-xs" onclick="openTacticCardDetail('${c.id}')">？</button>
-            <button class="btn-xs ${canAdd ? "btn-primary" : ""}" ${canAdd ? "" : "disabled"} onclick="addTacticCard('${c.id}')">${inDeck >= 3 ? "3/3" : `+追加(${inDeck}/3)`}</button>
-          </div>
+      <div class="deck-visual-card el-pat-${c.element} ${inDeck > 0 ? "in-deck" : ""}">
+        <div class="dvc-top" onclick="openTacticCardDetail('${c.id}')">
+          <span class="dvc-rar">${c.rarity} Lv.${lv}</span>
+          <span class="tcg-cost">${c.cost}</span>
         </div>
-        <div style="font-size:10px; color:var(--accent); font-weight:800; margin-top:3px;">${el.icon} AP${c.cost} ｜ ${escapeHtml(c.summary)}</div>
+        <div class="dvc-mid" onclick="openTacticCardDetail('${c.id}')">
+          <div class="dvc-ico">${c.icon}</div>
+          <div class="dvc-name">${escapeHtml(c.name)}</div>
+          <div class="dvc-meta">${el.icon}${typeLabel}</div>
+          <div class="dvc-sum">${escapeHtml(c.summary)}</div>
+        </div>
+        <div class="dvc-ctrl">
+          <button class="dvc-step-btn" ${canRem ? "" : "disabled"} onclick="removeTacticCardById('${c.id}')">－</button>
+          <span class="dvc-count">${inDeck} / 3</span>
+          <button class="dvc-step-btn add" ${canAdd ? "" : "disabled"} onclick="addTacticCard('${c.id}')">＋</button>
+        </div>
       </div>
     `;
-  }).join("");
+  }).join("")}</div>`;
 }
 
 function addTacticCard(tid) {
@@ -540,4 +643,4 @@ function claimDexMilestone(targetCount) {
   if (typeof updateTabletBadge === "function") updateTabletBadge();
   renderCardDexView();
   showToast(`🎉 ${m.label}受取！💎結晶石+${m.gems}！`);
-}
+    }
