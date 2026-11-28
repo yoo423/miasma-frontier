@@ -11,7 +11,7 @@ window.MF_STORY_CH4_B = [
       {
         bg: "caldera", speaker: "ran", text: "足場が固まりました！今が主霧獣を討つ絶好の機会です。隊長、突入部隊の先鋒を誰に任せますか？",
         choices: [
-          { label: "「ヴァレリアとユズの水属性連携で、一気に蒸発大ダメージを狙う！」", replySpeaker: "valeria", reply: "心得ましたわ！紅蓮の炎など、蒼き激流で消し飛ばして差し上げます！", bondChar: "valeria" },
+          { label: "「ヴァレリアとユズの水属性連携で、一気に蒸発反応を叩き込む！」", replySpeaker: "valeria", reply: "心得ましたわ！紅蓮の炎など、蒼き激流で消し飛ばして差し上げます！", bondChar: "valeria" },
           { label: "「ミコトとレイラの氷属性で、動きごと完全に凍てつかせる！」", replySpeaker: "mikoto", reply: "ええ、どれほど熱い業火でも、絶対零度の前には沈黙するのみですわ。", bondChar: "mikoto" }
         ]
       },
@@ -38,11 +38,11 @@ window.MF_STORY_CH4_B = [
       { bg: "camp_dusk", speaker: "crow", text: "フッ、俺はただのトレジャーハンターじゃねぇ。実は方舟の下層街で、議会が隠した歴史をずっと追ってたのさ。" },
       { bg: "camp_dusk", bgm: "tension", speaker: "chloe", text: "……読んでみますね。えっ！？『方舟都市リベルタは避難船であると同時に、天蓋の塔“アーク・スパイア”から切り離された上部制御モジュールである』……！？" },
       { bg: "camp_dusk", speaker: "aoi", text: "私たちが住んでいた方舟そのものが、もともと地上の塔の一部だったんですか……！？" },
-      { bg: "camp_dusk", speaker: "chloe", text: "しかも、第5エリアの『水没ネオン街・アクア・メトロポリス』に、方舟と塔を再接続するための起動キーが沈んでいると記されています！" },
+      { bg: "camp_dusk", speaker: "chloe", text: "しかも、第五開拓領域『水没都市・アクア・メトロポリス』に、方舟と塔を再接続するための起動キーが沈んでいると記されています！" },
       {
         bg: "camp_dusk", speaker: "crow", text: "面白くなってきただろ隊長？まずは目の前の溶岩トカゲを片付けて、沈んだ首都へ宝探しに行こうぜ。",
         choices: [
-          { label: "「最高の情報だクロウ。お前の眼力が世界を救う鍵になった」", replySpeaker: "crow", reply: "フッ……悪くない気分だ。この黒翼、あんたの切り札として貸してやろう。" },
+          { label: "「最高の情報だクロウ。お前の眼力が世界を救う鍵になった」", replySpeaker: "crow", reply: "フッ……悪くない気分だ。この黒翼、あんたの切り札として貸してやろう。", bondChar: "crow" },
           { label: "「方舟の秘密も、ノクスの野望も、必ず俺たちが解き明かす」", replySpeaker: "chloe", reply: "はいっ！すべてのパズルが繋がり始めています！", bondChar: "chloe" }
         ]
       }
@@ -68,10 +68,10 @@ window.MF_STORY_CH4_B = [
     ]
   },
   {
-    id: "ch4_ep16", chapter: "第十六話", title: "灼熱の主『マグマ・サラマンダー』", subtitle: "第4エリア主霧獣との火口決戦",
+    id: "ch4_ep16", chapter: "第十六話", title: "灼熱の主『マグマ・サラマンダー』", subtitle: "第四領域の主霧獣との火口決戦",
     reqClear: "ch4_ep15", battleEnemyId: "magma_salamander", reward: { gems: 540, credits: 38000, books: 64, cores: 15 },
     scenes: [
-      { bg: "caldera", bgm: "boss", sfx: "roar", fx: "shake", speaker: "narrator", text: "大地を溶かす業火のブレスが迫る。生半可な戦力では一瞬で焼き尽くされる第4エリアの支配者。" },
+      { bg: "caldera", bgm: "boss", sfx: "roar", fx: "shake", speaker: "narrator", text: "大地を溶かす業火のブレスが迫る。生半可な戦力では一瞬で焼き尽くされる、この灼熱領域の支配者。" },
       { bg: "caldera", speaker: "ran", text: "大技の予兆を見逃さず、防御と崩し、そして水・氷反応で一気に押し切りましょう！" },
       { bg: "danger", sfx: "boom", fx: "redflash", speaker: "protagonist", text: "総員全力展開！！主霧獣『マグマ・サラマンダー』を討伐する！！" }
     ]
@@ -92,12 +92,12 @@ window.MF_STORY_CH4_B = [
     reqClear: "ch4_ep17", battleEnemyId: "lava_golem", reward: { gems: 380, credits: 36000, books: 60, cores: 12 },
     scenes: [
       { bg: "gold_storm", bgm: "tension", speaker: "narrator", text: "噴き上がる黄金の火柱の中、炎帝竜を守るように赤熱ゴーレムが立ち塞がる。" },
-      { bg: "gold_storm", speaker: "crow", text: "雑魚に構ってる暇はねぇ！最短ターンでブッ飛ばして炎帝竜の懐へ飛び込むぞ！" },
+      { bg: "gold_storm", speaker: "crow", text: "雑魚に構ってる暇はねぇ！一瞬でブッ飛ばして炎帝竜の懐へ飛び込むぞ！" },
       { bg: "danger", sfx: "boom", fx: "redflash", speaker: "protagonist", text: "炎帝竜への道を切り開く！突破戦開始！" }
     ]
   },
   {
-    id: "ch4_ep19", chapter: "第十九話", title: "溶鉱炉の果て、未来を鍛える絆", subtitle: "第4章最終決戦直前・全員の総力結集",
+    id: "ch4_ep19", chapter: "第十九話", title: "溶鉱炉の果て、未来を鍛える絆", subtitle: "灼熱最終決戦直前・全員の総力結集",
     reqClear: "ch4_ep18", battleEnemyId: null, reward: { gems: 400, credits: 38000, books: 62, cores: 13 },
     scenes: [
       { bg: "gold_storm", bgm: "tension", sfx: "roar", fx: "shake", speaker: "narrator", text: "黄金の翼と太陽のような核を宿した『紅蓮業火の炎帝竜』が、噴煙の空から第7小隊を見下ろしている。" },
@@ -105,7 +105,7 @@ window.MF_STORY_CH4_B = [
       { bg: "gold_storm", speaker: "ran", text: "方舟都市の未来を歪める悪意、この槍と皆様の力で断ち切りましょう！" },
       { bg: "gold_storm", speaker: "yuzu", text: "さぁて、あたしも本気出しちゃおっかな。大物中の大物、一気に決めよっか隊長！" },
       {
-        bg: "gold_storm", speaker: "lunaria", text: "これで第4エリアも終わりよ！隊長、第7小隊の最強の一撃、号令を頼むわ！！",
+        bg: "gold_storm", speaker: "lunaria", text: "この灼熱の大地も、いよいよ決着ね！隊長、第7小隊の最強の一撃、号令を頼むわ！！",
         choices: [
           { label: "「太陽核を打ち砕き、ノクスの狂気をこの火口で終わらせる！」", replySpeaker: "lunaria", reply: "了解っ！！あたしたちの炎と絆で、黄金の竜ごと塗り替えてやるわ！！", bondChar: "lunaria" },
           { label: "「水・氷・雷・風・煌・炎——全6元素の総力戦で必ず勝ち切る！」", replySpeaker: "aoi", reply: "はいっ！第7クリアラー小隊、すべての力を解放します！", bondChar: "aoi" }
@@ -115,11 +115,11 @@ window.MF_STORY_CH4_B = [
     ]
   },
   {
-    id: "ch4_ep20", chapter: "第二十話", title: "紅蓮業火の炎帝竜を超えて", subtitle: "第4章完結・【融光種】紅蓮業火の炎帝竜最終決戦",
+    id: "ch4_ep20", chapter: "第二十話", title: "紅蓮業火の炎帝竜を超えて", subtitle: "【融光種】紅蓮業火の炎帝竜最終決戦",
     reqClear: "ch4_ep19", battleEnemyId: "radiant_salamander", reward: { gems: 1200, credits: 50000, books: 85, cores: 22 },
     scenes: [
       { bg: "gold_storm", bgm: "boss", sfx: "roar", fx: "shake", speaker: "narrator", text: "天を焦がす黄金の業火。四つの大地を歩み続けてきた第7小隊の、これまでのすべてが試される最終決戦。" },
-      { bg: "gold_storm", speaker: "haruto", text: "装備もデッキも限界突破だ！行くぜ隊長！！" },
+      { bg: "gold_storm", speaker: "haruto", text: "装備も戦術も全力全開だ！行くぜ隊長！！" },
       { bg: "gold_storm", speaker: "protagonist", text: "第7クリアラー小隊、総員全力解放！！【融光種】紅蓮業火の炎帝竜を撃破する！！" }
     ],
     epilogue: [
@@ -128,7 +128,7 @@ window.MF_STORY_CH4_B = [
       { bg: "caldera", speaker: "ran", text: "見事な勝利でした、隊長。そして炉心から、方舟中央議会の裏切り者たちとノクスを結ぶ決定的な通信証拠も確保いたしました。" },
       { bg: "caldera", speaker: "crow", text: "フッ、これでいよいよ次は大詰めだな。残るは水没した旧首都『アクア・メトロポリス』と……天蓋の塔『アーク・スパイア』のみ。" },
       { bg: "aqua_city", bgm: "story", sfx: "comm", speaker: "chloe", text: "皆さん、方舟都市から緊急警報です！中央議会の強硬派が、方舟を強制降下させて天蓋の塔へ直結しようと動き出しました！" },
-      { bg: "aqua_city", speaker: "valeria", text: "……ついに、物語の核心へ踏み込む時が来ましたわね。第5章『水没ネオン街』、そして第6章『天蓋の塔』——人類の運命を決めるクライマックスへ、いざ参りましょう！" }
+      { bg: "aqua_city", speaker: "valeria", text: "……ついに、すべての真実へ踏み込む時が来ましたわね。水没した旧首都『アクア・メトロポリス』、そして天蓋の塔『アーク・スパイア』——人類の運命を決める最終決戦へ、いざ参りましょう！" }
     ]
   }
 ];
