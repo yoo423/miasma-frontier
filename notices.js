@@ -1,4 +1,4 @@
-// ---------- ⏳ 読み込み画面（Tips＆プログレスバー） ----------
+// ---------- ⏳ 読み込み画面（Tips＆全画像アセット事前プリロード） ----------
 const LOADING_TIPS = [
   "敵の『🛡️装甲硬化』や『⚡必殺チャージ』には【崩し】カードを合わせると大ダメージ＆行動キャンセル！",
   "『🔥炎×❄️氷＝融解(2.2倍)』『🔥炎×💧水＝蒸発(2.0倍)』『💧水×❄️氷＝凍結』で強敵を圧倒しよう。",
@@ -10,9 +10,82 @@ const LOADING_TIPS = [
   "『融光レイド』では防御ダウン（超電導・スキャン）と攻撃バフを重ねた3連チェインがハイスコアの鍵！"
 ];
 
-let loadingTimer = null;
+window.MF_RESOLVED_IMG_SRC = window.MF_RESOLVED_IMG_SRC || {};
+window.MF_PRELOADED_IMAGES = window.MF_PRELOADED_IMAGES || [];
 
-function showLoadingScreen(label = "作戦データを展開中……", onDone = null, durationMs = 720) {
+let loadingTimer = null;
+let preloadPromise = null;
+let preloadState = { total: 0, done: 0, finished: false };
+
+function collectAllImageBases() {
+  const bases = [
+    "assets/protagonist_m_cool",
+    "assets/protagonist_m_genki",
+    "assets/protagonist_f_cool",
+    "assets/protagonist_f_genki"
+  ];
+  Object.values(window.MF_DATA?.CHARACTERS || {}).forEach(ch => {
+    if (!ch.isProtagonist && ch.id) bases.push(`assets/${ch.id}`);
+  });
+  const bossIds = [
+    "moss_behemoth", "radiant_behemoth", "thunder_wyvern", "radiant_wyvern",
+    "glacial_mammoth", "radiant_mammoth", "magma_salamander", "radiant_salamander",
+    "abyss_kraken", "radiant_kraken", "spire_seraph", "radiant_zero"
+  ];
+  bossIds.forEach(id => bases.push(`assets/${id}`));
+  return [...new Set(bases)];
+}
+
+function preloadSingleBaseImage(base) {
+  return new Promise(resolve => {
+    if (window.MF_RESOLVED_IMG_SRC[base]) { resolve(true); return; }
+    const v = window.MF_IMG_VER || "480";
+    const exts = [".jpg", ".jpeg", ".png"];
+    let idx = 0;
+
+    const tryNext = () => {
+      if (idx >= exts.length) { resolve(false); return; }
+      const url = `${base}${exts[idx]}?v=${v}`;
+      idx += 1;
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => {
+        window.MF_RESOLVED_IMG_SRC[base] = url;
+        window.MF_PRELOADED_IMAGES.push(img);
+        if (typeof img.decode === "function") img.decode().catch(() => {}).finally(() => resolve(true));
+        else resolve(true);
+      };
+      img.onerror = () => tryNext();
+      img.src = url;
+    };
+    tryNext();
+  });
+}
+
+function startAssetPreload() {
+  if (preloadPromise) return preloadPromise;
+  const bases = collectAllImageBases();
+  preloadState = { total: bases.length, done: 0, finished: false };
+
+  const tasks = bases.map(base =>
+    preloadSingleBaseImage(base).finally(() => {
+      preloadState.done += 1;
+    })
+  );
+
+  // 最大6秒の安全タイムアウト付き（低速回線でもフリーズしない）
+  preloadPromise = Promise.race([
+    Promise.all(tasks),
+    new Promise(res => setTimeout(res, 6000))
+  ]).finally(() => {
+    preloadState.done = preloadState.total;
+    preloadState.finished = true;
+  });
+
+  return preloadPromise;
+}
+
+function showLoadingScreen(label = "作戦データを展開中……", onDone = null, durationMs = 720, waitAssets = false) {
   const ov = document.getElementById("loading-overlay");
   if (!ov) { if (typeof onDone === "function") onDone(); return; }
   clearInterval(loadingTimer);
@@ -28,20 +101,40 @@ function showLoadingScreen(label = "作戦データを展開中……", onDone =
   if (pctEl) pctEl.textContent = "0%";
 
   ov.classList.add("active");
+  if (waitAssets) startAssetPreload();
+
   const start = Date.now();
   loadingTimer = setInterval(() => {
-    const p = Math.min(100, Math.round(((Date.now() - start) / durationMs) * 100));
+    const timePct = Math.min(100, Math.round(((Date.now() - start) / durationMs) * 100));
+    let p = timePct;
+
+    if (waitAssets) {
+      const assetPct = preloadState.total > 0
+        ? Math.min(100, Math.round((preloadState.done / preloadState.total) * 100))
+        : 100;
+      p = preloadState.finished ? timePct : Math.min(timePct, Math.max(8, assetPct));
+      if (lblEl) {
+        lblEl.textContent = preloadState.finished
+          ? "前線キャンプへ接続中……"
+          : `隊員・ボス画像を読み込み中… (${preloadState.done}/${preloadState.total})`;
+      }
+    }
+
     if (fillEl) fillEl.style.width = `${p}%`;
     if (pctEl) pctEl.textContent = `${p}%`;
-    if (p >= 100) {
+
+    const readyToClose = waitAssets ? (preloadState.finished && timePct >= 100) : (p >= 100);
+    if (readyToClose) {
       clearInterval(loadingTimer);
       loadingTimer = null;
+      if (fillEl) fillEl.style.width = "100%";
+      if (pctEl) pctEl.textContent = "100%";
       setTimeout(() => {
         ov.classList.remove("active");
         if (typeof onDone === "function") onDone();
       }, 120);
     }
-  }, 32);
+  }, 40);
 }
 
 // ---------- 🎬 オープニング＆タイトル画面 ----------
@@ -57,6 +150,8 @@ function startOpeningSequence(forceCinematic = false) {
   const ov = document.getElementById("opening-overlay");
   if (!ov) return;
   ov.classList.add("active");
+  // オープニング・タイトル表示の裏側で即座に全画像の事前読み込みを開始
+  startAssetPreload();
   const shouldPlayMovie = forceCinematic || !state?.seenOpening;
   if (shouldPlayMovie) runOpeningSlides(0);
   else showTitleScreen();
@@ -111,10 +206,11 @@ function tapTitleToStart() {
   const ov = document.getElementById("opening-overlay");
   if (ov) ov.classList.remove("active");
 
-  showLoadingScreen("前線キャンプへ接続中……", () => {
+  // 全キャラ・ボス画像の読み込み完了を待ってからゲーム開始
+  showLoadingScreen("隊員・ボス画像を読み込み中……", () => {
     switchView(state.initialized ? "home" : "creator");
     if (state.initialized && typeof checkLoginBonusAutoOpen === "function") checkLoginBonusAutoOpen();
-  }, 780);
+  }, 850, true);
 }
 
 // ---------- 📢 運営からのお知らせ ----------
@@ -135,7 +231,7 @@ const ADMIN_NOTICES = [
     date: "2026/11/28",
     tag: "新機能",
     title: "💬『プレイヤー交流掲示板』＆BGM12曲リズム刷新のお知らせ",
-    body: "タブレット2ページ目に『💬 掲示板』を新設しました！雑談・攻略＆デッキ相談・フレンド募集（コードワンタップ添付可）・オンライン対戦募集にぜひご活用ください。\nあわせて全BGMのリズム精度を刷新し、画面や強敵ごとに全12曲へ拡張しました。"
+    body: "『💬 掲示板』を新設しました！雑談・攻略＆デッキ相談・フレンド募集・オンライン対戦募集にぜひご活用ください。\nあわせて全BGMのリズム精度を刷新し、画面や強敵ごとに全12曲へ拡張しました。"
   },
   {
     id: "n_2026_endgame",
