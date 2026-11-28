@@ -1802,3 +1802,22 @@ body.theme-tactical .cf-extra-btn {
 .cf-extra-dock.is-tall .cf-extra-btn { gap: 3px; border-radius: 10px; }
 .cf-extra-dock.is-tall .cf-extra-ico { font-size: 22px; }
 .cf-extra-dock.is-tall .cf-extra-lbl { font-size: 10.5px; }
+/* =========================================================
+   ✨ 画面切り替え演出：シャッターワイプ廃止 → 自然なフェードに変更
+   ========================================================= */
+.ef-view-wipe,
+#ef-view-wipe {
+  display: none !important;
+  animation: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.view.active {
+  animation: mfSmoothFadeIn 0.22s ease-out both !important;
+}
+
+@keyframes mfSmoothFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
