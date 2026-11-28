@@ -8,7 +8,7 @@ window.MF_STORY_CH3_A = [
       { bg: "frost_field", speaker: "momo", text: "ぶるるるっ……さ、さむーい！！息が真っ白だよ隊長！耳まで凍っちゃいそう！" },
       { bg: "frost_field", speaker: "fiona", text: "ほらモモちゃん、防寒保温ジェルを首元に塗っておきますね。低体温症になったら衛生兵の私の出番が増えちゃいますから♪" },
       { bg: "frost_field", speaker: "belle", text: "水晶玉が囁いています……この吹雪、自然の気象ではありません。北の巨大ドームから人工的な冷気波が流れ続けていますわ。" },
-      { bg: "frost_field", speaker: "aoi", text: "第2章の最後にクロエさんが逆探知した『謎の通信の発信源』も、ちょうどあの白銀のドームです！" },
+      { bg: "frost_field", speaker: "aoi", text: "峡谷の戦いの直後にクロエさんが逆探知した『謎の通信の発信源』も、ちょうどあの白銀のドームです！" },
       { bg: "frost_field", bgm: "tension", sfx: "slash", fx: "flash", speaker: "narrator", text: "シュンッ——！！ 吹雪を裂く鋭い銃声が響き、小隊の足元へ飛びかかろうとしていた白い影が氷の礫となって弾け飛んだ。" },
       { bg: "frost_field", speaker: "leila", text: "……動かないで。雪原で無防備に立ち止まるのは、霧獣に餌を差し出すようなものです。" },
       { bg: "frost_field", speaker: "rikka", text: "第7クリアラー小隊の皆様ですね。私は氷壁防衛オペレーターのリッカ、そしてこちらが極北スナイパーのレイラです。" },
@@ -16,8 +16,8 @@ window.MF_STORY_CH3_A = [
       {
         bg: "frost_field", speaker: "rikka", text: "吹雪が強まってきました。私たちが確保している雪原前哨基地へご案内します。隊長、進軍ペースはどうなさいますか？",
         choices: [
-          { label: "「レイラとリッカの案内を信じる。速やかに前哨基地へ入ろう」", replySpeaker: "leila", reply: "……賢明です。私の足跡の後ろを真っ直ぐついてきてください。" },
-          { label: "「フィオナとベルの体調管理を優先しつつ、確実に進もう」", replySpeaker: "fiona", reply: "優しいご判断です隊長♪ みなさんのコンディションは私にお任せください！" }
+          { label: "「レイラとリッカの案内を信じる。速やかに前哨基地へ入ろう」", replySpeaker: "leila", reply: "……賢明です。私の足跡の後ろを真っ直ぐついてきてください。", bondChar: "leila" },
+          { label: "「フィオナとベルの体調管理を優先しつつ、確実に進もう」", replySpeaker: "fiona", reply: "優しいご判断です隊長♪ みなさんのコンディションは私にお任せください！", bondChar: "fiona" }
         ]
       },
       { bg: "frost_field", sfx: "roar", fx: "shake", speaker: "mint", text: "……待って。吹雪の風上から、冷たい獣の遠吠えがいくつも近づいてる……！" }
@@ -29,7 +29,7 @@ window.MF_STORY_CH3_A = [
     scenes: [
       { bg: "frost_field", bgm: "tension", sfx: "roar", fx: "flash", speaker: "narrator", text: "真っ白な雪煙の中から、透き通る氷の毛並みを持つ狼型霧獣『氷狼・ブリザードハウンド』が飛び出した。" },
       { bg: "frost_field", speaker: "rikka", text: "雪原の原生霧獣です！こいつらは『氷結の尾房』を振り回して周囲を凍てつかせてきます！" },
-      { bg: "frost_field", speaker: "lunaria", text: "氷の狼ですって！？あたしの炎で『融解 2.2倍』を叩き込むには最高の的じゃない！" },
+      { bg: "frost_field", speaker: "lunaria", text: "氷の狼ですって！？あたしの炎で一気に『融解』させて焼き払うには最高の的じゃない！" },
       { bg: "frost_field", speaker: "leila", text: "侮らないでください。この極寒地帯の霧獣は、峡谷の個体よりさらに強靭です。防御を怠れば一瞬で凍傷に陥りますよ。" },
       { bg: "danger", sfx: "roar", fx: "redflash", speaker: "protagonist", text: "雪原初戦！氷狼ブリザードハウンドを迎え撃つ！" }
     ]
@@ -48,7 +48,7 @@ window.MF_STORY_CH3_A = [
       {
         bg: "frost_lab", speaker: "mikoto", text: "いずれにせよ、融光種を操っていた黒幕の正体が、この研究棟の奥に潜んでいることは間違いありませんわね。隊長殿、潜入作戦はいかがいたしましょう。",
         choices: [
-          { label: "「正面は固い。レイラの狙撃援護のもと、保守搬入口から潜入しよう」", replySpeaker: "leila", reply: "的確な判断です。搬入口の防衛網は私が事前に無力化しておきます。" },
+          { label: "「正面は固い。レイラの狙撃援護のもと、保守搬入口から潜入しよう」", replySpeaker: "leila", reply: "的確な判断です。搬入口の防衛網は私が事前に無力化しておきます。", bondChar: "leila" },
           { label: "「ミコトとベルの観測力で冷気源を特定し、一気に中枢を突く」", replySpeaker: "mikoto", reply: "承知いたしました。同じ氷を扱う者として、奴の冷気は私が読み解きましょう。", bondChar: "mikoto" }
         ]
       },
@@ -104,7 +104,7 @@ window.MF_STORY_CH3_A = [
       {
         bg: "camp_night", speaker: "leila", text: "隊長。研究棟の地下冷却炉を止めれば、ノクスのサーバー電源も落ちるはずです。明日は私の狙撃を、あなたの作戦の軸に組み込んでください。",
         choices: [
-          { label: "「頼もしい言葉だ。レイラの精密狙撃で必ず活路を開こう」", replySpeaker: "leila", reply: "……ええ。極北の狙撃手として、一発の狂いもなく撃ち抜きます。" },
+          { label: "「頼もしい言葉だ。レイラの精密狙撃で必ず活路を開こう」", replySpeaker: "leila", reply: "……ええ。極北の狙撃手として、一発の狂いもなく撃ち抜きます。", bondChar: "leila" },
           { label: "「もう一人じゃない。第7小隊みんなでこの雪原を解放しよう」", replySpeaker: "mikoto", reply: "はい。白狐の氷華も、すべて隊長殿の指揮に委ねますわ。", bondChar: "mikoto" }
         ]
       },
@@ -133,22 +133,22 @@ window.MF_STORY_CH3_A = [
       { bg: "frost_lab", speaker: "chloe", text: "おそらく議会の一部勢力が、炉の延命のためにノクスと裏取引をしていたんです。けれど、そのせいで地上の主霧獣が次々と融光化して暴走を始めてしまった……！" },
       { bg: "frost_lab", sfx: "boom", fx: "shake", speaker: "narrator", text: "ドォォォン……ッ！！ 制御室の分厚い強化ガラスの向こうで、凍結炉そのものを砕く凄まじい地響きが轟いた。" },
       { bg: "frost_lab", speaker: "rikka", text: "冷却炉の隔壁が内側から破られました！！炉心を丸ごと背中に融合させた超巨大なマンモス型霧獣が、外へ飛び出していきます！！" },
-      { bg: "frost_lab", speaker: "narrator", text: "『ハハハハハ！ 素晴らしい！ 第3エリアの主霧獣『グレイシャル・マンモス』の覚醒だ！ 制御データごと氷の墓標へ沈むがいい！』" }
+      { bg: "frost_lab", speaker: "narrator", text: "『ハハハハハ！ 素晴らしい！ この凍土の主霧獣『グレイシャル・マンモス』の覚醒だ！ 制御データごと氷の墓標へ沈むがいい！』" }
     ]
   },
   {
-    id: "ch3_ep10", chapter: "第十話", title: "氷河の門番、絶対零度の序曲", subtitle: "前編クライマックス・冷却炉外周防衛戦",
+    id: "ch3_ep10", chapter: "第十話", title: "氷河の門番、絶対零度の序曲", subtitle: "研究棟脱出・冷却炉外周防衛戦",
     reqClear: "ch3_ep9", battleEnemyId: "frost_spider", reward: { gems: 380, credits: 22000, books: 40, cores: 9 },
     scenes: [
       { bg: "frost_lab", bgm: "tension", sfx: "alarm", fx: "redflash", speaker: "narrator", text: "主霧獣の覚醒と同時に暴走を始めた冷却炉の非常ゲート。脱出路を塞ぐ最強クラスの機巧蜘蛛部隊を突破しなければ、雪原へ出ることもできない。" },
       { bg: "frost_lab", speaker: "koharu", text: "非常シャッターが閉まるまであとわずかだよ！全力で押し通るしかない！" },
       { bg: "frost_lab", speaker: "lunaria", text: "上等よ！あたしたちを閉じ込めようなんて百年早いのよ！" },
-      { bg: "danger", sfx: "roar", fx: "redflash", speaker: "protagonist", text: "非常ゲートをこじ開けろ！第3章前編、総力突破戦開始！" }
+      { bg: "danger", sfx: "roar", fx: "redflash", speaker: "protagonist", text: "非常ゲートをこじ開けろ！総力突破戦、開始！" }
     ],
     epilogue: [
       { bg: "frost_field", bgm: "tension", sfx: "roar", fx: "shake", speaker: "narrator", text: "崩れ落ちる研究棟から雪原へ飛び出した第7小隊の眼前で、山脈と見紛う巨影が猛吹雪を巻き上げて咆哮した。" },
       { bg: "frost_field", speaker: "leila", text: "……確認しました。背中に暴走冷却炉を背負う白銀の巨獣——主霧獣『グレイシャル・マンモス』。" },
-      { bg: "frost_field", speaker: "mikoto", text: "これより先、第3章・後編は絶対零度との死闘になりますわ。隊長殿、さらなる鍛錬を積んで挑みましょう。" }
+      { bg: "frost_field", speaker: "mikoto", text: "これより先は、絶対零度との死闘になりますわ。隊長殿、さらなる鍛錬を積んで挑みましょう。" }
     ]
   }
 ];
