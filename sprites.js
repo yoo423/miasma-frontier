@@ -1,6 +1,14 @@
-window.MF_IMG_VER = "480";
+window.MF_IMG_VER = "535";
 let zoomCharId = null;
 let zoomFaceMode = true;
+
+function normalizeProtagStyleId(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+  if (s === "m_cool" || s === "m_genki" || s === "f_cool" || s === "f_genki") return s;
+  const isF = s.includes("f") || s.includes("girl") || s.includes("woman") || s.includes("female");
+  const isGenki = s.includes("genki") || s.includes("bright") || s.includes("active") || s.includes("2");
+  return `${isF ? "f" : "m"}_${isGenki ? "genki" : "cool"}`;
+}
 
 window.mfImgFallback = function(img) {
   const step = Number(img.dataset.step || 0);
@@ -68,9 +76,11 @@ window.MF_SPRITES = {
   },
 
   portraitHTML(ch, mode = "contain") {
-    const sid = ch.styleId || (typeof state !== "undefined" ? state.styleId : "m_cool") || "m_cool";
-    const base = ch.isProtagonist ? `assets/protagonist_${sid}` : `assets/${ch.id}`;
-    const fb = ch.isProtagonist ? "assets/protagonist" : "";
+    const isProtag = Boolean(ch && (ch.isProtagonist || ch.id === "protagonist"));
+    const rawSid = (ch && ch.styleId) || (typeof state !== "undefined" ? (state.styleId || state.protagonistStyle) : "m_cool");
+    const sid = normalizeProtagStyleId(rawSid);
+    const base = isProtag ? `assets/protagonist_${sid}` : `assets/${ch.id}`;
+    const fb = isProtag ? "assets/protagonist_m_cool" : "";
     const firstSrc = this.resolveFirstSrc(base);
     const alt = this.esc(ch.name);
 
