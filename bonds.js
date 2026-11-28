@@ -66,6 +66,46 @@ const BOND_EPISODES = {
       { bg: "forest_mist", speaker: "sylphy", text: "これからもデカい獲物を見つけたら真っ先に声をかけろよ！一番乗りでブッ飛ばしてやるからさ！" }
     ]
   },
+  serina: {
+    title: "桜風のアンコール、二人だけのステージ",
+    rewardTitle: "春風の最前列",
+    scenes: [
+      { bg: "verde_morning", speaker: "serina", text: "あ、隊長さん！見つかっちゃいましたね♪ 実は今、次の作戦に向けた応援ソングの新曲をこっそり練習してたんです。" },
+      { bg: "verde_morning", speaker: "serina", text: "私、ずっと方舟都市のステージで歌うだけだったから、最初は前線に降りて自分に何ができるか不安だったんです。" },
+      { bg: "verde_morning", speaker: "serina", text: "でも隊長さんが『セリーナの歌があるとみんなが踏ん張れる』って言ってくれて……胸の奥がぽかぽかして、歌う意味がはっきり見えました！" },
+      { bg: "verde_morning", speaker: "serina", text: "えへへ、今ここで隊長さんだけに一曲、一番近くで歌っていいですか？……これからも特等席で、私の歌を聴いていてくださいね♪" }
+    ]
+  },
+  lily: {
+    title: "純白の祈りと結晶の約束",
+    rewardTitle: "純白の守護誓約",
+    scenes: [
+      { bg: "camp_night", speaker: "lily", text: "こんばんは、隊長さま。星がとても綺麗な夜ですね。……あ、少し夜風が冷えますから、私の結晶マントを半分どうぞ。" },
+      { bg: "camp_night", speaker: "lily", text: "私は昔から、傷つく誰かを見るのが怖くて、ただひたすら硬い盾を作ることばかり考えていました。" },
+      { bg: "camp_night", speaker: "lily", text: "けれど隊長さまの隣で戦うようになって気づいたんです。本当の守りとは、恐怖から隠れることではなく、未来へ踏み出す背中を支えることなのだと。" },
+      { bg: "camp_night", speaker: "lily", text: "どうか忘れないでください。どんなに深い瘴霧に呑まれようとも、このリリィの純白の盾は、永遠に隊長さまのそばにあります。" }
+    ]
+  },
+  marina: {
+    title: "蒼海の水平線と秘密の貝殻",
+    rewardTitle: "蒼海の相棒",
+    scenes: [
+      { bg: "aqua_city", speaker: "marina", text: "やっほー隊長！ちょうどいいところに来たね♪ 見て見て、水辺でめちゃくちゃ綺麗なアーク真珠の貝殻見つけちゃった！" },
+      { bg: "aqua_city", speaker: "marina", text: "あたしね、普段はお気楽に見えるかもしれないけど、狙撃の瞬間だけは息を止めて、誰よりも真剣にみんなのこと見てるんだよ。" },
+      { bg: "aqua_city", speaker: "marina", text: "だから知ってるんだ。隊長が誰よりも遅くまで作戦を考えて、みんなの無事を祈ってくれてること。" },
+      { bg: "aqua_city", speaker: "marina", text: "はい、この貝殻はお守りとして隊長にあげるっ！いつか霧が晴れたら、本物の青い海を二人で見に行こうね、約束だよ♪" }
+    ]
+  },
+  iris: {
+    title: "真紅のワルツ、星屑の夜に",
+    rewardTitle: "紅蓮の舞踏相手",
+    scenes: [
+      { bg: "camp_night", speaker: "iris", text: "あら、こんな時間に独り歩きだなんて、無防備ね隊長？……ふふ、そんなに驚かないで。少しあなたと二人でお話ししたくなっただけよ。" },
+      { bg: "camp_night", speaker: "iris", text: "私、退屈なことが大嫌いなの。だから戦場でも誰より派手に双剣を振るって、火花みたいに生きられればそれでいいと思ってた。" },
+      { bg: "camp_night", speaker: "iris", text: "でも不思議ね……あなたの指揮に合わせて踊るように敵を斬る瞬間は、今までのどんな戦いより胸が高鳴るのよ。" },
+      { bg: "camp_night", speaker: "iris", text: "ねえ隊長、次も最高の舞台を用意してよね？私を退屈させないって約束してくれるなら……この真紅の双剣、ずっとあなただけに捧げてあげるわ♪" }
+    ]
+  },
   kaede: {
     title: "隊長だけの特製レシピ",
     rewardTitle: "前線食堂の常連",
@@ -119,15 +159,18 @@ const BOND_EPISODES = {
 const MASTER_TITLES = [
   { id: "t_rookie",    name: "第7小隊・新任隊長",   cond: "初期獲得", check: () => true },
   { id: "t_ch1_clear", name: "新緑の解放者",        cond: "第1章・第二十話踏破", check: () => (state.clearedStories || []).includes("ch1_ep20") },
-  { id: "t_ch2_clear", name: "天雷を越えし者",      cond: "第2章完結", check: () => (state.clearedStories || []).includes("ch2_ep8") || (state.clearedStories || []).includes("ch2_ep20") },
+  { id: "t_ch2_clear", name: "天雷を越えし者",      cond: "第2章完結", check: () => (state.clearedStories || []).includes("ch2_ep20") },
+  { id: "t_ch3_clear", name: "白銀の解明者",        cond: "第3章完結", check: () => (state.clearedStories || []).includes("ch3_ep20") },
+  { id: "t_ch4_clear", name: "紅蓮の炎帝討ち",      cond: "第4章完結", check: () => (state.clearedStories || []).includes("ch4_ep20") },
   { id: "t_dex30",     name: "戦術の探究者",        cond: "戦術カード30種収集", check: () => typeof getOwnedCardCount === "function" && getOwnedCardCount() >= 30 },
   { id: "t_dex60",     name: "伝説のカードマスター", cond: "戦術カード60種収集", check: () => typeof getOwnedCardCount === "function" && getOwnedCardCount() >= 60 },
   { id: "t_hunt20",    name: "歴戦の霧祓い",        cond: "霧獣累計20体討伐", check: () => Object.values(state.huntLog || {}).reduce((s, h) => s + (h.kills || 0), 0) >= 20 },
+  { id: "t_tower10",   name: "瘴霧タワー制覇者",    cond: "無限タワー10F踏破", check: () => (state.endgame?.towerClearedFloor || 0) >= 10 },
+  { id: "t_raid_s",    name: "融光レイドの覇者",    cond: "融光レイド25,000DMG突破", check: () => (state.endgame?.raidBestScore || 0) >= 25000 },
   { id: "t_arena5",    name: "読み合いの覇者",      cond: "対人アリーナ通算5勝", check: () => (state.arenaWins || 0) >= 5 }
 ];
 
-// じっくり時間をかけて育てる長期・絆ポイント設計
-const BOND_THRESHOLDS = [0, 10, 30, 65, 120]; // Lv.1:0 / Lv.2:10 / Lv.3(個別話):30 / Lv.4:65 / Lv.5(MAX):120
+const BOND_THRESHOLDS = [0, 10, 30, 65, 120];
 
 function getBondPoint(charId) {
   return (state.bondPoints && state.bondPoints[charId]) || 0;
@@ -158,7 +201,11 @@ function getBondEpisodeFor(charId) {
   const ch = getCharProfile(charId);
   return {
     title: `${ch.name}との穏やかな休息`,
-    rewardTitle: `${ch.name}の信頼`, scenes: [ { bg: "camp_dusk", speaker: charId, text: "あ、隊長！ちょうどいいところに来てくれましたね。少しだけ息抜きしませんか？" }, { bg: "camp_dusk", speaker: charId, text: "第7小隊に配属されてから、本当に毎日が充実しています。隊長の指揮のもとで戦えてよかったです。" }, { bg: "camp_dusk", speaker: charId, text: `これからも${ch.trait || "隊員"}として、全力で隊長を支えますから、いつでも頼ってくださいね！` }
+    rewardTitle: `${ch.name}の信頼`,
+    scenes: [
+      { bg: "camp_dusk", speaker: charId, text: "あ、隊長！ちょうどいいところに来てくれましたね。少しだけ息抜きしませんか？" },
+      { bg: "camp_dusk", speaker: charId, text: "第7小隊に配属されてから、本当に毎日が充実しています。隊長の指揮のもとで戦えてよかったです。" },
+      { bg: "camp_dusk", speaker: charId, text: `これからも${ch.trait || "隊員"}として、全力で隊長を支えますから、いつでも頼ってくださいね！` }
     ]
   };
 }
@@ -166,7 +213,8 @@ function getBondEpisodeFor(charId) {
 function renderBondsView() {
   renderTopBar();
   syncUnlockedTitles();
-  document.getElementById("bd-tab-members").className = `select-chip ${currentBondsTab === "members" ? "selected" : ""}`; document.getElementById("bd-tab-profile").className = `select-chip ${currentBondsTab === "profile" ? "selected" : ""}`;
+  document.getElementById("bd-tab-members").className = `select-chip ${currentBondsTab === "members" ? "selected" : ""}`;
+  document.getElementById("bd-tab-profile").className = `select-chip ${currentBondsTab === "profile" ? "selected" : ""}`;
 
   document.getElementById("bd-story-panel").style.display = activeBondStory ? "block" : "none";
   document.getElementById("bd-members-panel").style.display = !activeBondStory && currentBondsTab === "members" ? "block" : "none";
@@ -230,7 +278,17 @@ function talkToMemberForBond(charId) {
   state.bondPoints[charId] = (state.bondPoints[charId] || 0) + 1;
   saveGame(); playSfx("switch");
   renderBondsView();
-  showToast(`💬 ${getCharProfile(charId).name}とゆっくり語らった（絆+1）`); }  function giveGiftToMember(charId) { if ((state.bondGifts \vert{}\vert{} 0) <= 0) { showToast("💐 ブーケがありません（補給ショップで購入できます）"); return; } state.bondGifts -= 1; state.bondPoints = state.bondPoints \vert{}\vert{} {}; state.bondPoints[charId] = (state.bondPoints[charId] \vert{}\vert{} 0) + 2; saveGame(); playSfx("gift"); renderBondsView(); showToast(`💐 ${getCharProfile(charId).name}にブーケを贈った！（絆+2）`);
+  showToast(`💬 ${getCharProfile(charId).name}とゆっくり語らった（絆+1）`);
+}
+
+function giveGiftToMember(charId) {
+  if ((state.bondGifts || 0) <= 0) { showToast("💐 ブーケがありません（補給ショップで購入できます）"); return; }
+  state.bondGifts -= 1;
+  state.bondPoints = state.bondPoints || {};
+  state.bondPoints[charId] = (state.bondPoints[charId] || 0) + 2;
+  saveGame(); playSfx("gift");
+  renderBondsView();
+  showToast(`💐 ${getCharProfile(charId).name}にブーケを贈った！（絆+2）`);
 }
 
 function openBondStory(charId) {
@@ -250,7 +308,43 @@ function renderBondNovelScene() {
 
   document.getElementById("bd-story-title").textContent = `💞 ${ch.name} 絆エピソード『${ep.title}』（${index + 1}/${ep.scenes.length}）`;
   const stage = document.getElementById("bd-story-stage");
-  stage.className = `novel-stage nbg-${scene.bg \vert{}\vert{} "camp_dusk"}`; stage.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain"); document.getElementById("bd-story-speaker").textContent = ch.name;  const textEl = document.getElementById("bd-story-text"); const spd = typeof getTextSpeedObj === "function" ? getTextSpeedObj() : { ms: 40 }; bondFullText = scene.text;  if (spd.ms === 0) { textEl.textContent = bondFullText; bondIsTyping = false; return; } bondIsTyping = true; textEl.textContent = ""; let pos = 0; bondTypeTimer = setInterval(() => { pos += 1; textEl.textContent = bondFullText.slice(0, pos); if (pos >= bondFullText.length) { clearInterval(bondTypeTimer); bondIsTyping = false; } }, spd.ms); }  function advanceBondStory() { if (!activeBondStory) return; if (bondIsTyping) { clearInterval(bondTypeTimer); bondIsTyping = false; document.getElementById("bd-story-text").textContent = bondFullText; return; } if (activeBondStory.index < activeBondStory.ep.scenes.length - 1) { activeBondStory.index += 1; playSfx("tap"); renderBondNovelScene(); return; }  const { charId, ep } = activeBondStory; activeBondStory = null; state.clearedBondStories = state.clearedBondStories \vert{}\vert{} []; state.unlockedTitles = state.unlockedTitles \vert{}\vert{} ["第7小隊・新任隊長"]; if (!state.clearedBondStories.includes(charId)) { state.clearedBondStories.push(charId); state.gems += 240; state.cardTickets = (state.cardTickets \vert{}\vert{} 0) + 3; if (!state.unlockedTitles.includes(ep.rewardTitle)) state.unlockedTitles.push(ep.rewardTitle); saveGame(); playSfx("gift"); showToast(`💞 絆エピソード読了！💎+240 / 🎟️券+3 / 称号『${ep.rewardTitle}』獲得！`);
+  stage.className = `novel-stage nbg-${scene.bg || "camp_dusk"}`;
+  stage.innerHTML = window.MF_SPRITES.portraitHTML(ch, "contain");
+  document.getElementById("bd-story-speaker").textContent = ch.name;
+
+  const textEl = document.getElementById("bd-story-text");
+  const spd = typeof getTextSpeedObj === "function" ? getTextSpeedObj() : { ms: 40 };
+  bondFullText = scene.text;
+
+  if (spd.ms === 0) { textEl.textContent = bondFullText; bondIsTyping = false; return; }
+  bondIsTyping = true;
+  textEl.textContent = "";
+  let pos = 0;
+  bondTypeTimer = setInterval(() => {
+    pos += 1;
+    textEl.textContent = bondFullText.slice(0, pos);
+    if (pos >= bondFullText.length) { clearInterval(bondTypeTimer); bondIsTyping = false; }
+  }, spd.ms);
+}
+
+function advanceBondStory() {
+  if (!activeBondStory) return;
+  if (bondIsTyping) { clearInterval(bondTypeTimer); bondIsTyping = false; document.getElementById("bd-story-text").textContent = bondFullText; return; }
+  if (activeBondStory.index < activeBondStory.ep.scenes.length - 1) {
+    activeBondStory.index += 1; playSfx("tap"); renderBondNovelScene(); return;
+  }
+
+  const { charId, ep } = activeBondStory;
+  activeBondStory = null;
+  state.clearedBondStories = state.clearedBondStories || [];
+  state.unlockedTitles = state.unlockedTitles || ["第7小隊・新任隊長"];
+  if (!state.clearedBondStories.includes(charId)) {
+    state.clearedBondStories.push(charId);
+    state.gems += 240;
+    state.cardTickets = (state.cardTickets || 0) + 3;
+    if (!state.unlockedTitles.includes(ep.rewardTitle)) state.unlockedTitles.push(ep.rewardTitle);
+    saveGame(); playSfx("gift");
+    showToast(`💞 絆エピソード読了！💎+240 / 🎟️券+3 / 称号『${ep.rewardTitle}』獲得！`);
   }
   if (window.MF_AUDIO) window.MF_AUDIO.playBgm("home");
   renderBondsView();
@@ -269,6 +363,7 @@ function renderProfilePanel() {
   const totalPower = state.party.reduce((s, id) => s + calcCharPower(id), 0);
   const totalKills = Object.values(state.huntLog || {}).reduce((s, h) => s + (h.kills || 0), 0);
   const ownedCards = typeof getOwnedCardCount === "function" ? getOwnedCardCount() : 14;
+  const totalCards = Object.keys(window.MF_CARDS?.TACTIC_CARDS || {}).length || 102;
   const curTitle = state.activeTitle || "第7小隊・新任隊長";
 
   document.getElementById("bd-profile-card").innerHTML = `
@@ -282,8 +377,8 @@ function renderProfilePanel() {
     </div>
     <div class="stat-grid">
       <div class="stat-cell"><span>累計討伐</span><strong>${totalKills}体</strong></div>
-      <div class="stat-cell"><span>カード図鑑</span><strong>${ownedCards}/102</strong></div>
-      <div class="stat-cell"><span>所属隊員</span><strong>${(state.ownedChars || []).length}人</strong></div>
+      <div class="stat-cell"><span>カード図鑑</span><strong>${ownedCards}/${totalCards}</strong></div>
+      <div class="stat-cell"><span>無限タワー</span><strong>${state.endgame?.towerClearedFloor || 0}F</strong></div>
       <div class="stat-cell"><span>対人勝利</span><strong>${state.arenaWins || 0}勝</strong></div>
     </div>
   `;
