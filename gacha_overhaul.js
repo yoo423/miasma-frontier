@@ -1097,3 +1097,64 @@ window.goSkipToResults = goSkipToResults;
 window.goCloseDropOverlay = goCloseDropOverlay;
 window.goOpenResultDetail = goOpenResultDetail;
 window.goCloseResultDetail = goCloseResultDetail;
+
+// =========================================================
+// 🔇 スカウト中（スカウト画面＆軌道降下演出中）はBGMを停止
+// =========================================================
+let goBgmStopped = false;
+
+function goStopBgmForScout() {
+  if (!window.MF_AUDIO) return;
+  try {
+    if (typeof window.MF_AUDIO.stopLoop === "function") window.MF_AUDIO.stopLoop();
+    if (typeof window.MF_AUDIO.stopBgm === "function") window.MF_AUDIO.stopBgm();
+    goBgmStopped = true;
+  } catch (_) {}
+}
+
+function goResumeBgmAfterScout() {
+  if (!goBgmStopped || !window.MF_AUDIO) return;
+  goBgmStopped = false;
+  try {
+    if (typeof window.MF_AUDIO.playBgm === "function") {
+      window.MF_AUDIO.playBgm("home");
+    }
+  } catch (_) {}
+}
+
+(function installGachaBgmHooks() {
+  if (typeof window.renderGachaView === "function" && !window.renderGachaView._bgmHooked) {
+    const origRender = window.renderGachaView;
+    window.renderGachaView = function() {
+      const r = origRender.apply(this, arguments);
+      if (document.getElementById("view-gacha")?.classList.contains("active")) {
+        goStopBgmForScout();
+      }
+      return r;
+    };
+    window.renderGachaView._bgmHooked = true;
+  }
+
+  if (typeof goPlayOrbitalDropSequence === "function" && !goPlayOrbitalDropSequence._bgmHooked) {
+    const origDrop = goPlayOrbitalDropSequence;
+    goPlayOrbitalDropSequence = function() {
+      goStopBgmForScout();
+      return origDrop.apply(this, arguments);
+    };
+    goPlayOrbitalDropSequence._bgmHooked = true;
+  }
+
+  if (typeof window.switchView === "function" && !window.switchView._goBgmHooked) {
+    const origSwitch = window.switchView;
+    window.switchView = function(viewId) {
+      const r = origSwitch.apply(this, arguments);
+      if (viewId === "gacha") {
+        goStopBgmForScout();
+      } else if (goBgmStopped) {
+        goResumeBgmAfterScout();
+      }
+      return r;
+    };
+    window.switchView._goBgmHooked = true;
+  }
+})();
