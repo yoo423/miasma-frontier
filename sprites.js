@@ -1,4 +1,4 @@
-window.MF_IMG_VER = "370";
+window.MF_IMG_VER = "480";
 let zoomCharId = null;
 let zoomFaceMode = true;
 
@@ -8,11 +8,11 @@ window.mfImgFallback = function(img) {
   const fb = img.dataset.fb || "";
   const v = window.MF_IMG_VER;
   const list = [
-    base + ".png?v=" + v,
     base + ".jpeg?v=" + v,
+    base + ".png?v=" + v,
     fb ? fb + ".jpg?v=" + v : "",
-    fb ? fb + ".png?v=" + v : "",
-    fb ? fb + ".jpeg?v=" + v : ""
+    fb ? fb + ".jpeg?v=" + v : "",
+    fb ? fb + ".png?v=" + v : ""
   ].filter(Boolean);
 
   if (step < list.length) {
@@ -62,11 +62,16 @@ window.MF_SPRITES = {
     }[c]));
   },
 
+  resolveFirstSrc(base) {
+    const cached = window.MF_RESOLVED_IMG_SRC && window.MF_RESOLVED_IMG_SRC[base];
+    return cached || `${base}.jpg?v=${window.MF_IMG_VER}`;
+  },
+
   portraitHTML(ch, mode = "contain") {
     const sid = ch.styleId || (typeof state !== "undefined" ? state.styleId : "m_cool") || "m_cool";
     const base = ch.isProtagonist ? `assets/protagonist_${sid}` : `assets/${ch.id}`;
     const fb = ch.isProtagonist ? "assets/protagonist" : "";
-    const firstSrc = `${base}.jpg?v=${window.MF_IMG_VER}`;
+    const firstSrc = this.resolveFirstSrc(base);
     const alt = this.esc(ch.name);
 
     if (mode === "icon" || mode === "icon-lg") {
@@ -98,11 +103,10 @@ window.MF_SPRITES = {
     `;
   },
 
-  // ボス画像表示（assets/<enemyId>.jpg があれば表示、なければ自動で絵文字表示）
   enemyHTML(en, mode = "stage") {
     if (!en) return "";
     const base = `assets/${en.id}`;
-    const firstSrc = `${base}.jpg?v=${window.MF_IMG_VER}`;
+    const firstSrc = this.resolveFirstSrc(base);
     const alt = this.esc(en.name);
 
     if (mode === "thumb") {
