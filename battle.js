@@ -21,12 +21,15 @@ let battleAutoMode = false;
 let battleSpeed = 1;
 let prevThemeBeforeBattle = "camp";
 let btlUidSeq = 1;
-let currentHuntTier = 0; // 0:通常 / 1:★強敵(Lv+15) / 2:★★極限(Lv+30)
+let currentHuntTier = 0;
 
+// 5段階難易度（通常 → 強敵 → 極限 → 災厄 → 終焉）
 const HUNT_TIERS = [
-  { id: 0, label: "⚔️ 通常",        lvAdd: 0,  hpMult: 1.0,  atkMult: 1.0,  rwMult: 1.0, extraTk: 0 },
-  { id: 1, label: "🔥 ★強敵(Lv+15)", lvAdd: 15, hpMult: 1.45, atkMult: 1.25, rwMult: 2.2, extraTk: 1 },
-  { id: 2, label: "💀 ★★極限(Lv+30)", lvAdd: 30, hpMult: 2.0,  atkMult: 1.5,  rwMult: 3.8, extraTk: 2 }
+  { id: 0, label: "⚔️ 通常",        short: "通常", lvAdd: 0,  lvCap: 50, lvFloor: 0,  hpMult: 1.0,  atkMult: 1.0,  rwMult: 1.0, extraTk: 0, firstGems: 120,  firstTk: 1,  firstCrest: 0  },
+  { id: 1, label: "🔥 ★強敵",       short: "強敵", lvAdd: 15, lvCap: 62, lvFloor: 0,  hpMult: 1.38, atkMult: 1.22, rwMult: 2.2, extraTk: 1, firstGems: 240,  firstTk: 2,  firstCrest: 0  },
+  { id: 2, label: "💀 ★★極限",      short: "極限", lvAdd: 28, lvCap: 72, lvFloor: 0,  hpMult: 1.88, atkMult: 1.45, rwMult: 3.6, extraTk: 2, firstGems: 400,  firstTk: 4,  firstCrest: 0  },
+  { id: 3, label: "🩸 ★★★災厄",     short: "災厄", lvAdd: 42, lvCap: 78, lvFloor: 58, hpMult: 2.65, atkMult: 1.76, rwMult: 5.5, extraTk: 3, firstGems: 640,  firstTk: 6,  firstCrest: 10 },
+  { id: 4, label: "👑 ★★★★終焉",    short: "終焉", lvAdd: 54, lvCap: 82, lvFloor: 76, hpMult: 3.75, atkMult: 2.12, rwMult: 8.0, extraTk: 5, firstGems: 1000, firstTk: 10, firstCrest: 25 }
 ];
 
 function getStepDelay(baseMs) { return battleSpeed === 2 ? Math.round(baseMs * 0.5) : baseMs; }
@@ -49,7 +52,6 @@ function getCraftAtkMultiplier(extraPct = 0) {
   return 1 + bonus / 100;
 }
 
-// 敵ごとの適正レベル（序盤は3〜、中盤・ボス・融光種は高Lvを要求）
 function getEnemyBaseLevel(en) {
   if (!en) return 5;
   const list = window.MF_DATA?.ENEMIES || [];
@@ -61,6 +63,12 @@ function getEnemyBaseLevel(en) {
   return Math.max(10, Math.round((en.recPower || 550) / 52));
 }
 
+function getTierReqLevel(en, tier) {
+  const base = getEnemyBaseLevel(en);
+  const raw = Math.max(tier.lvFloor || 0, base + (tier.lvAdd || 0));
+  return Math.min(tier.lvCap || 82, raw);
+}
+
 function getCurrentPartyAvgLv() {
   if (typeof getPartyAvgLevel === "function") return getPartyAvgLevel();
   const ids = state?.party || [];
@@ -68,7 +76,6 @@ function getCurrentPartyAvgLv() {
   return Math.round(ids.reduce((s, id) => s + (state.charLevels?.[id] || 1), 0) / ids.length);
 }
 
-// AUTO解放判定キー（一度撃破した対象・難易度のみAUTO解放）
 function getBattleClearKey(enemyId, opts) {
   if (opts?.questTitle) return `${enemyId}::${opts.questTitle}`;
   if (opts?.huntTier > 0) return `${enemyId}::tier_${opts.huntTier}`;
@@ -95,6 +102,10 @@ function markBattleClearedForAuto(enemyId, opts) {
   if (!state.clearedBattleKeys.includes(key)) state.clearedBattleKeys.push(key);
 }
 
+function isTierFirstCleared(enemyId, tierId) {
+  return !!(state?.huntFirstClears?.[`${enemyId}_t${tierId}`]);
+}
+
 function setHuntTier(tierId) {
   currentHuntTier = tierId;
   playSfx("tap");
@@ -104,12 +115,15 @@ function setHuntTier(tierId) {
 function startTieredHunt(enemyId) {
   const tier = HUNT_TIERS[currentHuntTier] || HUNT_TIERS[0];
   startBattle(enemyId, {
+    isTieredHunt: true,
     huntTier: tier.id,
     hpMult: tier.hpMult,
     atkMult: tier.atkMult,
     rwMult: tier.rwMult,
     extraTickets: tier.extraTk,
     lvAdd: tier.lvAdd,
+    lvCap: tier.lvCap,
+    lvFloor: tier.lvFloor,
     questTitle: tier.id > 0 ? `【${tier.label}】` : ""
   });
 }
@@ -118,14 +132,14 @@ function toggleBattleAuto() {
   if (!btl) return;
   if (!btl.canAuto) {
     playSfx("tap");
-    showToast("🔒 AUTOはこの敵を1度手動で撃破すると解放されます");
+    showToast("🔒 AUTOはこの敵・難易度を1度手動で撃破すると解放されます");
     return;
   }
   battleAutoMode = !battleAutoMode;
   playSfx("switch");
   if (battleAutoMode) btl.usedAuto = true;
   updateAutoButtonUI();
-  showToast(battleAutoMode ? "🤖 AUTO ON（※一部ボーナス対象外）" : "🎮 手動モード");
+  showToast(battleAutoMode ? "🤖 AUTO ON（※一部ボーナス・チャレンジ対象外）" : "🎮 手動モード");
   if (battleAutoMode && !btl.resolving && !btl.finished) setTimeout(() => runAutoTurn(), getStepDelay(700));
 }
 
@@ -167,51 +181,66 @@ function renderBattleView() {
 
   const tier = HUNT_TIERS[currentHuntTier] || HUNT_TIERS[0];
   const pioneer = window.MF_PIONEER?.getBattleBonuses ? window.MF_PIONEER.getBattleBonuses() : { statBonusPct: 0, creditMult: 1 };
+  const remainFirstCnt = unlocked.filter(en => !isTierFirstCleared(en.id, tier.id)).length;
 
   const tierBar = `
-    <div style="display:flex; gap:4px; margin-bottom:7px;">
-      ${HUNT_TIERS.map(t => `
-        <button class="btn-xs ${t.id === currentHuntTier ? "btn-accent2" : ""}" style="flex:1; font-size:10px; padding:5px 2px;" onclick="setHuntTier(${t.id})">${t.label}</button>
+    <div class="btl-tier-grid-top">
+      ${HUNT_TIERS.slice(0, 3).map(t => `
+        <button class="btn-xs ${t.id === currentHuntTier ? "btn-accent2" : ""}" style="font-size:10px; padding:6px 2px;" onclick="setHuntTier(${t.id})">${t.label}</button>
       `).join("")}
     </div>
-    <div style="font-size:10.5px; font-weight:900; color:var(--muted); margin-bottom:8px;">
-      小隊平均Lv.<strong>${avgLv}</strong> ｜ 調査済 ${unlocked.length}/${allEnemies.length}種 ｜ 開拓バフ <strong>+${pioneer.statBonusPct}%</strong>
+    <div class="btl-tier-grid-end">
+      ${HUNT_TIERS.slice(3).map(t => `
+        <button class="btn-xs btl-tier-endbtn ${t.id === currentHuntTier ? "selected" : ""}" onclick="setHuntTier(${t.id})">
+          ${t.label} <span style="font-size:9px; opacity:0.9;">(初回💎+${t.firstGems})</span>
+        </button>
+      `).join("")}
+    </div>
+    <div style="font-size:10.5px; font-weight:900; color:var(--muted); margin:6px 0 8px;">
+      小隊平均Lv.<strong>${avgLv}</strong> ｜ ${tier.label} 未制覇：<strong>${remainFirstCnt}/${unlocked.length}体</strong> ｜ 開拓バフ <strong>+${pioneer.statBonusPct}%</strong>
     </div>
   `;
 
   listEl.innerHTML = tierBar + unlocked.map(en => {
     const log = typeof getHuntEntry === "function" ? getHuntEntry(en.id) : { kills: 0 };
-    const reqLv = getEnemyBaseLevel(en) + tier.lvAdd;
+    const reqLv = getTierReqLevel(en, tier);
     const diff = reqLv - avgLv;
     const warn = diff >= 5
       ? `<span style="color:#ff4d5a;">☠️ 危険（適正Lv.${reqLv}）</span>`
       : (diff > 0 ? `<span style="color:#ff9f1c;">⚠️ 強敵（適正Lv.${reqLv}）</span>` : `<span style="color:#18b88a;">✅ 適正Lv.${reqLv}</span>`);
     const partsLabel = en.parts.length ? `💥 部位：${en.parts.map(p => p.name).join("・")}` : "通常・精鋭ターゲット";
-    const radiantStyle = en.isRadiant || tier.id === 2 ? "border-color:#ffd000;" : "";
+    const clearedFirst = isTierFirstCleared(en.id, tier.id);
+    const firstBadge = clearedFirst
+      ? `<span class="tag" style="background:#18b88a; color:#fff; font-size:9px;">✓${tier.short}制覇</span>`
+      : `<span class="tag" style="background:#f3cf00; color:#111; font-size:9px;">🎁初回 💎+${tier.firstGems} / 🎟️+${tier.firstTk}${tier.firstCrest ? ` / 💠+${tier.firstCrest}` : ""}</span>`;
+    const borderCls = tier.id === 4 ? "border-color:#ff4d5a;" : (tier.id === 3 || en.isRadiant ? "border-color:#f3cf00;" : "");
     const thumb = window.MF_SPRITES.enemyHTML ? window.MF_SPRITES.enemyHTML(en, "thumb") : "";
     const estCredits = Math.round((en.rewards.credits || 1000) * tier.rwMult * pioneer.creditMult);
     const estTk = (en.rewards.tickets || 1) + tier.extraTk;
 
     return `
-      <div class="card" style="padding:10px; margin-bottom:8px; ${radiantStyle}">
+      <div class="card" style="padding:10px; margin-bottom:8px; ${borderCls}">
         <div style="display:flex; gap:9px; align-items:center;">
           ${thumb}
           <div style="flex:1; min-width:0;">
             <div class="top-row"><strong style="font-size:12.5px;">${escapeHtml(en.name)}</strong><span class="rank-pill">${en.rank}</span></div>
-            <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin:3px 0;">
-              <span class="tag">討伐 ${log.kills}体</span>
+            <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin:3px 0;">
+              <span class="tag">討伐 ${log.kills}</span>
               <span style="font-size:10px; font-weight:900;">${warn}</span>
             </div>
-            <div style="font-size:10.5px; color:var(--muted);">${partsLabel}</div>
+            <div style="margin:2px 0;">${firstBadge}</div>
+            <div style="font-size:10px; color:var(--muted);">${partsLabel}</div>
           </div>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-          <span style="font-size:10.5px; font-weight:800;">🪙+${estCredits.toLocaleString()} / 🎟️券+${estTk} / 💎+${Math.round(en.rewards.gems * (1 + tier.id * 0.4))}</span>
-          <button class="btn-xs btn-accent2" onclick="startTieredHunt('${en.id}')">🃏 討伐開始</button>
+          <span style="font-size:10px; font-weight:800;">通常枠：🪙+${estCredits.toLocaleString()} / 🎟️+${estTk} / 💎+${Math.round(en.rewards.gems * (1 + tier.id * 0.45))}</span>
+          <button class="btn-xs btn-accent2" onclick="startTieredHunt('${en.id}')">🃏 出撃</button>
         </div>
       </div>
     `;
   }).join("");
+
+  if (window.MF_REWARD_HUB?.renderEntryBanners) window.MF_REWARD_HUB.renderEntryBanners();
 }
 
 function shuffleCards(arr) {
@@ -220,35 +249,36 @@ function shuffleCards(arr) {
   return a;
 }
 
-function pickNextEnemyIntent(turn, prevType, enemy, enraged) {
-  const mult = enraged ? 1.35 : 1.0;
+function pickNextEnemyIntent(turn, prevType, enemy, enraged, tierId = 0) {
+  const mult = (enraged ? 1.38 : 1.0) * (tierId >= 4 ? 1.12 : 1.0);
   if (prevType === "charge") {
     return {
       type: "heavy", icon: "☄️", threat: "極大脅威",
-      name: enraged ? "【怒り】極・ミアズマ崩壊" : "ミアズマ大崩壊",
-      dmg: Math.round(enemy.atk * 2.35 * mult),
+      name: tierId >= 4 ? "【終焉】絶滅ミアズマ崩壊" : (enraged ? "【怒り】極・ミアズマ崩壊" : "ミアズマ大崩壊"),
+      dmg: Math.round(enemy.atk * (tierId >= 3 ? 2.55 : 2.35) * mult),
       hint: "壊滅的な一撃が迫る！防壁・カウンター・凍結で備えろ！"
     };
   }
   const r = Math.random();
-  if (turn >= 2 && r < (enraged ? 0.36 : 0.26)) {
+  const chargeRate = tierId >= 3 ? (enraged ? 0.42 : 0.34) : (enraged ? 0.36 : 0.26);
+  if (turn >= 2 && r < chargeRate) {
     return {
       type: "charge", icon: "⚡", threat: "エネルギー収束",
       name: "必殺チャージ中", dmg: 0,
       hint: "凄まじい瘴気が集中している……【崩し】で阻止しろ！"
     };
   }
-  if (r < 0.56) {
+  if (r < 0.58) {
     return {
       type: "guard", icon: "🛡️", threat: "堅牢態勢",
-      name: "装甲硬化・反撃構え", dmg: Math.round(enemy.atk * 0.9 * mult),
+      name: "装甲硬化・反撃構え", dmg: Math.round(enemy.atk * 0.95 * mult),
       hint: "外殻が硬化している！【崩し】カードで装甲を砕け！"
     };
   }
-  if (r < 0.82) {
+  if (r < 0.85) {
     return {
       type: "heavy", icon: "💢", threat: "強襲警戒",
-      name: "猛襲叩きつけ", dmg: Math.round(enemy.atk * 1.6 * mult),
+      name: "猛襲叩きつけ", dmg: Math.round(enemy.atk * 1.65 * mult),
       hint: "重い一撃の気配！【防御】や【カウンター】で迎え撃て！"
     };
   }
@@ -272,37 +302,13 @@ function applyLimitedAndPioneerOpeningPassives() {
     logs.push("🗺️ 開拓本部の前線支援が展開された！");
   }
 
-  if (p.includes("mikoto")) {
-    btl.shield += Math.round(btl.teamMaxHp * 0.22);
-    btl.attachedElement = "ice";
-    logs.push("👑 ミコトの氷華が戦場を包み込む！");
-  }
-  if (p.includes("celestia")) {
-    btl.shredTurns = Math.max(btl.shredTurns, 3);
-    btl.exGauge = Math.min(95, btl.exGauge + 25);
-    logs.push("👑 セレスティアが敵の急所をロックオン！");
-  }
-  if (p.includes("sylphy")) {
-    btl.ap = Math.min(8, btl.ap + 2);
-    drawCards(1);
-    logs.push("👑 シルフィが疾風のように先手を取る！");
-  }
-  if (p.includes("lily")) {
-    btl.shield += Math.round(btl.teamMaxHp * 0.32);
-    logs.push("👑 リリィの純白の聖壁が展開された！");
-  }
-  if (p.includes("marina")) {
-    if (!btl.attachedElement) btl.attachedElement = "water";
-    logs.push("👑 マリナが水流弾で敵を捕捉した！");
-  }
-  if (p.includes("iris")) {
-    btl.nextAtkMult = Math.max(btl.nextAtkMult, 1.35);
-    logs.push("👑 イリスが紅蓮の闘気を纏う！");
-  }
-  if (p.includes("serina")) {
-    btl.exGauge = Math.min(95, btl.exGauge + 12);
-    logs.push("👑 セリーナの旋律が小隊を鼓舞する！");
-  }
+  if (p.includes("mikoto")) { btl.shield += Math.round(btl.teamMaxHp * 0.22); btl.attachedElement = "ice"; logs.push("👑 ミコトの氷華が戦場を包み込む！"); }
+  if (p.includes("celestia")) { btl.shredTurns = Math.max(btl.shredTurns, 3); btl.exGauge = Math.min(95, btl.exGauge + 25); logs.push("👑 セレスティアが敵の急所をロックオン！"); }
+  if (p.includes("sylphy")) { btl.ap = Math.min(8, btl.ap + 2); drawCards(1); logs.push("👑 シルフィが疾風のように先手を取る！"); }
+  if (p.includes("lily")) { btl.shield += Math.round(btl.teamMaxHp * 0.32); logs.push("👑 リリィの純白の聖壁が展開された！"); }
+  if (p.includes("marina")) { if (!btl.attachedElement) btl.attachedElement = "water"; logs.push("👑 マリナが水流弾で敵を捕捉した！"); }
+  if (p.includes("iris")) { btl.nextAtkMult = Math.max(btl.nextAtkMult, 1.35); logs.push("👑 イリスが紅蓮の闘気を纏う！"); }
+  if (p.includes("serina")) { btl.exGauge = Math.min(95, btl.exGauge + 12); logs.push("👑 セリーナの旋律が小隊を鼓舞する！"); }
   if (logs.length > 0) {
     logs.reverse().forEach(l => pushBattleLog(l));
     setTimeout(() => spawnBattleFloat("✨ 先制陣形展開", "#ffd000"), 250);
@@ -315,17 +321,24 @@ function startBattle(enemyId, opts = null) {
 
   const isRaid = !!opts?.isRaid;
   const isTutorialSim = !!(opts?.questTitle && opts.questTitle.includes("模擬戦"));
+  const tierId = Number(opts?.huntTier || 0);
   const hpMult = opts?.hpMult || 1.0;
   const atkMultEn = opts?.atkMult || 1.0;
-  const isBoss = isRaid || baseTemplate.isRadiant || baseTemplate.parts.length >= 2 || hpMult >= 1.8;
+  const isBoss = isRaid || baseTemplate.isRadiant || baseTemplate.parts.length >= 2 || hpMult >= 1.8 || tierId >= 3;
 
   const avgLv = getCurrentPartyAvgLv();
   const strictMinLv = opts?.minReqLv || 0;
-  const enemyTargetLv = isTutorialSim ? 1 : (strictMinLv || (getEnemyBaseLevel(baseTemplate) + (opts?.lvAdd || 0)));
+  let enemyTargetLv = 1;
+  if (!isTutorialSim) {
+    if (strictMinLv > 0) enemyTargetLv = strictMinLv;
+    else {
+      const rawLv = Math.max(opts?.lvFloor || 0, getEnemyBaseLevel(baseTemplate) + (opts?.lvAdd || 0));
+      enemyTargetLv = Math.min(opts?.lvCap || 82, rawLv);
+    }
+  }
   const lvGap = strictMinLv > 0 ? Math.max(0, strictMinLv - avgLv) : 0;
   const softLvDiff = isTutorialSim || isRaid ? 0 : (enemyTargetLv - avgLv);
 
-  // 適正Lvに応じた本格的な敵HP・攻撃力計算（レベル上げが必須になる手応え）
   const L = enemyTargetLv;
   const roleHpMult = baseTemplate.isRadiant ? 2.35 : (isBoss ? 1.85 : 1.0);
   const roleAtkMult = baseTemplate.isRadiant ? 1.55 : (isBoss ? 1.32 : 1.0);
@@ -342,8 +355,8 @@ function startBattle(enemyId, opts = null) {
         Math.round((290 + L * 66 + L * L * 0.72) * roleAtkMult * atkMultEn)
       );
 
-  const stagScale = isBoss ? 2.2 : 1.65;
-  const scaledMaxStagger = Math.round(baseTemplate.maxStagger * stagScale * Math.sqrt(hpMult));
+  const stagScale = tierId >= 4 ? 3.1 : (tierId >= 3 ? 2.65 : (isBoss ? 2.2 : 1.65));
+  const scaledMaxStagger = Math.round(baseTemplate.maxStagger * stagScale * Math.sqrt(Math.min(2.5, hpMult)));
 
   const template = {
     ...baseTemplate,
@@ -391,10 +404,12 @@ function startBattle(enemyId, opts = null) {
 
   let introMsg = `⚔️ ${template.name} が立ちはだかった！`;
   if (isRaid) introMsg = "☄️ 極限レイド開始！5ターン以内に全力でダメージを刻め！";
+  else if (tierId >= 4) introMsg = "👑 【終焉領域】圧倒的絶望が眼前に顕現した……全戦力を解放せよ！";
+  else if (tierId >= 3) introMsg = "🩸 【災厄級】凄まじい瘴気が空間を歪めている！";
   else if (lvGap > 0 || softLvDiff >= 5) introMsg = "☠️ 圧倒的な瘴気を感じる……適正レベルに届いていない！";
 
   btl = {
-    ctx: opts, enemy: template, rawEnemy: baseTemplate, isBoss, isRaid, canAuto,
+    ctx: opts, enemy: template, rawEnemy: baseTemplate, isBoss, isRaid, canAuto, tierId,
     pioneer,
     raidMaxTurns: opts?.raidMaxTurns || 5,
     totalDamageDealt: 0,
@@ -408,8 +423,10 @@ function startBattle(enemyId, opts = null) {
     shield: 0, counterMult: 0, nextAtkMult: 1.0, exGauge: 0,
     ap: 4, maxAp: 4, turn: 1,
     drawPile: shuffleCards(rawDeck), discardPile: [], hand: [], queue: [],
-    intent: pickNextEnemyIntent(1, null, template, false),
+    intent: pickNextEnemyIntent(1, null, template, false, tierId),
     log: [introMsg],
+    // 実績・週替わりチャレンジ用トラッキング
+    stats: { reactions: 0, chains3: 0, partBreaks: 0, usedElements: [] },
     resolving: false, usedAuto: false, finished: false
   };
 
@@ -573,6 +590,7 @@ function executeTurnQueue() {
   const cardsToRun = [...btl.queue];
   btl.queue = [];
   const hasFullChain = cardsToRun.length === 3;
+  if (hasFullChain && btl.stats) btl.stats.chains3 += 1;
   renderBattleHUD();
 
   let step = 0;
@@ -590,7 +608,6 @@ function executeTurnQueue() {
   setTimeout(runNext, getStepDelay(450));
 }
 
-// 適正Lv未達時は明確に厳しい壁となるレベル差補正
 function getLvGapOutMult() {
   if (!btl) return 1.0;
   if (btl.lvGap > 0) return Math.max(0.05, Math.pow(0.84, btl.lvGap));
@@ -617,6 +634,9 @@ function dealDamageToEnemy(dmg) {
 function resolveSingleCard(card, isThirdChain) {
   const member = btl.members.find(m => m.id === card.charId) || btl.members[0];
   const elInfo = window.MF_DATA.ELEMENTS[card.element];
+  if (btl.stats && card.element && !btl.stats.usedElements.includes(card.element)) {
+    btl.stats.usedElements.push(card.element);
+  }
 
   if (card.isUlt || card.isLimitedCard || card.cost >= 2 || card.type === "break" || card.counterMult || card.rarity === "SSR") {
     showBattleCutin(member.id, `${card.icon} ${card.name}`, `${member.name}「いくぞ！${elInfo.name}の力！」`, elInfo.color);
@@ -679,7 +699,9 @@ function resolveSingleCard(card, isThirdChain) {
       const pMult = (part.spotted ? 1.25 : 1.0) * (btl.shredTurns > 0 ? 1.3 : 1.0) * marinaBonus * pioneerPartMult;
       part.hp = Math.max(0, part.hp - Math.round(dmg * pMult));
       if (part.hp === 0) {
-        part.broken = true; btl.stunned = true; playSfx("break");
+        part.broken = true; btl.stunned = true;
+        if (btl.stats) btl.stats.partBreaks += 1;
+        playSfx("break");
         triggerBattleFx("#ffd000", "💥"); spawnBattleFloat(`💥 ${part.name}破壊!`, "#ffd000");
         pushBattleLog(`💥 部位破壊！【${part.name}】を粉砕した！`);
         btl.targetPartIdx = btl.parts.findIndex(p => !p.broken);
@@ -692,14 +714,15 @@ function resolveSingleCard(card, isThirdChain) {
         btl.stagger = 0;
         btl.stunned = true;
         btl.breakCount = (btl.breakCount || 0) + 1;
-        btl.maxStagger = Math.round(btl.baseMaxStagger * (1 + btl.breakCount * 0.38));
+        btl.maxStagger = Math.round(btl.baseMaxStagger * (1 + btl.breakCount * (btl.tierId >= 3 ? 0.48 : 0.38)));
         playSfx("break");
         spawnBattleFloat("💫 BREAK!", "#ffd000");
         pushBattleLog("💫 体勢ブレイク！敵が大きく怯んだ！");
       }
     }
 
-    if (!btl.isRaid && !btl.enraged && btl.hp > 0 && btl.hp <= btl.maxHp * 0.5 && (btl.isBoss || btl.parts.length > 0)) {
+    const enrageRatio = btl.tierId >= 4 ? 0.65 : (btl.tierId >= 3 ? 0.58 : 0.5);
+    if (!btl.isRaid && !btl.enraged && btl.hp > 0 && btl.hp <= btl.maxHp * enrageRatio && (btl.isBoss || btl.parts.length > 0)) {
       btl.enraged = true; playSfx("roar"); triggerBattleFx("#ff2e4c", "💢"); shakeBattleStage();
       spawnBattleFloat("💢 怒り覚醒!!", "#ff2e4c");
       pushBattleLog(`💢 ${btl.enemy.name}が猛り狂い、瘴気が激増した！`);
@@ -731,11 +754,14 @@ function applyElementReaction(elA, elB, dmg) {
   else if (p.includes("fire") && p.includes("water")) { out = Math.round(dmg * 2.0); txt = "💧🔥 蒸発!"; }
   else if (p.includes("fire") && p.includes("ice")) { out = Math.round(dmg * 2.2); txt = "❄️🔥 融解!"; }
   else if (p.includes("fire") && p.includes("volt")) { out = Math.round(dmg * 1.65); if (!btl.stunned) btl.stagger += 18; txt = "⚡🔥 過負荷!"; }
-  else if (p.includes("water") && p.includes("ice")) { out = Math.round(dmg * 1.3); if (btl.lvGap < 5 && btl.softLvDiff < 8) btl.stunned = true; txt = "💧❄️ 凍結!"; }
+  else if (p.includes("water") && p.includes("ice")) { out = Math.round(dmg * 1.3); if (btl.lvGap < 5 && btl.softLvDiff < 8 && btl.tierId < 4) btl.stunned = true; txt = "💧❄️ 凍結!"; }
   else if (p.includes("volt") && p.includes("ice")) { out = Math.round(dmg * 1.45); btl.shredTurns = 2; txt = "⚡❄️ 超電導!"; }
   else if (p.includes("water") && p.includes("volt")) { out = Math.round(dmg * 1.5); btl.electroTurns = 2; txt = "💧⚡ 感電!"; }
   else if (p.includes("wind")) { out = Math.round(dmg * 1.55); txt = "🌪️ 元素拡散!"; }
-  if (txt) { spawnBattleFloat(txt, "#ffffff"); pushBattleLog(`⚡ 元素反応【${txt}】発動！`); }
+  if (txt) {
+    if (btl.stats) btl.stats.reactions += 1;
+    spawnBattleFloat(txt, "#ffffff"); pushBattleLog(`⚡ 元素反応【${txt}】発動！`);
+  }
   return out;
 }
 
@@ -751,7 +777,7 @@ function resolveEnemyTurn() {
 
   const intent = btl.intent;
   if (btl.stunned) {
-    spawnBattleFloat("💫 行動不能", "#ffd000"); pushBattleLog(`💫 ${btl.enemy.name}は体制を崩している！`); btl.stunned = false;
+    spawnBattleFloat("💫 行動不能", "#ffd000"); pushBattleLog(`💫 ${btl.enemy.name}は体勢を崩している！`); btl.stunned = false;
   } else if (intent.dmg > 0) {
     const brokenCnt = btl.parts.filter(p => p.broken).length;
     let dmg = Math.max(1, Math.round(intent.dmg * Math.max(0.58, 1 - brokenCnt * 0.14) * getLvGapInMult()));
@@ -793,7 +819,7 @@ function resolveEnemyTurn() {
       btl.exGauge = Math.min(99, btl.exGauge + 12);
       pushBattleLog("🌸 セリーナの旋律が傷を癒やした！");
     }
-    btl.intent = pickNextEnemyIntent(btl.turn, intent.type, btl.enemy, btl.enraged);
+    btl.intent = pickNextEnemyIntent(btl.turn, intent.type, btl.enemy, btl.enraged, btl.tierId);
     drawCards(Math.max(2, 5 - btl.hand.length));
     btl.resolving = false; renderBattleHUD();
     if (battleAutoMode && !btl.finished) setTimeout(() => runAutoTurn(), getStepDelay(750));
@@ -846,7 +872,7 @@ function finishBattle(isWin) {
     playSfx("lose");
     const lvAdvice = (btl.lvGap > 0 || btl.softLvDiff > 0)
       ? `小隊のレベルが不足しています（現在平均Lv.${btl.avgLv} ／ 適正Lv.${btl.enemyTargetLv}）。育成クエストや開拓本部で戦力を整えて再挑戦しよう！`
-      : `強敵に押し切られた……！防御・回復カードや元素反応、キャンプ飯を見直して再挑戦しよう！`;
+      : `強敵に押し切られた……！防御・回復カードや元素反応、キャンプ飯、限界突破を見直して再挑戦しよう！`;
     body.innerHTML = `
       <div style="font-size:48px; margin-bottom:4px;">💀</div>
       <h3 style="margin:0 0 6px; color:#ff595e; font-size:20px;">作戦撤退……</h3>
@@ -858,9 +884,11 @@ function finishBattle(isWin) {
   }
 
   playSfx("win");
-  markBattleClearedForAuto((btl.rawEnemy || btl.enemy).id, btl.ctx);
+  const rawId = (btl.rawEnemy || btl.enemy).id;
+  markBattleClearedForAuto(rawId, btl.ctx);
   if (state.camp?.activeBuff) state.camp.activeBuff = null;
 
+  const tier = HUNT_TIERS[btl.tierId || 0] || HUNT_TIERS[0];
   const rw = btl.enemy.rewards;
   const rwMult = btl.ctx?.rwMult || 1.0;
   const creditMult = (btl.pioneer?.creditMult || 1.0) * rwMult;
@@ -871,7 +899,7 @@ function finishBattle(isWin) {
   const gainCredits = Math.round((rw.credits || 1000) * creditMult);
   const gainBooks = Math.round((rw.books || 2) * rwMult);
   const gainCores = Math.max(rw.cores || 0, Math.round((rw.cores || 1) * rwMult));
-  const gainGems = Math.round((rw.gems || 20) * (1 + (btl.ctx?.huntTier || 0) * 0.4));
+  const gainGems = Math.round((rw.gems || 20) * (1 + (btl.tierId || 0) * 0.45));
   const extraTk = btl.ctx?.extraTickets || 0;
 
   state.credits += gainCredits;
@@ -880,6 +908,23 @@ function finishBattle(isWin) {
   if (extraTk > 0) state.cardTickets = (state.cardTickets || 0) + extraTk;
   state.playerExp = (state.playerExp || 0) + Math.round((rw.rankExp || 15) * rwMult);
   while (state.playerExp >= state.playerRank * 100) { state.playerExp -= state.playerRank * 100; state.playerRank += 1; }
+
+  // 討伐ティア初回撃破ボーナス（通常〜終焉まで各霧獣ごと）
+  let tierFirstHtml = "";
+  const isHuntBattle = !!(btl.ctx?.isTieredHunt || !btl.ctx);
+  if (isHuntBattle && !isTierFirstCleared(rawId, tier.id)) {
+    state.huntFirstClears = state.huntFirstClears || {};
+    state.huntFirstClears[`${rawId}_t${tier.id}`] = true;
+    state.gems += tier.firstGems;
+    state.cardTickets = (state.cardTickets || 0) + tier.firstTk;
+    if (tier.firstCrest > 0) state.arcCrests = (state.arcCrests || 0) + tier.firstCrest;
+    tierFirstHtml = `
+      <div style="background:rgba(243,207,0,0.18); border:2px solid #f3cf00; border-radius:10px; padding:7px; font-size:11.5px; color:#f3cf00; font-weight:900; margin-top:8px;">
+        👑 【${tier.label}】初回撃破ボーナス！<br>
+        💎+${tier.firstGems.toLocaleString()} ／ 🎟️パック券+${tier.firstTk}${tier.firstCrest ? ` ／ 💠クレスト+${tier.firstCrest}` : ""}
+      </div>
+    `;
+  }
 
   let bonusHtml = "";
   if (isManual) {
@@ -892,6 +937,26 @@ function finishBattle(isWin) {
     bonusHtml = `<div style="font-size:11px; color:#ff9f1c; font-weight:800; margin-top:8px;">🤖 AUTO周回クリア</div>`;
   }
 
+  // 実績・週替わり戦術チャレンジへ勝利データを送信
+  let hubNoteHtml = "";
+  if (window.MF_REWARD_HUB?.onBattleWin) {
+    const hubRes = window.MF_REWARD_HUB.onBattleWin({
+      enemyId: rawId,
+      tierId: btl.tierId || 0,
+      isHunt: isHuntBattle,
+      turns: btl.turn,
+      isManual,
+      reactions: btl.stats?.reactions || 0,
+      chains3: btl.stats?.chains3 || 0,
+      partBreaks: btl.stats?.partBreaks || 0,
+      usedElements: btl.stats?.usedElements || [],
+      partyElements: (btl.members || []).map(m => m.element)
+    });
+    if (hubRes?.unlockedLabels?.length) {
+      hubNoteHtml = `<div style="background:rgba(56,163,255,0.18); border:1.5px solid #38a3ff; border-radius:10px; padding:6px 8px; font-size:11px; font-weight:900; margin-top:7px;">🏅 達成：${hubRes.unlockedLabels.map(x => escapeHtml(x)).join(" / ")}</div>`;
+    }
+  }
+
   const firstHtml = huntRes.isFirstClear
     ? `<div style="font-size:11px; color:#ffd000; font-weight:900; margin-top:6px;">📓 初討伐達成！調査ノート報酬＆AUTO周回が解放されました！</div>` : "";
 
@@ -902,7 +967,7 @@ function finishBattle(isWin) {
     <h3 style="margin:0 0 4px; color:#18b88a; font-size:20px;">討伐完了！</h3>
     <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">${escapeHtml(btl.enemy.name)}（${btl.turn}ターン撃破）</div>
     <div style="background:var(--surface-sub); border-radius:10px; padding:8px; font-size:12px; font-weight:900;">🪙 +${gainCredits.toLocaleString()} ｜ 📘 記録+${gainBooks} ｜ 💠 コア+${gainCores}</div>
-    ${bonusHtml}${firstHtml}
+    ${tierFirstHtml}${bonusHtml}${hubNoteHtml}${firstHtml}
     <button class="btn-primary" style="width:100%; padding:13px; font-size:15px; margin-top:14px;" onclick="exitBattleArena(true)">${nextLabel}</button>
   `;
   modal.classList.add("active");
@@ -938,11 +1003,10 @@ function renderBattleHUD() {
 
   const stage = document.getElementById("btl-stage");
   if (stage) {
-    const baseCls = btl.enemy.isRadiant ? "stage-radiant" : (btl.isBoss ? "stage-boss" : "stage-field");
+    const baseCls = btl.enemy.isRadiant || btl.tierId >= 4 ? "stage-radiant" : (btl.isBoss ? "stage-boss" : "stage-field");
     stage.className = `battle-stage ${baseCls} ${btl.enraged || btl.lvGap > 0 || btl.softLvDiff >= 5 ? "stage-enraged" : ""}`;
   }
 
-  // メタ数値を廃した没入感のある状態表示
   const elTag = btl.attachedElement ? `${window.MF_DATA.ELEMENTS[btl.attachedElement].icon}付着` : "無付着";
   const debuffs = [elTag];
   if (btl.isRaid) debuffs.push(`☄️累計 ${btl.totalDamageDealt.toLocaleString()}`);
@@ -960,7 +1024,6 @@ function renderBattleHUD() {
   document.getElementById("btl-stagger-fill").style.width = btl.stunned ? "100%" : `${Math.round((btl.stagger / btl.maxStagger) * 100)}%`;
   document.getElementById("btl-stagger-text").textContent = btl.stunned ? "💫 BREAK" : "体勢ゲージ";
 
-  // 相手からの具体ダメージ数値などのメタ表示を削除
   const it = btl.intent;
   document.getElementById("btl-intent-box").innerHTML = `
     <div style="font-size:11.5px; font-weight:900;">${it.icon} ${escapeHtml(it.name)} <span style="opacity:0.85; font-size:10px;">【${escapeHtml(it.threat || "警戒")}】</span></div>
@@ -1009,6 +1072,6 @@ function renderBattleHUD() {
       </div>
     `;
   }).join("");
-  
-attachHandSwipeHandlers();
+
+  attachHandSwipeHandlers();
 }
