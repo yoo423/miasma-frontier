@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=480" />
+  <link rel="stylesheet" href="style.css?v=482" />
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
@@ -58,14 +58,15 @@
     <header class="top-bar">
       <div class="top-row">
         <div class="player-badge" onclick="currentBondsTab='profile'; switchView('bonds');" style="cursor:pointer;">
-          <span id="tb-name">ユウ</span>
+          <span id="tb-name">ナナシ</span>
           <span id="tb-rank" class="rank-pill">開拓Lv.1</span>
           <span id="tb-title" style="font-size:10px; color:var(--accent); font-weight:900;">🏅 新任隊長</span>
         </div>
         <div style="display:flex; gap:4px;">
-          <button class="btn-xs" style="position:relative;" onclick="openNoticeModal()">📢<span id="home-notice-badge" class="mini-dot" style="display:none;">!</span></button>
-          <button id="btn-theme" class="btn-xs" onclick="toggleUiTheme()">🏕️ 拠点</button>
-          <button id="btn-sound" class="btn-xs" onclick="toggleSound()">🔊</button>
+          <button class="btn-xs" onclick="switchView('board')" title="掲示板">💬</button>
+          <button class="btn-xs" style="position:relative;" onclick="openNoticeModal()" title="お知らせ">📢<span id="home-notice-badge" class="mini-dot" style="display:none;">!</span></button>
+          <button id="btn-theme" class="btn-xs" onclick="toggleUiTheme()" title="表示切替">🏕️</button>
+          <button id="btn-sound" class="btn-xs" onclick="toggleSound()" title="サウンド">🔊</button>
         </div>
       </div>
       <div class="resource-strip" style="grid-template-columns:repeat(4,1fr); gap:4px;">
@@ -467,7 +468,6 @@
         <!-- Page 2: 拠点・対人・フレンド・お知らせ・意見箱・設定（9個） -->
         <div class="tablet-page">
           <div class="tablet-grid">
-            <button class="btn-xs" onclick="switchView('board')">💬 掲示板</button>
             <button class="menu-btn" onclick="tabletGo('camp')"><span id="tb-lock-camp" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🏭</span><span>キャンプ</span></button>
             <button class="menu-btn" onclick="tabletGo('craft')"><span id="tb-lock-craft" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🔨</span><span>クラフト</span></button>
             <button class="menu-btn" onclick="tabletGo('arena')"><span id="tb-lock-arena" class="menu-badge" style="display:none;">🔒</span><span class="m-ico">🏆</span><span>対人戦</span></button>
