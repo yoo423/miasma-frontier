@@ -526,6 +526,34 @@
     </div>
   </div>
 
+    <!-- 🎓 チュートリアルモーダル -->
+  <div id="modal-tutorial" class="modal-overlay">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="top-row" style="margin-bottom:4px;">
+        <span id="tut-step-badge" class="rank-pill" style="background:#ffd13b;">STEP 1 / 5</span>
+        <button class="btn-xs" onclick="skipHomeTutorial()">スキップ ✕</button>
+      </div>
+      <h3 id="tut-step-title" style="margin:4px 0 6px; font-size:15px;">チュートリアル</h3>
+      <div class="tut-guide-row">
+        <div id="tut-guide-portrait"></div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:10px; font-weight:900; color:var(--accent);">副官アオイ</div>
+          <div id="tut-speech-text" style="font-size:11.5px; line-height:1.45; font-weight:800;"></div>
+        </div>
+      </div>
+      <div id="tut-step-body"></div>
+      <div id="tut-progress-dots" class="tablet-dots" style="margin:10px 0;"></div>
+      <div id="tut-nav-row" style="display:grid; grid-template-columns:1fr 1.6fr; gap:8px;">
+        <button id="btn-tut-prev" onclick="prevTutorialStep()">◀ 戻る</button>
+        <button id="btn-tut-next" class="btn-primary" onclick="nextTutorialStep()">次へ ▶</button>
+      </div>
+      <div id="tut-end-actions" style="display:none; flex-direction:column; gap:7px;">
+        <button class="btn-accent2" style="width:100%; padding:11px;" onclick="finishHomeTutorial(true)">⚔️ 模擬バトルで実戦練習する！</button>
+        <button class="btn-primary" style="width:100%; padding:10px;" onclick="finishHomeTutorial(false)">🏕️ 拠点へ戻って冒険を始める</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script src="data.js?v=440"></script>
@@ -564,5 +592,6 @@
   <script src="story.js?v=440"></script>
   <script src="camp.js?v=440"></script>
   <script src="main.js?v=485"></script>
+  <link rel="stylesheet" href="style.css?v=500" />
 </body>
 </html>
