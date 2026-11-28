@@ -1193,3 +1193,61 @@ body.theme-tactical .battle-stage::before {
   border-radius: 9px; padding: 7px 9px;
 }
 .bo-title-row.equipped { border-color: #f3cf00; background: rgba(243, 207, 0, 0.14); }
+/* =========================================================
+   🏅 5段階超難度ボタン ＆ 戦術報酬ハブ（実績・派遣・週次）
+   ========================================================= */
+.btl-tier-grid-top {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px;
+}
+.btl-tier-grid-end {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 4px;
+}
+.btl-tier-endbtn {
+  padding: 7px 4px !important; font-size: 10px !important;
+  background: linear-gradient(135deg, #1b1124, #2c1220) !important;
+  color: #ffe2e6 !important; border: 1.5px solid #ff4d5a !important;
+}
+.btl-tier-endbtn.selected {
+  background: linear-gradient(135deg, #ff2e4c, #b80f2e) !important;
+  color: #fff !important; border-color: #f3cf00 !important;
+  box-shadow: 0 0 12px rgba(255, 46, 76, 0.55);
+}
+
+.rh-entry-bar {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+  margin-bottom: 8px;
+}
+.rh-entry-btn {
+  position: relative;
+  background: linear-gradient(135deg, #111624, #1b2438);
+  color: #eef3ff; border: 1.5px solid var(--border); border-radius: 9px;
+  padding: 7px 4px; font-size: 10.5px; font-weight: 900;
+}
+.rh-entry-btn.hot {
+  border-color: #f3cf00;
+  box-shadow: 0 0 10px rgba(243, 207, 0, 0.35);
+}
+.rh-dot {
+  display: inline-block; margin-left: 3px;
+  background: #ff2e4c; color: #fff; font-size: 9px; font-weight: 900;
+  padding: 0 5px; border-radius: 999px; line-height: 1.45;
+}
+
+.rh-scroll-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.rh-item-card {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 9px;
+}
+.rh-item-card.ready {
+  border-color: #f3cf00; background: rgba(243, 207, 0, 0.13);
+}
+.rh-item-card.done { opacity: 0.6; }
+
+.rh-bench-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  max-height: 130px; overflow-y: auto;
+  background: var(--surface-sub); border-radius: 9px; padding: 6px;
+}
