@@ -362,6 +362,62 @@ function pickStoryChoice(choiceIdx) {
   playSfx("switch");
   renderNovelScene();
 }
+function getNextStoryEpisode(currentId) {
+  const all = getStoryChapters();
+  const idx = all.findIndex(c => c.id === currentId);
+  if (idx < 0 || idx >= all.length - 1) return null;
+  return all[idx + 1];
+}
+
+function closeStoryClearOverlay() {
+  const modal = document.getElementById("modal-story-next");
+  if (modal) modal.classList.remove("active");
+}
+
+function proceedToNextStoryEpisode(nextId) {
+  closeStoryClearOverlay();
+  const m = String(nextId || "").match(/^ch(\d+)_/);
+  if (m) activeChapterGroup = Number(m[1]);
+  startStoryChapter(nextId, false);
+}
+
+function showStoryClearOverlay(ch, isFirstClear) {
+  const nextEp = getNextStoryEpisode(ch.id);
+  let modal = document.getElementById("modal-story-next");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-story-next";
+    modal.className = "modal-overlay";
+    modal.style.zIndex = "1600";
+    document.body.appendChild(modal);
+  }
+
+  const rewardHtml = isFirstClear
+    ? `<div style="background:var(--surface-sub); border:1.5px solid #f3cf00; border-radius:10px; padding:8px; font-size:11.5px; font-weight:900; margin:8px 0;">
+         🎁 初踏破報酬：💎+${ch.reward.gems} ／ 🎟️券+2 ／ 📘+${ch.reward.books} ／ 💠+${ch.reward.cores}
+       </div>`
+    : `<div style="font-size:11px; color:var(--muted); margin:6px 0;">回想エピソードを読み終えました</div>`;
+
+  const nextBtnHtml = nextEp
+    ? `<button class="btn-accent2" style="width:100%; padding:12px; font-size:13.5px; margin-bottom:7px;" onclick="proceedToNextStoryEpisode('${nextEp.id}')">
+         ▶ 次の話へ進む（${escapeHtml(nextEp.chapter)}：${escapeHtml(nextEp.title)}）
+       </button>`
+    : `<div style="font-size:11px; color:var(--accent); font-weight:900; margin-bottom:8px;">✨ 現在公開中のエピソードをすべて踏破しました！</div>`;
+
+  modal.innerHTML = `
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div style="font-size:36px; margin-bottom:2px;">📖</div>
+      <strong style="font-size:15px; display:block;">${escapeHtml(ch.chapter)} 完了！</strong>
+      <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">${escapeHtml(ch.title)}</div>
+      ${rewardHtml}
+      ${nextBtnHtml}
+      <button class="btn-xs" style="width:100%; padding:9px;" onclick="closeStoryClearOverlay(); renderStoryView();">
+        📋 エピソード一覧へ戻る
+      </button>
+    </div>
+  `;
+  modal.classList.add("active");
+}
 
 function advanceNovelScene() {
   if (!activeStory) return;
@@ -375,9 +431,10 @@ function advanceNovelScene() {
   activeStory = null; storyAutoOn = false;
 
   if (isEpilogue || !chRef.battleEnemyId) {
-    completeStoryChapter(chRef);
+    const isFirst = completeStoryChapter(chRef);
     playSfx("gift");
     renderStoryView();
+    showStoryClearOverlay(chRef, isFirst);
     return;
   }
 
@@ -385,8 +442,12 @@ function advanceNovelScene() {
   startBattle(chRef.battleEnemyId, {
     returnView: "story",
     onWin: () => {
-      completeStoryChapter(chRef);
-      if (chRef.epilogue && chRef.epilogue.length > 0) setTimeout(() => startStoryChapter(chRef.id, true), 120);
+      const isFirst = completeStoryChapter(chRef);
+      if (chRef.epilogue && chRef.epilogue.length > 0) {
+        setTimeout(() => startStoryChapter(chRef.id, true), 120);
+      } else {
+        setTimeout(() => showStoryClearOverlay(chRef, isFirst), 180);
+      }
     }
   });
 }
@@ -404,13 +465,17 @@ function completeStoryChapter(ch) {
     let unlockMsg = "";
     if (ch.id === "ch1_ep3") unlockMsg = " ／ フレンド通信が利用可能に！";
     if (ch.id === "ch1_ep4") unlockMsg = " ／ キャンプ＆クラフト設備が稼働！";
-    if (ch.id === "ch1_ep20") unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
-    if (ch.id === "ch2_ep20" && PUBLISHED_MAX_CHAPTER >= 3) unlockMsg = " ／ 『❄️第3章』解放！";
+    if (ch.id === getChapterEndId(1)) unlockMsg = " ／ 『🏆対人アリーナ』＆『⚡第2章』解放！";
+    if (ch.id === getChapterEndId(2) && PUBLISHED_MAX_CHAPTER >= 3) unlockMsg = " ／ 『❄️第3章』解放！";
+    if (ch.id === getChapterEndId(3) && PUBLISHED_MAX_CHAPTER >= 4) unlockMsg = " ／ 『🔥第4章』解放！";
     showToast(`📖 ${ch.chapter}踏破！💎+${ch.reward.gems} / 🎟️券+2${unlockMsg}`);
+    return true;
   }
+  return false;
 }
 
-function closeNovelStage() { stopNovelTimers(); storyAutoOn = false; activeStory = null; renderStoryView(); }
+function closeNovelStage() { stopNovelTimers(); storyAutoOn = false; activeStory = null; closeStoryClearOverlay(); renderStoryView(); }
+
 
 // ---------- 分岐ルート開拓マップ ----------
 function renderExpeditionPanel() {
