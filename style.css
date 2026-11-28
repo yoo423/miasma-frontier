@@ -818,3 +818,161 @@ body.theme-tactical .battle-stage::before {
   text-transform: uppercase;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
 }
+/* =========================================================
+   🛰️ ステップ4：エンドフィールド風 軌道降下スカウトUI＆演出
+   ========================================================= */
+.go-banner-hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #0d111a 0%, #171f32 55%, #0b0e15 100%);
+  border: 2px solid #f3cf00;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  padding: 10px 11px; margin-bottom: 8px; color: #fff;
+}
+.go-banner-hero::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+  background: repeating-linear-gradient(-45deg, #f3cf00 0 8px, #0b0d12 8px 16px);
+}
+.go-banner-hero.card-mode { text-align: center; padding: 14px 11px; }
+.go-banner-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; }
+.go-banner-visual { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: center; }
+.go-banner-art {
+  height: 148px; background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(243, 207, 0, 0.45); border-radius: 6px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+}
+.go-banner-art img { width: 100%; height: 100%; object-fit: cover !important; object-position: 50% 14% !important; }
+.go-banner-info { text-align: left; min-width: 0; }
+
+.go-wallet-strip {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: 9px; padding: 6px 10px; font-size: 11px; margin-bottom: 8px;
+}
+
+/* 軌道ポッド降下オーバーレイ */
+.go-drop-overlay {
+  --go-sig: #38a3ff;
+  position: fixed; inset: 0; z-index: 2300;
+  display: none; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 45%, #151b2b 0%, #07090e 72%, #030407 100%);
+  overflow: hidden; color: #fff;
+}
+.go-drop-overlay.active { display: flex; animation: efOverlayIn 0.18s ease-out forwards; }
+.go-drop-overlay.ssr-override { animation: goGlitchFlash 0.36s steps(2, end) 2; }
+@keyframes goGlitchFlash {
+  0%, 100% { filter: none; }
+  50% { filter: invert(0.18) brightness(1.85) contrast(1.4); }
+}
+
+.go-skip-btn {
+  position: fixed; top: 18px; right: 14px; z-index: 20;
+  background: rgba(10, 13, 20, 0.85); color: #f3cf00;
+  border: 1.5px solid #f3cf00; border-radius: 6px;
+  padding: 5px 11px; font-size: 11px; font-weight: 900; letter-spacing: 0.08em;
+}
+
+.go-drop-stage {
+  position: relative; width: 100%; max-width: 440px; height: 100%;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 26px 18px 30px; z-index: 5;
+}
+.go-drop-stage.impact-shake { animation: goImpactShake 0.42s ease-out; }
+@keyframes goImpactShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-7px, 5px); }
+  40% { transform: translate(7px, -6px); }
+  60% { transform: translate(-5px, 4px); }
+  80% { transform: translate(4px, -3px); }
+}
+
+.go-tele-top {
+  display: flex; justify-content: space-between;
+  font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--go-sig); letter-spacing: 0.1em; font-weight: 800;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 6px;
+  padding-right: 76px;
+}
+
+.go-rail {
+  position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
+}
+.go-beam {
+  position: absolute; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, transparent 0%, var(--go-sig) 45%, #ffffff 100%);
+  box-shadow: 0 0 24px var(--go-sig), 0 0 48px var(--go-sig);
+}
+.go-pod {
+  position: relative; width: 64px; height: 92px; z-index: 3;
+  background: linear-gradient(180deg, #273046, #0d111a);
+  border: 2.5px solid var(--go-sig);
+  clip-path: polygon(50% 0, 100% 24%, 84% 100%, 16% 100%, 0 24%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 32px var(--go-sig);
+  animation: goPodDrop 0.96s cubic-bezier(0.55, 0.05, 0.9, 0.25) forwards;
+}
+.go-pod-core { font-size: 24px; color: var(--go-sig); text-shadow: 0 0 14px var(--go-sig); }
+@keyframes goPodDrop {
+  0% { transform: translateY(-48dvh) scale(0.7); opacity: 0.4; }
+  85% { transform: translateY(4dvh) scale(1.06); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.go-shockwave {
+  position: absolute; width: 40px; height: 40px; border-radius: 50%;
+  border: 4px solid var(--go-sig); opacity: 0; pointer-events: none;
+}
+.go-shockwave.boom { animation: goWaveExpand 0.65s ease-out forwards; }
+@keyframes goWaveExpand {
+  0% { transform: scale(0.5); opacity: 1; box-shadow: 0 0 40px var(--go-sig); }
+  100% { transform: scale(9); opacity: 0; }
+}
+
+.go-signal-plate {
+  background: rgba(10, 13, 20, 0.92);
+  border-left: 5px solid var(--go-sig);
+  padding: 12px 14px; text-align: left;
+}
+.go-sig-code {
+  font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--go-sig); letter-spacing: 0.12em; font-weight: 900;
+}
+.go-sig-main { font-size: 22px; font-weight: 900; letter-spacing: 0.08em; margin-top: 2px; }
+
+.go-ssr-card-visual {
+  width: 200px; padding: 20px 14px; border-radius: 14px; border: 3px solid #f3cf00;
+  text-align: center; color: #fff; box-shadow: 0 0 34px rgba(243, 207, 0, 0.65);
+}
+
+/* リザルト一覧ボード */
+.go-result-shell {
+  position: relative; width: 100%; max-width: 460px; max-height: 92dvh;
+  display: flex; flex-direction: column; padding: 24px 14px 20px; z-index: 6;
+}
+.go-result-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px;
+  overflow-y: auto; padding: 2px 2px 8px;
+}
+.go-result-grid.single { grid-template-columns: 1fr; max-width: 240px; margin: 0 auto; width: 100%; }
+.go-res-tile {
+  background: linear-gradient(155deg, rgba(20, 25, 38, 0.96), rgba(10, 12, 18, 0.98));
+  border: 2px solid #44506b; border-radius: 8px; padding: 7px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  animation: efBannerSlide 0.28s ease-out both;
+}
+.go-res-tile.rar-SSR { border-color: #f3cf00; box-shadow: 0 0 16px rgba(243, 207, 0, 0.45); }
+.go-res-tile.rar-SR  { border-color: #b565ff; box-shadow: 0 0 10px rgba(181, 101, 255, 0.32); }
+.go-res-tile.rar-R   { border-color: #38a3ff; }
+.go-res-top { width: 100%; display: flex; justify-content: space-between; font-size: 10px; font-weight: 900; }
+.go-res-tile.rar-SSR .go-res-rar { color: #f3cf00; }
+.go-res-tile.rar-SR .go-res-rar  { color: #d39eff; }
+.go-res-media { display: flex; justify-content: center; align-items: center; min-height: 52px; }
+.go-res-card-ico {
+  width: 50px; height: 50px; border-radius: 10px; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+}
+.go-res-name { font-size: 11px; font-weight: 900; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.go-res-tag { font-size: 9.5px; font-weight: 900; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+.go-res-tag.kind-new { background: #18e0a8; color: #111; }
+.go-res-tag.kind-crest { background: #f3cf00; color: #111; }
+.go-res-tag.kind-memory { background: #38a3ff; color: #111; }
+.go-result-footer { padding-top: 8px; }
