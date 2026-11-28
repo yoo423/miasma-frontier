@@ -815,25 +815,35 @@ function cfGetRewardHubBadgesSafe() {
 
 // ホーム画面：旧切替ステージ＆旧上部バーを廃止し、ド真ん中の秘書官メインステージへ統合
 function cfHideLegacyHomeStages(homeEl) {
-  Array.from(homeEl.children).forEach(child => {
-    if (!child || child.id === "cf-home-main-stage") return;
-    // 物語・討伐ボタン行と下部メインドック（またはそれらを包む要素）だけは必ず維持
-    const keepPlay = child.matches(".home-play-row") || !!child.querySelector(".home-play-row");
-    const keepDock = child.matches(".home-main-dock") || !!child.querySelector(".home-main-dock");
-    if (keepPlay || keepDock) {
-      // もし内側に旧切替エリアが混ざっていればその部分だけ隠す
-      Array.from(child.children).forEach(sub => {
-        if (sub.id === "cf-home-main-stage") return;
-        const sPlay = sub.matches(".home-play-row") || !!sub.querySelector(".home-play-row");
-        const sDock = sub.matches(".home-main-dock") || !!sub.querySelector(".home-main-dock");
-        if (!sPlay && !sDock) sub.style.display = "none";
-      });
-      return;
-    }
-    // 旧切替画面・旧秘書官カード・旧上部3連バーを廃止（非表示）
-    child.style.display = "none";
+  if (!homeEl) return;
+  const keepSel = ".home-play-row, .home-main-dock";
+
+  // 下のメインボタン群（物語・討伐・デッキ・隊員・極限・タブレット）を確実に表示維持
+  homeEl.querySelectorAll(keepSel).forEach(el => {
+    el.style.display = "";
+    Array.from(el.children).forEach(c => { c.style.display = ""; });
   });
+
+  // 秘書官ステージと下のボタン群以外の「旧切り替え画面」だけを非表示にする
+  const prune = (container) => {
+    Array.from(container.children).forEach(el => {
+      if (!el || el.id === "cf-home-main-stage") return;
+      if (el.matches(keepSel)) {
+        el.style.display = "";
+        return;
+      }
+      if (el.querySelector(keepSel)) {
+        el.style.display = "";
+        prune(el);
+        return;
+      }
+      el.style.display = "none";
+    });
+  };
+
+  prune(homeEl);
 }
+
 
 function cfRenderHomeWidgets() {
   if (typeof state === "undefined" || !state) return;
