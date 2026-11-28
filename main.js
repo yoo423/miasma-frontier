@@ -361,7 +361,7 @@ function renderTopBar() {
   document.getElementById("tb-name").textContent = state.playerName;
   document.getElementById("tb-rank").textContent = `開拓Lv.${state.playerRank}`;
   const tEl = document.getElementById("tb-title");
-  if (tEl) tEl.textContent = `🏅 ${state.activeTitle || "第7小隊・新任隊長"}`;
+  if (tEl) tEl.textContent = `🏅${state.activeTitle || "第7小隊・新任隊長"}`;
   document.getElementById("tb-en").textContent = `${state.en}/${MAX_EN}`;
   document.getElementById("tb-reserve").textContent = `予備+${state.reserveEn}`;
   document.getElementById("tb-credits").textContent = state.credits.toLocaleString();
@@ -371,6 +371,7 @@ function renderTopBar() {
   document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️" : "⚡";
   document.getElementById("btn-sound").textContent = state.soundOn ? "🔊" : "🔇";
 }
+
 
 function renderHome() {
   renderTopBar();
