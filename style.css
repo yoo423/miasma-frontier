@@ -583,3 +583,5 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 }
 .pioneer-perk.unlocked { border-color: #18b88a; background: rgba(24, 184, 138, 0.14); }
 .pioneer-perk.locked { opacity: 0.58; }
+
+#cd-hero-box img[data-failed="1"] { display: none !important; }
