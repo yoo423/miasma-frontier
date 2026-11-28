@@ -16,8 +16,8 @@ window.MF_STORY_CH4_A = [
       {
         bg: "caldera", speaker: "ran", text: "個性豊かな面々が揃いましたね。隊長、まずはカルデラ外周のどこから調査を進めましょうか？",
         choices: [
-          { label: "「ハルトとランの案内で、溶鉱炉の冷却水路を先に確保しよう」", replySpeaker: "haruto", reply: "ナイス判断だ隊長！水路さえ動かせば、このクソ暑い前線も一気に戦いやすくなるぜ！" },
-          { label: "「クロウが見つけた廃坑道の近道を使い、ノクスに先手を打つ」", replySpeaker: "crow", reply: "ほう、俺の眼力を買うとは見どころがあるな隊長。さあ、俺の漆黒のマントに遅れずについて来い！" }
+          { label: "「ハルトとランの案内で、溶鉱炉の冷却水路を先に確保しよう」", replySpeaker: "haruto", reply: "ナイス判断だ隊長！水路さえ動かせば、このクソ暑い前線も一気に戦いやすくなるぜ！", bondChar: "haruto" },
+          { label: "「クロウが見つけた廃坑道の近道を使い、ノクスに先手を打つ」", replySpeaker: "crow", reply: "ほう、俺の眼力を買うとは見どころがあるな隊長。さあ、俺の漆黒のマントに遅れずについて来い！", bondChar: "crow" }
         ]
       },
       { bg: "caldera", sfx: "boom", fx: "shake", speaker: "narrator", text: "ゴゴゴゴ……ッ！ 溶岩の河から、赤く焼けた巨岩のような腕がゆっくりと這い上がってきた。" }
@@ -29,8 +29,8 @@ window.MF_STORY_CH4_A = [
     scenes: [
       { bg: "caldera", bgm: "tension", sfx: "roar", fx: "shake", speaker: "narrator", text: "溶けた鉄塊と古代の炉壁がミアズマ結晶で組み上がった巨兵——『溶鉱炉の巨兵・ゴーレム』が道を塞いだ。" },
       { bg: "caldera", speaker: "haruto", text: "おいおい、旧文明の精錬炉ごと霧獣化しやがったか！胸の『灼熱炉心』をぶっ壊さないと、何度でも装甲を再生しやがるぞ！" },
-      { bg: "caldera", speaker: "yuzu", text: "炎の塊なら、あたしの水圧ハンマーでじゅわーっと『蒸発 2.0倍』にして冷やしちゃえばいいよねぇ♪" },
-      { bg: "caldera", speaker: "ran", text: "一撃が極めて重い相手です。私の槍と防御札でしっかり受け止め、隙を突いて炉心を砕きましょう！" },
+      { bg: "caldera", speaker: "yuzu", text: "炎の塊なら、あたしの水圧ハンマーでじゅわーっと『蒸発』させて一気に冷やしちゃえばいいよねぇ♪" },
+      { bg: "caldera", speaker: "ran", text: "一撃が極めて重い相手です。私の槍と防衛陣形でしっかり受け止め、隙を突いて炉心を砕きましょう！" },
       { bg: "danger", sfx: "boom", fx: "redflash", speaker: "protagonist", text: "灼熱地帯の初戦！溶鉱炉の巨兵・ゴーレムを迎え撃つ！" }
     ]
   },
@@ -49,7 +49,7 @@ window.MF_STORY_CH4_A = [
       {
         bg: "camp_dusk", speaker: "ran", text: "私は警備隊長として、権力ではなく『方舟の市民の命』を守る道を選びました。隊長、あなたが真実を暴く限り、私は最後までお味方します。",
         choices: [
-          { label: "「ありがとうラン。方舟の誰が敵でも、俺たちは市民を守る」", replySpeaker: "ran", reply: "その言葉が聞けて安心しました。背中は私が守り抜きます。" },
+          { label: "「ありがとうラン。方舟の誰が敵でも、俺たちは市民を守る」", replySpeaker: "ran", reply: "その言葉が聞けて安心しました。背中は私が守り抜きます。", bondChar: "ran" },
           { label: "「まずはノクスの意識データを完全に叩き潰して証拠を掴もう」", replySpeaker: "valeria", reply: "ええ、動かぬ証拠さえ持ち帰れば、議会の裏切り者も言い逃れはできませんわ。", bondChar: "valeria" }
         ]
       },
@@ -102,8 +102,8 @@ window.MF_STORY_CH4_A = [
       {
         bg: "camp_night", speaker: "sakura", text: "隊長も少しお疲れじゃないですか？特製のリラックス薬草茶を淹れたので、次の作戦の前にひと息ついてくださいね。",
         choices: [
-          { label: "「ありがとうサクラ。お前の薬草と優しさが小隊の命綱だ」", replySpeaker: "sakura", reply: "えへへ、そんな風に言ってもらえると照れちゃいます……でもすごく嬉しいです！" },
-          { label: "「ハルトも整備助かる。最高の装備で溶鉱炉の主を倒そう」", replySpeaker: "haruto", reply: "任せな隊長！絶対に壊れない最高のコンディションに磨き上げとくぜ！" }
+          { label: "「ありがとうサクラ。お前の薬草と優しさが小隊の命綱だ」", replySpeaker: "sakura", reply: "えへへ、そんな風に言ってもらえると照れちゃいます……でもすごく嬉しいです！", bondChar: "sakura" },
+          { label: "「ハルトも整備助かる。最高の装備で溶鉱炉の主を倒そう」", replySpeaker: "haruto", reply: "任せな隊長！絶対に壊れない最高のコンディションに磨き上げとくぜ！", bondChar: "haruto" }
         ]
       },
       { bg: "caldera", bgm: "tension", sfx: "roar", fx: "shake", speaker: "crow", text: "……のんびりお茶してる時間は終わりだぜ。第二精錬塔の炉底から、とんでもなくデカいトカゲが這い上がってくる！" }
@@ -115,7 +115,7 @@ window.MF_STORY_CH4_A = [
     scenes: [
       { bg: "caldera", bgm: "tension", speaker: "narrator", text: "手動遮断バルブの目の前。炉心の熱を直接吸収して赤白く輝く大型ゴーレムが、最後の壁として立ち塞がった。" },
       { bg: "caldera", speaker: "haruto", text: "あれさえどかせば、第二精錬塔のバルブを閉じられる！一気に行くぜ隊長！" },
-      { bg: "caldera", speaker: "crow", text: "俺が死角から切り込む！隊長、元素コンボの号令を！" },
+      { bg: "caldera", speaker: "crow", text: "俺が死角から切り込む！隊長、元素連携の号令を！" },
       { bg: "danger", sfx: "boom", fx: "redflash", speaker: "protagonist", text: "バルブを解放せよ！大型ゴーレムを撃破する！" }
     ]
   },
@@ -124,15 +124,15 @@ window.MF_STORY_CH4_A = [
     reqClear: "ch4_ep8", battleEnemyId: null, reward: { gems: 320, credits: 28000, books: 48, cores: 10 },
     scenes: [
       { bg: "caldera", bgm: "tension", sfx: "boom", fx: "shake", speaker: "narrator", text: "第二精錬塔のバルブを閉じた瞬間、行き場を失った地下の溶岩圧が中央火口から噴き上がった。紅蓮の飛沫の中から現れたのは、巨大な炎の巨竜トカゲだった。" },
-      { bg: "caldera", sfx: "roar", fx: "redflash", speaker: "aoi", text: "超高熱生体反応を確認！！第4エリアの主霧獣『マグマ・サラマンダー』です！！" },
-      { bg: "caldera", speaker: "chloe", text: "体表温度八百度超！弱点部位は『灼熱の溶岩顎』と『業火の尾先』です！水属性の『蒸発』や氷属性の『融解』で一気に冷却ダメージを狙いましょう！" },
+      { bg: "caldera", sfx: "roar", fx: "redflash", speaker: "aoi", text: "超高熱生体反応を確認！！このカルデラの主霧獣『マグマ・サラマンダー』です！！" },
+      { bg: "caldera", speaker: "chloe", text: "体表温度八百度超！弱点部位は『灼熱の溶岩顎』と『業火の尾先』です！水属性の『蒸発』や氷属性の『融解』で一気に熱量を奪いましょう！" },
       { bg: "caldera", speaker: "valeria", text: "私とユズ殿、そしてミコト殿・レイラ殿の水氷連携の見せ場ですわね！" },
       { bg: "caldera", speaker: "yuzu", text: "ふふっ、大物を一本釣りする気分でドカンと冷やしちゃおうかぁ！" },
-      { bg: "caldera", speaker: "protagonist", text: "第4章前編の関門を越えるぞ！全員、火口外縁へ展開！" }
+      { bg: "caldera", speaker: "protagonist", text: "溶鉱炉の関門を越えるぞ！全員、火口外縁へ展開！" }
     ]
   },
   {
-    id: "ch4_ep10", chapter: "第十話", title: "焦熱火口の前哨戦", subtitle: "前編クライマックス・溶岩防衛線突破",
+    id: "ch4_ep10", chapter: "第十話", title: "焦熱火口の前哨戦", subtitle: "火口外縁・溶岩防衛線突破",
     reqClear: "ch4_ep9", battleEnemyId: "lava_golem", reward: { gems: 420, credits: 33000, books: 55, cores: 12 },
     scenes: [
       { bg: "caldera", bgm: "tension", sfx: "roar", fx: "shake", speaker: "narrator", text: "マグマ・サラマンダーの咆哮に呼応し、火口縁の溶岩塊が一斉にゴーレムとなって小隊へ襲いかかる。" },
@@ -142,7 +142,7 @@ window.MF_STORY_CH4_A = [
     epilogue: [
       { bg: "caldera", bgm: "tension", sfx: "roar", fx: "flash", speaker: "narrator", text: "火口の外縁を制圧した第7小隊の眼前で、マグマ・サラマンダーが巨大な溶岩顎を大きく開いて威嚇した。" },
       { bg: "caldera", speaker: "lunaria", text: "……すごい熱気ね。でも、あたしの炎とどっちが熱いか勝負してやろうじゃない！" },
-      { bg: "caldera", speaker: "aoi", text: "これより先は第4章・後編、灼熱の主霧獣および黄金の炎帝竜との決戦です！隊員の育成とデッキを整えて挑みましょう！" }
+      { bg: "caldera", speaker: "aoi", text: "これより先は、灼熱の主霧獣との決戦が待っています！装備と戦術を万全に整えて挑みましょう！" }
     ]
   }
 ];
