@@ -1037,3 +1037,85 @@ body.theme-tactical .battle-stage::before {
   padding: 6px 8px; margin-top: 8px; font-size: 10px; line-height: 1.45; color: #cfd9f0;
   text-align: left;
 }
+/* ===== ロング軌道降下演出 ＆ 結果詳細モーダル ===== */
+.go-reticle {
+  position: absolute; width: 170px; height: 170px;
+  border: 2px dashed var(--go-sig); border-radius: 50%;
+  opacity: 0.55; pointer-events: none;
+  animation: goReticleLock 1.2s ease-out infinite alternate;
+}
+@keyframes goReticleLock {
+  0% { transform: scale(1.25) rotate(0deg); opacity: 0.35; }
+  100% { transform: scale(0.88) rotate(90deg); opacity: 0.78; }
+}
+
+.go-beam { opacity: 0.25; transition: width 0.35s, opacity 0.35s; }
+.go-beam.ignited { width: 8px; opacity: 1; }
+
+.go-pod.waiting {
+  animation: none !important;
+  transform: translateY(-58dvh) scale(0.65);
+  opacity: 0;
+}
+.go-pod.descending {
+  animation: goPodLongDrop 1.8s cubic-bezier(0.52, 0.06, 0.88, 0.22) forwards !important;
+}
+@keyframes goPodLongDrop {
+  0%   { transform: translateY(-54dvh) scale(0.68); opacity: 0.6; }
+  70%  { transform: translateY(-10dvh) scale(0.95); opacity: 1; }
+  92%  { transform: translateY(3dvh) scale(1.08); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.go-shockwave.second.boom {
+  animation: goWaveExpand 0.9s ease-out 0.16s forwards;
+}
+
+.go-scan-bar {
+  width: 100%; height: 5px; margin-top: 8px;
+  background: rgba(255, 255, 255, 0.14); border-radius: 999px; overflow: hidden;
+}
+.go-scan-fill {
+  width: 0%; height: 100%; background: var(--go-sig);
+  box-shadow: 0 0 10px var(--go-sig);
+  transition: width 0.65s ease-out, background-color 0.25s;
+}
+
+.go-res-detail-hint {
+  font-size: 9px; font-weight: 900; color: #9bb3de; letter-spacing: 0.04em; margin-top: 1px;
+}
+.go-res-tile:active { transform: scale(0.97); }
+
+/* 結果画面からの詳細モーダル中身 */
+.go-det-char-head {
+  display: flex; gap: 10px; align-items: stretch; margin-bottom: 8px;
+}
+.go-det-portrait {
+  width: 108px; height: 138px; flex-shrink: 0;
+  background: var(--surface-sub); border: 2px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.go-det-portrait img {
+  width: 100%; height: 100%; object-fit: cover !important; object-position: 50% 14% !important;
+}
+.go-det-voice {
+  background: var(--surface-sub); border-left: 3.5px solid var(--accent);
+  border-radius: 0 8px 8px 0; padding: 6px 8px; margin-bottom: 8px;
+  font-size: 11px; font-weight: 800; text-align: left; line-height: 1.45;
+}
+.go-det-sec {
+  background: var(--surface-sub); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 9px; margin-bottom: 7px;
+  text-align: left; font-size: 11px; line-height: 1.5;
+}
+.go-det-sec strong { display: block; font-size: 11.5px; margin-bottom: 3px; }
+.go-det-mini-card {
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  padding: 4px 0; border-top: 1px dashed rgba(128, 128, 128, 0.3); font-size: 10.5px;
+}
+.go-det-mini-card:first-of-type { border-top: none; }
+.go-det-card-hero {
+  border-radius: 12px; border: 2px solid #f3cf00; padding: 12px;
+  margin-bottom: 8px; text-align: center;
+}
