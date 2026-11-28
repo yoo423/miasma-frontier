@@ -368,7 +368,7 @@ function renderTopBar() {
   document.getElementById("tb-gems").textContent = state.gems.toLocaleString();
   const tkEl = document.getElementById("tb-tickets");
   if (tkEl) tkEl.textContent = String(state.cardTickets || 0);
-  document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️ 拠点" : "⚡ 作戦";
+  document.getElementById("btn-theme").textContent = state.uiTheme === "camp" ? "🏕️" : "⚡";
   document.getElementById("btn-sound").textContent = state.soundOn ? "🔊" : "🔇";
 }
 
