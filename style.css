@@ -1720,3 +1720,77 @@ body.theme-tactical .cf-stage-voice-bar {
 }
 body.theme-tactical .cf-stage-voice-bar .cf-sec-vtag { color: #18e0a8; }
 body.theme-tactical .cf-stage-voice-bar .cf-sec-vtxt { color: #eef3ff; }
+/* =========================================================
+   📱 ホーム画面・空きスペース連動 タブレット主要ショートカット
+   ========================================================= */
+.cf-extra-dock {
+  margin-top: 8px;
+  padding: 6px 7px 7px;
+  border-radius: 12px;
+  background: rgba(245, 252, 248, 0.92);
+  border: 1.5px solid #cde3d8;
+  box-shadow: 0 3px 10px rgba(16, 40, 32, 0.07);
+}
+.cf-extra-dock-label {
+  font-family: ui-monospace, monospace;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #0e9f6e;
+  text-align: left;
+  margin-bottom: 5px;
+  padding-left: 2px;
+}
+.cf-extra-dock-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.cf-extra-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 2px;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #17232c;
+  border: 1.5px solid #d2e6dc;
+  border-bottom: 3px solid #18b88a;
+  font-weight: 900;
+}
+.cf-extra-btn.acc-gold { border-bottom-color: #e6a800; }
+.cf-extra-btn.acc-pink { border-bottom-color: #ff5c8d; }
+.cf-extra-btn.acc-cyan { border-bottom-color: #0ea5e9; }
+.cf-extra-btn.acc-mint { border-bottom-color: #18b88a; }
+.cf-extra-btn:active { transform: scale(0.95); }
+.cf-extra-ico { font-size: 16px; line-height: 1.1; }
+.cf-extra-lbl { font-size: 9.5px; line-height: 1.2; white-space: nowrap; }
+.cf-extra-badge {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+  background: #ff2e4c;
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 0 5px;
+  border-radius: 999px;
+  line-height: 1.45;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ⚔️ 作戦表示（theme-tactical）連動 */
+body.theme-tactical .cf-extra-dock {
+  background: rgba(11, 15, 25, 0.9);
+  border-color: rgba(243, 207, 0, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+body.theme-tactical .cf-extra-dock-label { color: #f3cf00; }
+body.theme-tactical .cf-extra-btn {
+  background: rgba(22, 29, 46, 0.92);
+  color: #eef3ff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
