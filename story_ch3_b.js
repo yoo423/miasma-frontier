@@ -12,7 +12,7 @@ window.MF_STORY_CH3_B = [
         bg: "frost_field", speaker: "protagonist", text: "吹雪の向こうに巨大な足跡が続いている。追撃部隊の陣形を整えるぞ。",
         choices: [
           { label: "「炎属性を軸にした『融解』火力隊で氷装甲を溶かし切る！」", replySpeaker: "lunaria", reply: "待ってました！氷の塊だろうが何だろうが、あたしの炎でドロドロにしてやるわ！", bondChar: "lunaria" },
-          { label: "「フィオナとリッカの耐久支援で吹雪を耐え抜き、着実に追い詰める」", replySpeaker: "fiona", reply: "お任せください隊長♪ 誰一人凍えさせずに支え切ってみせます！" }
+          { label: "「フィオナとリッカの耐久支援で吹雪を耐え抜き、着実に追い詰める」", replySpeaker: "fiona", reply: "お任せください隊長♪ 誰一人凍えさせずに支え切ってみせます！", bondChar: "fiona" }
         ]
       },
       { bg: "frost_field", sfx: "roar", fx: "shake", speaker: "mint", text: "……マンモスが残した氷柱の陰から、氷狼の群れが追撃を邪魔しに出てきたよ！" }
@@ -38,10 +38,10 @@ window.MF_STORY_CH3_B = [
       { bg: "camp_night", speaker: "rikka", text: "私は攻撃の才能はありませんから。……でも、大切な仲間が後ろから安心して反撃できるよう、最前線で壁になり続けることなら誰にも負けません。" },
       { bg: "camp_night", speaker: "valeria", text: "素晴らしい騎士道精神ですわね。私も槍を振るう者として、あなたと肩を並べられることを誇りに思いますわ。" },
       {
-        bg: "camp_night", speaker: "rikka", text: "隊長。明日の決戦では、敵の猛攻を私と防衛カードで必ず受け切ってみせます。",
+        bg: "camp_night", speaker: "rikka", text: "隊長。明日の決戦では、敵の猛攻を私の氷壁と防衛陣形で必ず受け切ってみせます。",
         choices: [
-          { label: "「頼りにしてるぞリッカ。お前の守りが俺たちの反撃の起点だ」", replySpeaker: "rikka", reply: "……はいっ！そのお言葉だけで、どんな冷気も跳ね返せそうです！" },
-          { label: "「無理はするな。フィオナの回復と全員の連携で支え合おう」", replySpeaker: "fiona", reply: "そうですよリッカさん♪ 傷ついたらすぐ私が治してあげますからね！" }
+          { label: "「頼りにしてるぞリッカ。お前の守りが俺たちの反撃の起点だ」", replySpeaker: "rikka", reply: "……はいっ！そのお言葉だけで、どんな冷気も跳ね返せそうです！", bondChar: "rikka" },
+          { label: "「無理はするな。フィオナの回復と全員の連携で支え合おう」", replySpeaker: "fiona", reply: "そうですよリッカさん♪ 傷ついたらすぐ私が治してあげますからね！", bondChar: "fiona" }
         ]
       },
       { bg: "frost_lab", bgm: "tension", sfx: "alarm", fx: "redflash", speaker: "chloe", text: "警告！ドクター・ノクスが研究棟の残存機巧蜘蛛をすべて盆地へ差し向けてきました！防衛ラインを守り抜いてください！" }
@@ -70,7 +70,7 @@ window.MF_STORY_CH3_B = [
     ]
   },
   {
-    id: "ch3_ep16", chapter: "第十六話", title: "氷河の巨神『グレイシャル・マンモス』", subtitle: "第3エリア主霧獣との極寒決戦",
+    id: "ch3_ep16", chapter: "第十六話", title: "氷河の巨神『グレイシャル・マンモス』", subtitle: "第三領域の主霧獣との極寒決戦",
     reqClear: "ch3_ep15", battleEnemyId: "glacial_mammoth", reward: { gems: 480, credits: 28000, books: 52, cores: 12 },
     scenes: [
       { bg: "frost_field", bgm: "boss", sfx: "roar", fx: "shake", speaker: "narrator", text: "絶対零度の吹雪を纏い、グレイシャル・マンモスが巨大な鼻を高々と掲げた。" },
@@ -101,7 +101,7 @@ window.MF_STORY_CH3_B = [
     ]
   },
   {
-    id: "ch3_ep19", chapter: "第十九話", title: "白銀を照らす絆の炎", subtitle: "第3章最終決戦直前・全員の決意",
+    id: "ch3_ep19", chapter: "第十九話", title: "白銀を照らす絆の炎", subtitle: "極寒最終決戦直前・全員の決意",
     reqClear: "ch3_ep18", battleEnemyId: null, reward: { gems: 360, credits: 28000, books: 50, cores: 10 },
     scenes: [
       { bg: "gold_storm", bgm: "tension", sfx: "roar", fx: "shake", speaker: "narrator", text: "黄金の氷柱を背負い、絶対零度の威圧感を放つ『帝王マンモス』がついに小隊の正面へ立ち塞がった。" },
@@ -109,9 +109,9 @@ window.MF_STORY_CH3_B = [
       { bg: "gold_storm", speaker: "lunaria", text: "人間ごときですって！？あんたみたいな独りよがりの幽霊に、あたしたちの絆がわかってたまるもんですか！" },
       { bg: "gold_storm", speaker: "mikoto", text: "ええ。氷の美しさも、炎の温かさも、すべては誰かを守るためにあるのです。" },
       {
-        bg: "gold_storm", speaker: "leila", text: "融光氷牙、零度結晶炉——二箇所とも完全に射線へ捉えました。隊長、第3章を終わらせる号令を。",
+        bg: "gold_storm", speaker: "leila", text: "融光氷牙、零度結晶炉——二箇所とも完全に射線へ捉えました。隊長、この雪原の戦いに決着をつける号令を。",
         choices: [
-          { label: "「ノクスの歪んだ実験はここで終わらせる！総力で帝王マンモスを討つ！」", replySpeaker: "leila", reply: "了解しました。……極北の空へ、勝利の一撃を放ちます。" },
+          { label: "「ノクスの歪んだ実験はここで終わらせる！総力で帝王マンモスを討つ！」", replySpeaker: "leila", reply: "了解しました。……極北の空へ、勝利の一撃を放ちます。", bondChar: "leila" },
           { label: "「全員の元素と絆を一つに！凍てつく大地に春の光を呼び戻すぞ！」", replySpeaker: "mikoto", reply: "はいっ！白狐の極氷葬、全力で撃ち込みましょう！", bondChar: "mikoto" }
         ]
       },
@@ -119,11 +119,11 @@ window.MF_STORY_CH3_B = [
     ]
   },
   {
-    id: "ch3_ep20", chapter: "第二十話", title: "絶対零度の帝王を超えて", subtitle: "第3章完結・【融光種】絶対零度の帝王マンモス決戦",
+    id: "ch3_ep20", chapter: "第二十話", title: "絶対零度の帝王を超えて", subtitle: "【融光種】絶対零度の帝王マンモス決戦",
     reqClear: "ch3_ep19", battleEnemyId: "radiant_mammoth", reward: { gems: 960, credits: 38000, books: 70, cores: 18 },
     scenes: [
       { bg: "gold_storm", bgm: "boss", sfx: "roar", fx: "shake", speaker: "narrator", text: "大地を凍らせる黄金の吹雪。これまでで最も苛烈な、融光帝王との最終決戦。" },
-      { bg: "gold_storm", speaker: "aoi", text: "私たちが歩んできた第1章・第2章、そしてこの雪原でのすべての経験を力に変える時です！" },
+      { bg: "gold_storm", speaker: "aoi", text: "私たちが歩んできたヴェルデ平原や雷鳴の峡谷、そしてこの雪原でのすべての経験を力に変える時です！" },
       { bg: "gold_storm", speaker: "protagonist", text: "第7クリアラー小隊、最終決戦！！【融光種】絶対零度の帝王マンモスを撃破する！！" }
     ],
     epilogue: [
@@ -132,7 +132,7 @@ window.MF_STORY_CH3_B = [
       { bg: "frost_field", sfx: "comm", speaker: "chloe", text: "ノクスのメインサーバー、完全沈黙しました！……ですが、最後の言葉通り、意識データが南の灼熱地帯『イグニス・カルデラ』へ転送された痕跡があります！" },
       { bg: "frost_field", speaker: "leila", text: "……それでも、この雪原を覆っていた呪縛は完全に解けました。ありがとう、第7小隊。これからは私もあなた方に同行します。" },
       { bg: "frost_field", speaker: "rikka", text: "私もです！ノクスと方舟の裏切り者たちの企みを止めるまで、この氷槍で皆さんを守り抜きます！" },
-      { bg: "frost_field", bgm: "story", speaker: "valeria", text: "新緑の平原、雷鳴の峡谷、そして白銀の研究所……私たちの道は着実に真実へ近づいていますわ。次は灼熱の溶鉱炉『第4章：イグニス・カルデラ』へ参りましょう！" }
+      { bg: "frost_field", bgm: "story", speaker: "valeria", text: "新緑の平原、雷鳴の峡谷、そして白銀の研究所……私たちの道は着実に真実へ近づいていますわ。次は灼熱の溶鉱炉『イグニス・カルデラ』へ参りましょう！" }
     ]
   }
 ];
