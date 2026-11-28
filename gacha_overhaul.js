@@ -708,7 +708,8 @@ function renderGachaView() {
   const sec = document.getElementById("view-gacha");
   if (!sec) return;
 
-  const sched = goGetScheduleInfo();
+   const sched = goGetScheduleInfo();
+  if (goCurrentTab === "rerun" && !sched.rerunActive) goCurrentTab = "pickup";
   const chars = window.MF_DATA?.CHARACTERS || {};
   const puChar = chars[sched.puId] || Object.values(chars).find(c => c.rarity === "SSR" && !c.isProtagonist) || { id: "lunaria", name: "ルナリア", rarity: "SSR", element: "fire", emoji: "🔥" };
   const rerunChar = chars[sched.rerunId] || puChar;
@@ -717,7 +718,7 @@ function renderGachaView() {
 
   const tabs = [
     { id: "pickup",    label: "👑 限定PU" },
-    { id: "rerun",     label: "🔄 中旬復刻" },
+    ...(sched.rerunActive ? [{ id: "rerun", label: "🔄 中旬復刻" }] : []),
     { id: "standard",  label: "🛰️ 恒常招集" },
     { id: "card_pack", label: "🃏 カード" }
   ];
@@ -835,7 +836,7 @@ function renderGachaView() {
         <button class="btn-xs btn-accent2" onclick="openCrestShopModal()">💠 交換所</button>
       </div>
 
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:9px;">
+      <div style="display:grid; grid-template-columns:repeat(${tabs.length},1fr); gap:4px; margin-bottom:9px;">
         ${tabs.map(t => `
           <button class="btn-xs ${goCurrentTab === t.id ? "btn-primary" : ""}" style="padding:6px 2px; font-size:10px;" onclick="goSelectTab('${t.id}')">${t.label}</button>
         `).join("")}
