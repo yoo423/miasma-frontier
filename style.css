@@ -426,3 +426,48 @@ input[type="text"], select { width: 100%; font-family: inherit; font-weight: 800
 .dvc-sum { background: rgba(0, 0, 0, 0.68); color: #fff; padding: 4px 5px; }
 .dvc-step-btn { background: #2c3147; color: #fff; border-color: #8f98bd; }
 .dvc-step-btn.add { background: #18b88a; color: #121318; border-color: #121318; }
+/* ===== 上部バー1行スッキリ化 ＆ ホーム画面スクロール不要レイアウト ===== */
+.top-bar { padding: 5px 8px; gap: 4px; }
+.top-bar .top-row { flex-wrap: nowrap; gap: 4px; }
+.top-bar .player-badge {
+  flex: 1; min-width: 0; flex-wrap: nowrap; gap: 4px;
+  font-size: 12px; overflow: hidden;
+}
+#tb-name { white-space: nowrap; flex-shrink: 0; }
+#tb-rank { white-space: nowrap; flex-shrink: 0; font-size: 9.5px; padding: 1px 6px; }
+#tb-title {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0; font-size: 9.5px !important;
+}
+.top-bar .top-row > div:last-child { flex-shrink: 0; gap: 3px !important; }
+.top-bar .top-row > div:last-child .btn-xs {
+  padding: 3px 6px; font-size: 12.5px; min-width: 28px; line-height: 1.15;
+}
+
+/* ホーム画面表示中だけ1画面(100dvh)にピッタリ収める */
+.app-shell:has(#view-home.active) {
+  height: 100dvh; max-height: 100dvh; overflow: hidden;
+  padding: 6px 9px 8px; gap: 6px;
+}
+#view-home.active { flex: 1; min-height: 0; gap: 6px; overflow: hidden; }
+#view-home .home-hero-stage {
+  flex: 1 1 180px; height: auto; min-height: 175px;
+}
+#view-home .hero-art-layer { inset: 0 0 46px 0; }
+#view-home .hero-bottom-hud { padding: 5px 8px; bottom: 6px; left: 6px; right: 6px; }
+#view-home .hero-bottom-meta { margin-bottom: 2px; }
+#view-home .hero-speech-text {
+  font-size: 10.5px; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#view-home > .card { padding: 6px !important; flex-shrink: 0; }
+#view-home .party-slot { padding: 3px 2px; }
+#view-home .avatar-thumb { width: 32px; height: 32px; border-radius: 9px; margin-bottom: 1px; }
+#view-home .reaction-banner { margin-top: 4px; padding: 3px 6px; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#home-event-banner { flex-shrink: 0; }
+#home-event-banner .event-home-banner { padding: 5px 9px; }
+#view-home .home-play-row { flex-shrink: 0; gap: 6px; }
+#view-home .home-play-row button { padding: 9px 8px !important; font-size: 13.5px !important; }
+#view-home .home-main-dock { flex-shrink: 0; gap: 6px; }
+#view-home .home-main-dock .menu-btn { padding: 6px 2px; font-size: 10px; gap: 2px; }
+#view-home .home-main-dock .menu-btn .m-ico { font-size: 18px; }
