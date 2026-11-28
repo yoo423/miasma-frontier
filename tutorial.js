@@ -1,5 +1,5 @@
 // =========================================================
-// 🎓 ミアズマ・フロンティア チュートリアル（拠点ガイド＋初戦実戦コーチ）
+// 🎓 ミアズマ・フロンティア チュートリアル（自動生成安全版）
 // =========================================================
 let tutStepIdx = 0;
 let tutIsReplay = false;
@@ -47,7 +47,7 @@ const HOME_TUTORIAL_STEPS = [
         </div>
         <div class="tut-mini-card">
           <strong>💥 予兆への対処</strong>
-          <span>🛡️装甲・⚡チャージには<br><b>【💥崩し】</b>で特効中断！<br>💢大技には<b>【🛡️防御】</b></span>
+          <span>🛡️装甲・⚡チャージには<br><b>【💥崩し】</b>で特効＆大削り！<br>💫ブレイク中は<b>与ダメ1.25倍</b></span>
         </div>
       </div>
       <div class="tut-box" style="margin-top:6px;">
@@ -86,6 +86,44 @@ const HOME_TUTORIAL_STEPS = [
   }
 ];
 
+function ensureTutorialModal() {
+  let modal = document.getElementById("modal-tutorial");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-tutorial";
+    modal.className = "modal-overlay";
+    modal.style.zIndex = "1200";
+    modal.innerHTML = `
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="top-row" style="margin-bottom:4px;">
+          <span id="tut-step-badge" class="rank-pill" style="background:#ffd13b;">STEP 1 / 5</span>
+          <button class="btn-xs" onclick="skipHomeTutorial()">スキップ ✕</button>
+        </div>
+        <h3 id="tut-step-title" style="margin:4px 0 6px; font-size:15px;">チュートリアル</h3>
+        <div class="tut-guide-row">
+          <div id="tut-guide-portrait"></div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:10px; font-weight:900; color:var(--accent);">副官アオイ</div>
+            <div id="tut-speech-text" style="font-size:11.5px; line-height:1.45; font-weight:800;"></div>
+          </div>
+        </div>
+        <div id="tut-step-body"></div>
+        <div id="tut-progress-dots" class="tablet-dots" style="margin:10px 0;"></div>
+        <div id="tut-nav-row" style="display:grid; grid-template-columns:1fr 1.6fr; gap:8px;">
+          <button id="btn-tut-prev" onclick="prevTutorialStep()">◀ 戻る</button>
+          <button id="btn-tut-next" class="btn-primary" onclick="nextTutorialStep()">次へ ▶</button>
+        </div>
+        <div id="tut-end-actions" style="display:none; flex-direction:column; gap:7px;">
+          <button class="btn-accent2" style="width:100%; padding:11px;" onclick="finishHomeTutorial(true)">⚔️ 模擬バトルで実戦練習する！</button>
+          <button class="btn-primary" style="width:100%; padding:10px;" onclick="finishHomeTutorial(false)">🏕️ 拠点へ戻って冒険を始める</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  return modal;
+}
+
 function clearTutorialHighlight() {
   document.querySelectorAll(".tut-spotlight-ring").forEach(el => el.classList.remove("tut-spotlight-ring"));
 }
@@ -98,15 +136,13 @@ function applyTutorialHighlight(selector) {
 }
 
 function startHomeTutorial(isReplay = false) {
-  if (typeof state === "undefined" || !state) return;
   tutStepIdx = 0;
   tutIsReplay = !!isReplay;
   if (typeof switchView === "function") {
     const homeEl = document.getElementById("view-home");
     if (homeEl && !homeEl.classList.contains("active")) switchView("home");
   }
-  const modal = document.getElementById("modal-tutorial");
-  if (!modal) return;
+  const modal = ensureTutorialModal();
   modal.classList.add("active");
   if (typeof playSfx === "function") playSfx("switch");
   renderTutorialStep();
@@ -120,10 +156,14 @@ function renderTutorialStep() {
   const portraitEl = document.getElementById("tut-guide-portrait");
   if (portraitEl && window.MF_SPRITES) portraitEl.innerHTML = window.MF_SPRITES.portraitHTML(aoi, "icon-lg");
 
-  document.getElementById("tut-step-badge").textContent = step.badge;
-  document.getElementById("tut-step-title").textContent = step.title;
-  document.getElementById("tut-speech-text").textContent = `「${step.speakerText}」`;
-  document.getElementById("tut-step-body").innerHTML = step.bodyHtml;
+  const badgeEl = document.getElementById("tut-step-badge");
+  const titleEl = document.getElementById("tut-step-title");
+  const speechEl = document.getElementById("tut-speech-text");
+  const bodyEl = document.getElementById("tut-step-body");
+  if (badgeEl) badgeEl.textContent = step.badge;
+  if (titleEl) titleEl.textContent = step.title;
+  if (speechEl) speechEl.textContent = `「${step.speakerText}」`;
+  if (bodyEl) bodyEl.innerHTML = step.bodyHtml;
 
   const dotsEl = document.getElementById("tut-progress-dots");
   if (dotsEl) {
@@ -133,7 +173,6 @@ function renderTutorialStep() {
   }
 
   const prevBtn = document.getElementById("btn-tut-prev");
-  const nextBtn = document.getElementById("btn-tut-next");
   const endActions = document.getElementById("tut-end-actions");
   const navRow = document.getElementById("tut-nav-row");
   const isLast = tutStepIdx >= HOME_TUTORIAL_STEPS.length - 1;
@@ -141,7 +180,6 @@ function renderTutorialStep() {
   if (prevBtn) prevBtn.disabled = tutStepIdx === 0;
   if (navRow) navRow.style.display = isLast ? "none" : "grid";
   if (endActions) endActions.style.display = isLast ? "flex" : "none";
-  if (nextBtn) nextBtn.textContent = "次へ ▶";
 
   applyTutorialHighlight(step.highlight);
 }
@@ -163,8 +201,7 @@ function prevTutorialStep() {
 }
 
 function grantHomeTutorialRewardIfFirst() {
-  if (typeof state === "undefined" || !state) return false;
-  if (state.tutorialDone) return false;
+  if (typeof state === "undefined" || !state || state.tutorialDone) return false;
   state.tutorialDone = true;
   state.gems = (state.gems || 0) + 320;
   state.cardTickets = (state.cardTickets || 0) + 3;
@@ -180,10 +217,7 @@ function finishHomeTutorial(launchPractice = false) {
   const modal = document.getElementById("modal-tutorial");
   if (modal) modal.classList.remove("active");
   grantHomeTutorialRewardIfFirst();
-
-  if (launchPractice) {
-    startTutorialPracticeBattle();
-  }
+  if (launchPractice) startTutorialPracticeBattle();
 }
 
 function skipHomeTutorial() {
@@ -204,13 +238,13 @@ function startTutorialPracticeBattle() {
   if (typeof switchView === "function") switchView("battle");
   startBattle(firstEnemy.id, {
     questTitle: "🎓 【模擬戦】基本操作トレーニング",
-    hpMult: 0.55,
+    hpMult: 0.6,
     atkMult: 0.45,
     returnView: "home"
   });
 }
 
-// ---------- ⚔️ 初戦バトル実践コーチ（画面上部にコンパクト表示） ----------
+// ---------- ⚔️ 初戦バトル実践コーチ ----------
 function ensureBattleCoachEl() {
   const panel = document.getElementById("btl-arena-panel");
   if (!panel) return null;
@@ -283,7 +317,15 @@ function updateBattleTutorialCoach(phase = "auto") {
   `;
 }
 
-// ---------- 既存関数への安全フック（main.js / battle.js 編集不要） ----------
+// グローバル公開（onclickから確実に呼べるように明示）
+window.startHomeTutorial = startHomeTutorial;
+window.nextTutorialStep = nextTutorialStep;
+window.prevTutorialStep = prevTutorialStep;
+window.finishHomeTutorial = finishHomeTutorial;
+window.skipHomeTutorial = skipHomeTutorial;
+window.dismissBattleCoach = dismissBattleCoach;
+window.startTutorialPracticeBattle = startTutorialPracticeBattle;
+
 (function installTutorialHooks() {
   if (typeof window.confirmProtagonist === "function" && !window.confirmProtagonist._tutHooked) {
     const origConfirm = window.confirmProtagonist;
@@ -292,11 +334,8 @@ function updateBattleTutorialCoach(phase = "auto") {
       origConfirm.apply(this, arguments);
       if (wasUninit && typeof state !== "undefined" && state && state.initialized && !state.tutorialDone) {
         const loginModal = document.getElementById("modal-login-bonus");
-        if (loginModal && loginModal.classList.contains("active")) {
-          tutPendingAfterLogin = true;
-        } else {
-          setTimeout(() => startHomeTutorial(false), 320);
-        }
+        if (loginModal && loginModal.classList.contains("active")) tutPendingAfterLogin = true;
+        else setTimeout(() => startHomeTutorial(false), 320);
       }
     };
     window.confirmProtagonist._tutHooked = true;
