@@ -1455,3 +1455,147 @@ body.theme-tactical .battle-stage::before {
   color: #fff !important; border: 1.5px solid #f3cf00 !important;
   font-weight: 900 !important;
 }
+/* =========================================================
+   🎖️ ホーム中央・秘書官メインステージ（左立ち絵＋右サイドボタン）
+      ＆ 自由移動・ピンチズーム拡大ビューア
+   ========================================================= */
+/* ホーム画面の旧上部3連バーを完全に非表示（右サイドボタンへ統合） */
+#view-home #rh-entry-home,
+#view-home #cf-home-secretary-card {
+  display: none !important;
+}
+
+.cf-home-stage {
+  position: relative; overflow: hidden;
+  min-height: 365px; height: 48dvh; max-height: 460px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: radial-gradient(circle at 30% 42%, #1d2842 0%, #0e1320 62%, #080b12 100%);
+  border: 2px solid #f3cf00; border-radius: 14px;
+  padding: 9px; margin-bottom: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+.cf-home-stage::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; z-index: 4;
+  background: repeating-linear-gradient(-45deg, #f3cf00 0 9px, #0b0d12 9px 18px);
+}
+.cf-stage-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.16;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.cf-stage-glow {
+  position: absolute; left: -12%; top: 14%; width: 72%; height: 78%;
+  background: radial-gradient(circle, rgba(243, 207, 0, 0.16) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.cf-stage-top {
+  position: relative; z-index: 4;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  margin-top: 2px;
+}
+.cf-stage-char-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  background: rgba(8, 11, 18, 0.82); border-left: 3.5px solid #f3cf00;
+  padding: 4px 9px; border-radius: 0 8px 8px 0;
+  color: #fff; font-size: 12px;
+}
+.cf-stage-char-chip small { color: #f3cf00; font-size: 10px; font-weight: 900; }
+.cf-stage-zoom-btn {
+  background: rgba(8, 11, 18, 0.84); color: #eef3ff;
+  border: 1.5px solid rgba(255, 255, 255, 0.3); border-radius: 999px;
+  padding: 4px 10px; font-size: 10px; font-weight: 900;
+}
+
+.cf-stage-body {
+  position: relative; z-index: 3; flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 116px; gap: 6px;
+  align-items: center; margin: 4px 0;
+}
+.cf-stage-left-art {
+  position: relative; width: 100%; height: 100%; min-height: 220px;
+  display: flex; align-items: flex-end; justify-content: flex-start;
+  cursor: pointer; overflow: hidden;
+}
+.cf-stage-left-art img {
+  width: 100% !important; height: 100% !important;
+  max-width: 100% !important; max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: left bottom !important;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.8));
+}
+.cf-stage-left-art.cf-sec-pop { animation: cfSecBounce 0.28s ease-out; }
+
+.cf-stage-right-dock {
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
+  z-index: 5;
+}
+.cf-side-btn {
+  display: flex; justify-content: space-between; align-items: center; gap: 3px;
+  width: 100%; padding: 7px 8px;
+  background: rgba(11, 15, 25, 0.88); color: #eef3ff;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-left: 3.5px solid #90a4cc;
+  border-radius: 6px; font-size: 10.5px; font-weight: 900; text-align: left;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+.cf-side-btn.hot {
+  border-color: #f3cf00; border-left-color: #ff2e4c;
+  background: rgba(28, 22, 16, 0.92);
+}
+.cf-side-btn.accent-cyan { border-left-color: #18e0a8; }
+.cf-side-btn.accent-gold { border-left-color: #f3cf00; }
+.cf-side-btn:active { transform: scale(0.96); }
+
+.cf-stage-voice-bar {
+  position: relative; z-index: 4;
+  background: rgba(8, 11, 18, 0.88);
+  border-left: 4px solid #18e0a8;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0 9px 9px 0; padding: 6px 9px;
+  text-align: left; cursor: pointer;
+}
+
+/* 🔍 自由移動・ピンチズーム対応 立ち絵拡大オーバーレイ */
+.cf-free-zoom-overlay {
+  position: fixed; inset: 0; z-index: 2700;
+  display: none; flex-direction: column; justify-content: space-between;
+  background: radial-gradient(circle at 50% 45%, #192136 0%, #06080e 85%);
+  touch-action: none; user-select: none;
+}
+.cf-free-zoom-overlay.active { display: flex; }
+
+.cf-zoom-topbar {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 12px 14px; background: rgba(7, 10, 16, 0.88);
+  border-bottom: 1px solid rgba(243, 207, 0, 0.45); z-index: 5;
+}
+.cf-zoom-canvas {
+  flex: 1; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; cursor: grab;
+}
+.cf-zoom-canvas:active { cursor: grabbing; }
+.cf-zoom-target {
+  width: 92%; height: 88%;
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: center center;
+  will-change: transform;
+}
+.cf-zoom-target img {
+  width: 100% !important; height: 100% !important;
+  object-fit: contain !important; object-position: center center !important;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.85));
+}
+.cf-zoom-controls {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  padding: 11px 14px; background: rgba(7, 10, 16, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.16); z-index: 5;
+}
+.cf-zoom-pct {
+  font-family: ui-monospace, monospace; font-size: 12px; font-weight: 900;
+  color: #f3cf00; min-width: 48px; text-align: center;
+}
