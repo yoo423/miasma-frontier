@@ -1,5 +1,5 @@
 // =========================================================
-// 🛰️ ステップ4：ガチャ確率本格調整 ＆ エンドフィールド風・軌道降下スカウト
+// 🛰️ ステップ4改：重厚ロング軌道降下演出 ＆ 結果画面からの詳細確認機能
 // =========================================================
 let goCurrentTab = "pickup"; // "pickup" | "rerun" | "standard" | "card_pack"
 let goIsPulling = false;
@@ -7,21 +7,21 @@ let goDropTimers = [];
 let goAudioCtx = null;
 let goActiveSeq = null;
 
-// 本格調整後の排出確率（合計 100%）
+// 排出確率（合計 100%）
 const GO_CHAR_RATES = {
-  SSR: 0.016,        // 1.6%（60連〜段階UP・80連天井）
-  SR:  0.084,        // 8.4%（10連でSR以上1枠確定）
-  R:   0.500,        // 50.0%
-  N:   0.400,        // 40.0%
+  SSR: 0.016,
+  SR:  0.084,
+  R:   0.500,
+  N:   0.400,
   SOFT_PITY_START: 60,
   HARD_PITY: 80
 };
 
 const GO_CARD_RATES = {
-  SSR: 0.012,        // 1.2%（50パック天井）
-  SR:  0.078,        // 7.8%（10連でSR以上1枠確定）
-  R:   0.460,        // 46.0%
-  N:   0.450,        // 45.0%
+  SSR: 0.012,
+  SR:  0.078,
+  R:   0.460,
+  N:   0.450,
   SOFT_PITY_START: 38,
   HARD_PITY: 50
 };
@@ -29,6 +29,21 @@ const GO_CARD_RATES = {
 const GO_LIMITED_ORDER = ["mikoto", "celestia", "sylphy", "serina", "lily", "marina", "iris"];
 const GO_CARD_OVERFLOW_CRESTS = { SSR: 30, SR: 10, R: 3, N: 1 };
 const GO_CHAR_OVERFLOW_CRESTS = { LIMITED_SSR: 80, SSR: 50, SR: 15, R: 5, N: 2 };
+
+const GO_WEAPON_LABELS = {
+  sword: "⚔️ 片手剣", greatsword: "🗡️ 大剣", dual: "⚔️ 双剣", sniper: "🎯 狙撃銃",
+  hammer: "🔨 重槌", spear: "🔱 戦術槍", staff: "🪄 戦術杖", assault: "🔫 アサルト"
+};
+
+const GO_LIMITED_PASSIVES = {
+  mikoto:   "開幕に氷結防壁を展開＆敵へ氷属性を付着",
+  celestia: "開幕に3ターン防御DOWN付与＆EXゲージ+25%",
+  sylphy:   "開幕にAP+2＆追加1ドローで最速展開",
+  serina:   "毎ターン小隊HP10%回復＆EXゲージ+12%",
+  lily:     "開幕に特大聖壁展開＆ターン経過時の防壁維持率UP",
+  marina:   "開幕に水属性付着＆ボス部位破壊ダメージ大幅UP",
+  iris:     "開幕次撃強化＆3連チェイン3枚目の火力を極大強化"
+};
 
 function goEsc(s) {
   if (typeof escapeHtml === "function") return escapeHtml(s);
@@ -61,7 +76,6 @@ function goGetScheduleInfo() {
     puId = anyLim ? anyLim.id : "lunaria";
   }
 
-  // 中旬復刻（毎月11日〜20日）：今月PU以外の限定SSRを復刻対象に
   const rerunActive = day >= 11 && day <= 20;
   const rerunPool = GO_LIMITED_ORDER.filter(id => id !== puId && chars[id]);
   const rerunId = rerunPool[(month - 1) % Math.max(1, rerunPool.length)] || puId;
@@ -107,7 +121,6 @@ function goPickRandom(arr, fallback) {
 function goGetCharSsrProb(nextPity) {
   if (nextPity >= GO_CHAR_RATES.HARD_PITY) return 1.0;
   if (nextPity >= GO_CHAR_RATES.SOFT_PITY_START) {
-    // 60連目から1連ごとに約+4.5%ずつ上昇し80連で100%
     return Math.min(0.95, GO_CHAR_RATES.SSR + (nextPity - GO_CHAR_RATES.SOFT_PITY_START + 1) * 0.045);
   }
   return GO_CHAR_RATES.SSR;
@@ -121,7 +134,6 @@ function goGetCardSsrProb(nextPity) {
   return GO_CARD_RATES.SSR;
 }
 
-// 1回分のキャラ抽選（ステップ2の手動記憶＆完凸クレスト変換へ直結）
 function goRollOneChar(mode, puId, forceSrPlus = false) {
   goEnsureState();
   const pool = goGetCharPool(mode, puId);
@@ -158,7 +170,6 @@ function goRollOneChar(mode, puId, forceSrPlus = false) {
     else ch = goPickRandom(pool.N, pool.R[0] || pool.all[0]);
   }
 
-  // 獲得処理（新規 / 専用記憶 / 完凸クレスト変換）
   let statusTag = "";
   let statusKind = "new";
   if (!state.ownedChars.includes(ch.id)) {
@@ -186,7 +197,6 @@ function goRollOneChar(mode, puId, forceSrPlus = false) {
   return { kind: "char", rarity: ch.rarity, item: ch, isPickupHit, statusTag, statusKind };
 }
 
-// 1回分の戦術カード抽選（最大Lv.5超過時はクレストへ自動変換）
 function goRollOneCard(forceSrPlus = false) {
   goEnsureState();
   const poolObj = window.MF_CARDS?.ensurePool ? window.MF_CARDS.ensurePool() : (window.MF_CARDS?.TACTIC_CARDS || {});
@@ -314,7 +324,7 @@ function goBuyCardTickets(qty) {
   showToast(`🎟️ 戦術パック券を ${qty}枚 購入しました！`);
 }
 
-// ---------- 🔊 重厚・軌道降下＆着弾インパクトSE ----------
+// ---------- 🔊 重厚・4段階 軌道降下＆波形解析SE ----------
 function goPlayDropSfx(phase, rarity = "R") {
   if (typeof state !== "undefined" && state && state.soundOn === false) return;
   try {
@@ -325,65 +335,105 @@ function goPlayDropSfx(phase, rarity = "R") {
     const ctx = goAudioCtx;
     const now = ctx.currentTime;
 
-    if (phase === "descend") {
-      // 軌道降下のタービン唸り＆低音下降音
+    if (phase === "prepare") {
+      // 照準ロック＆軌道端末起動ビープ＋低音チャージ
+      [440, 587.3, 880].forEach((f, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        const t = now + idx * 0.22;
+        o.type = "triangle";
+        o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.linearRampToValueAtTime(0.06, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t + 0.2);
+      });
+      const hum = ctx.createOscillator();
+      const hg = ctx.createGain();
+      hum.type = "sine";
+      hum.frequency.setValueAtTime(55, now);
+      hum.frequency.linearRampToValueAtTime(110, now + 1.05);
+      hg.gain.setValueAtTime(0.001, now);
+      hg.gain.linearRampToValueAtTime(0.16, now + 0.8);
+      hg.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+      hum.connect(hg); hg.connect(ctx.destination);
+      hum.start(now); hum.stop(now + 1.18);
+    } else if (phase === "descend") {
+      // 大気圏突入・重厚タービン降下音（1.75秒）
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(190, now);
-      osc.frequency.exponentialRampToValueAtTime(52, now + 0.95);
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 1.75);
       const flt = ctx.createBiquadFilter();
       flt.type = "lowpass";
-      flt.frequency.setValueAtTime(520, now);
+      flt.frequency.setValueAtTime(720, now);
+      flt.frequency.exponentialRampToValueAtTime(180, now + 1.75);
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.14, now + 0.25);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.98);
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.35);
+      gain.gain.linearRampToValueAtTime(0.22, now + 1.45);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
       osc.connect(flt); flt.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + 1.0);
-    } else if (phase === "override") {
-      // 昇格オーバーライド警報音
-      [520, 780, 1040].forEach((f, i) => {
+      osc.start(now); osc.stop(now + 1.85);
+    } else if (phase === "scan") {
+      // 着弾後の波形解析スキャン電子音
+      [330, 392, 494, 587, 659].forEach((f, idx) => {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
-        o.type = "square";
-        o.frequency.setValueAtTime(f, now + i * 0.08);
-        g.gain.setValueAtTime(0.08, now + i * 0.08);
-        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.14);
+        const t = now + idx * 0.12;
+        o.type = "sine";
+        o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0.055, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
         o.connect(g); g.connect(ctx.destination);
-        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.15);
+        o.start(t); o.stop(t + 0.12);
+      });
+    } else if (phase === "override") {
+      // 昇格オーバーライド緊急警報音
+      [520, 780, 520, 1040, 1320].forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        const t = now + i * 0.095;
+        o.type = "square";
+        o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0.085, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t + 0.15);
       });
     } else if (phase === "impact") {
-      // 着弾重低音＋レア度別和音
+      // 重低音着弾＆レア度和音
       const sub = ctx.createOscillator();
       const sg = ctx.createGain();
       sub.type = "sine";
-      sub.frequency.setValueAtTime(rarity === "SSR" ? 135 : 98, now);
-      sub.frequency.exponentialRampToValueAtTime(28, now + (rarity === "SSR" ? 0.78 : 0.42));
-      sg.gain.setValueAtTime(0.45, now);
-      sg.gain.exponentialRampToValueAtTime(0.001, now + (rarity === "SSR" ? 0.82 : 0.46));
+      sub.frequency.setValueAtTime(rarity === "SSR" ? 145 : 102, now);
+      sub.frequency.exponentialRampToValueAtTime(26, now + (rarity === "SSR" ? 0.92 : 0.48));
+      sg.gain.setValueAtTime(0.48, now);
+      sg.gain.exponentialRampToValueAtTime(0.001, now + (rarity === "SSR" ? 0.96 : 0.52));
       sub.connect(sg); sg.connect(ctx.destination);
-      sub.start(now); sub.stop(now + 0.85);
+      sub.start(now); sub.stop(now + 1.0);
 
       const chord = rarity === "SSR"
         ? [293.66, 440, 587.33, 880, 1174.66]
-        : (rarity === "SR" ? [261.63, 392, 523.25] : [220, 329.63]);
+        : (rarity === "SR" ? [261.63, 392, 523.25, 659.25] : [220, 329.63]);
       chord.forEach((f, idx) => {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
-        const t0 = now + idx * 0.055;
+        const t0 = now + idx * 0.065;
         o.type = rarity === "SSR" ? "triangle" : "sine";
         o.frequency.setValueAtTime(f, t0);
         g.gain.setValueAtTime(0.001, t0);
-        g.gain.linearRampToValueAtTime(rarity === "SSR" ? 0.095 : 0.06, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0005, t0 + (rarity === "SSR" ? 0.65 : 0.3));
+        g.gain.linearRampToValueAtTime(rarity === "SSR" ? 0.1 : 0.065, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0005, t0 + (rarity === "SSR" ? 0.78 : 0.36));
         o.connect(g); g.connect(ctx.destination);
-        o.start(t0); o.stop(t0 + 0.7);
+        o.start(t0); o.stop(t0 + 0.82);
       });
     }
   } catch (_) {}
 }
 
-// ---------- 🛰️ 軌道ポッド降下シネマティック演出 ----------
+// ---------- 🛰️ ロング軌道ポッド降下シネマティック（4段階・約4.6〜5.8秒） ----------
 function goClearDropTimers() {
   goDropTimers.forEach(t => clearTimeout(t));
   goDropTimers = [];
@@ -407,14 +457,15 @@ function goPlayOrbitalDropSequence(results, protocolName) {
   const hasSSR = results.some(r => r.rarity === "SSR");
   const hasSR = results.some(r => r.rarity === "SR");
   const topRarity = hasSSR ? "SSR" : (hasSR ? "SR" : "R");
-  const doOverride = hasSSR && Math.random() < 0.38; // 38%で紫→金の昇格演出！
+  const doOverride = hasSSR && Math.random() < 0.42; // 42%で紫→金の昇格演出
 
   const ssrQueue = results.filter(r => r.rarity === "SSR");
   goActiveSeq = { results, protocolName, topRarity, ssrQueue, ssrIdx: 0, phase: "drop" };
 
-  const initColor = doOverride ? "#b565ff" : (topRarity === "SSR" ? "#f3cf00" : (topRarity === "SR" ? "#b565ff" : "#38a3ff"));
+  const revealColor = doOverride ? "#b565ff" : (topRarity === "SSR" ? "#f3cf00" : (topRarity === "SR" ? "#b565ff" : "#38a3ff"));
   const ov = goEnsureDropOverlay();
-  ov.style.setProperty("--go-sig", initColor);
+  // Phase 1 はニュートラルな戦術シアンで照準ロック（着弾まで色が読めないドキドキ感）
+  ov.style.setProperty("--go-sig", "#18e0a8");
   ov.className = "go-drop-overlay active";
 
   ov.innerHTML = `
@@ -427,77 +478,121 @@ function goPlayOrbitalDropSequence(results, protocolName) {
     <div id="go-drop-stage" class="go-drop-stage">
       <div class="go-tele-top">
         <span>// ${goEsc(protocolName)}</span>
-        <span id="go-alt-readout">ALT 4,200m</span>
+        <span id="go-alt-readout">ALT 12,000m</span>
       </div>
 
       <div class="go-rail">
-        <div class="go-beam"></div>
-        <div id="go-pod" class="go-pod">
+        <div id="go-reticle" class="go-reticle"></div>
+        <div id="go-beam" class="go-beam"></div>
+        <div id="go-pod" class="go-pod waiting">
           <div class="go-pod-core">◆</div>
         </div>
         <div id="go-shockwave" class="go-shockwave"></div>
+        <div id="go-shockwave-2" class="go-shockwave second"></div>
       </div>
 
       <div id="go-signal-plate" class="go-signal-plate">
-        <div id="go-sig-code" class="go-sig-code">SIGNAL LOCKING...</div>
-        <div id="go-sig-main" class="go-sig-main">ORBITAL DESCENT</div>
+        <div id="go-sig-code" class="go-sig-code">PHASE 01 // ORBITAL CALIBRATION</div>
+        <div id="go-sig-main" class="go-sig-main">TARGET LOCKING...</div>
+        <div class="go-scan-bar"><div id="go-scan-fill" class="go-scan-fill"></div></div>
       </div>
     </div>
   `;
 
-  goPlayDropSfx("descend", topRarity);
-
-  // 高度カウントダウン演出
-  let alt = 4200;
-  const altEl = document.getElementById("go-alt-readout");
-  for (let i = 1; i <= 6; i++) {
-    goDropTimers.push(setTimeout(() => {
-      alt = Math.max(0, 4200 - i * 700);
-      if (altEl) altEl.textContent = alt === 0 ? "IMPACT // 0m" : `ALT ${alt.toLocaleString()}m`;
-    }, i * 140));
-  }
-
-  // 着弾フェーズ
-  const impactDelay = 950;
+  // Phase 1（0.0s〜1.1s）：照準ロック＆軌道端末起動
+  goPlayDropSfx("prepare", topRarity);
   goDropTimers.push(setTimeout(() => {
-    const stage = document.getElementById("go-drop-stage");
-    const wave = document.getElementById("go-shockwave");
+    const fill = document.getElementById("go-scan-fill");
+    if (fill) fill.style.width = "32%";
+  }, 100));
+
+  // Phase 2（1.1s〜2.9s）：大気圏突入＆ポッド高速降下（1.8秒）
+  goDropTimers.push(setTimeout(() => {
+    const pod = document.getElementById("go-pod");
+    const beam = document.getElementById("go-beam");
     const sigCode = document.getElementById("go-sig-code");
     const sigMain = document.getElementById("go-sig-main");
+    const fill = document.getElementById("go-scan-fill");
+    if (pod) { pod.classList.remove("waiting"); pod.classList.add("descending"); }
+    if (beam) beam.classList.add("ignited");
+    if (sigCode) sigCode.textContent = "PHASE 02 // ATMOSPHERIC RE-ENTRY";
+    if (sigMain) sigMain.textContent = "ORBITAL DESCENT";
+    if (fill) fill.style.width = "68%";
+    goPlayDropSfx("descend", topRarity);
+
+    const altEl = document.getElementById("go-alt-readout");
+    for (let i = 1; i <= 10; i++) {
+      goDropTimers.push(setTimeout(() => {
+        const alt = Math.max(0, 12000 - i * 1200);
+        if (altEl) altEl.textContent = alt === 0 ? "IMPACT // 0m" : `ALT ${alt.toLocaleString()}m`;
+      }, i * 175));
+    }
+  }, 1100));
+
+  // Phase 3（2.9s〜4.1s）：着弾衝撃波 ＆ アーク波形スキャン（ここで初めて色が出現）
+  goDropTimers.push(setTimeout(() => {
+    const stage = document.getElementById("go-drop-stage");
+    const wave1 = document.getElementById("go-shockwave");
+    const wave2 = document.getElementById("go-shockwave-2");
+    const sigCode = document.getElementById("go-sig-code");
+    const sigMain = document.getElementById("go-sig-main");
+    const fill = document.getElementById("go-scan-fill");
+
+    ov.style.setProperty("--go-sig", revealColor);
     if (stage) stage.classList.add("impact-shake");
-    if (wave) wave.classList.add("boom");
+    if (wave1) wave1.classList.add("boom");
+    if (wave2) wave2.classList.add("boom");
+    if (fill) fill.style.width = "100%";
+
+    goPlayDropSfx("impact", doOverride ? "SR" : topRarity);
 
     if (doOverride) {
-      goPlayDropSfx("impact", "SR");
-      if (sigCode) sigCode.textContent = "SIGNAL CLASS // SR";
-      if (sigMain) sigMain.textContent = "POD TOUCHDOWN";
+      if (sigCode) sigCode.textContent = "PHASE 03 // ANALYZING SIGNATURE...";
+      if (sigMain) sigMain.textContent = "SIGNAL CLASS // SR";
+      goDropTimers.push(setTimeout(() => goPlayDropSfx("scan", "SR"), 420));
 
-      // 0.55秒後にノイズ→黄金SSRへ昇格オーバーライド！
+      // Phase 4（4.1s〜5.6s）：SR信号から黄金SSRへ強制オーバーライド昇格！
       goDropTimers.push(setTimeout(() => {
         ov.style.setProperty("--go-sig", "#f3cf00");
         ov.classList.add("ssr-override");
+        if (stage) {
+          stage.classList.remove("impact-shake");
+          void stage.offsetWidth;
+          stage.classList.add("impact-shake");
+        }
         goPlayDropSfx("override", "SSR");
-        if (sigCode) sigCode.textContent = "⚠ SIGNAL OVERRIDE // HIGH OUTPUT";
+        if (sigCode) sigCode.textContent = "⚠ SIGNAL OVERRIDE // LIMIT EXCEEDED";
         if (sigMain) sigMain.textContent = "CLASS SSR DETECTED!!";
 
         goDropTimers.push(setTimeout(() => {
           goPlayDropSfx("impact", "SSR");
           goAdvanceAfterDrop();
-        }, 900));
-      }, 550));
+        }, 1400));
+      }, 1200));
     } else {
-      goPlayDropSfx("impact", topRarity);
       if (sigCode) {
         sigCode.textContent = topRarity === "SSR"
-          ? "⚠ HIGH-OUTPUT ARC SIGNATURE"
-          : (topRarity === "SR" ? "SIGNAL CLASS // SR" : "SIGNAL CLASS // STANDARD");
+          ? "⚠ PHASE 03 // EXTREME ARC OUTPUT"
+          : (topRarity === "SR" ? "PHASE 03 // HIGH-GRADE SIGNATURE" : "PHASE 03 // STANDARD SIGNATURE");
       }
       if (sigMain) {
-        sigMain.textContent = topRarity === "SSR" ? "CLASS SSR DETECTED" : "POD TOUCHDOWN";
+        sigMain.textContent = topRarity === "SSR"
+          ? "CLASS SSR DETECTED!!"
+          : (topRarity === "SR" ? "CLASS SR CONFIRMED" : "POD TOUCHDOWN");
       }
-      goDropTimers.push(setTimeout(() => goAdvanceAfterDrop(), topRarity === "SSR" ? 950 : 650));
+      goDropTimers.push(setTimeout(() => goPlayDropSfx("scan", topRarity), 480));
+
+      // Phase 4：ハッチ解放＆展開（SSRは長めに余韻を残す）
+      goDropTimers.push(setTimeout(() => {
+        if (sigCode) sigCode.textContent = "PHASE 04 // CONTAINMENT HATCH OPEN";
+        if (sigMain) sigMain.textContent = "DEPLOYING DATA...";
+      }, 950));
+
+      goDropTimers.push(setTimeout(() => {
+        goAdvanceAfterDrop();
+      }, topRarity === "SSR" ? 1850 : 1550));
     }
-  }, impactDelay));
+  }, 2900));
 }
 
 function goAdvanceAfterDrop() {
@@ -596,9 +691,12 @@ function goShowResultBoard() {
     <div class="ef-cine-hazard bottom"></div>
 
     <div class="go-result-shell">
-      <div class="ef-cine-hud-top" style="margin-bottom:8px;">
+      <div class="ef-cine-hud-top" style="margin-bottom:4px;">
         <span class="ef-code">// DEPLOYMENT REPORT (${results.length} UNITS)</span>
         <span class="ef-code">SSR:${ssrCnt} / SR:${srCnt}</span>
+      </div>
+      <div style="font-size:10.5px; color:#c8d4ee; text-align:center; margin-bottom:7px; font-weight:800;">
+        🔍 各キャラ・カードをタップすると性能やスキル詳細を確認できます
       </div>
 
       <div class="go-result-grid ${results.length === 1 ? "single" : ""}">
@@ -609,7 +707,7 @@ function goShowResultBoard() {
             ? (window.MF_SPRITES?.portraitHTML ? window.MF_SPRITES.portraitHTML(it, "icon-lg") : `<div style="font-size:32px;">${it.emoji || "👤"}</div>`)
             : `<div class="go-res-card-ico el-pat-${it.element}">${it.icon || "🃏"}</div>`;
           return `
-            <div class="go-res-tile rar-${r.rarity}" style="animation-delay:${i * 45}ms;">
+            <div class="go-res-tile rar-${r.rarity}" style="animation-delay:${i * 45}ms; cursor:pointer;" onclick="goOpenResultDetail(${i})">
               <div class="go-res-top">
                 <span class="go-res-rar">${r.rarity}</span>
                 <span>${el.icon}</span>
@@ -617,6 +715,7 @@ function goShowResultBoard() {
               <div class="go-res-media">${media}</div>
               <div class="go-res-name">${goEsc(it.name)}</div>
               <div class="go-res-tag kind-${r.statusKind}">${goEsc(r.statusTag)}</div>
+              <div class="go-res-detail-hint">詳細を見る ▸</div>
             </div>
           `;
         }).join("")}
@@ -631,8 +730,150 @@ function goShowResultBoard() {
   `;
 }
 
+// ---------- 🔍 結果画面から開けるキャラ・カード詳細モーダル（最前面 z-index:2500） ----------
+function goCloseResultDetail() {
+  const m = document.getElementById("modal-go-detail");
+  if (m) m.classList.remove("active");
+}
+
+function goOpenResultDetail(idx) {
+  if (!goActiveSeq || !goActiveSeq.results[idx]) return;
+  const entry = goActiveSeq.results[idx];
+  const it = entry.item;
+  const el = window.MF_DATA?.ELEMENTS?.[it.element] || { icon: "✨", name: "煌", color: "#f3cf00" };
+
+  let modal = document.getElementById("modal-go-detail");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "modal-go-detail";
+    modal.className = "modal-overlay";
+    modal.style.zIndex = "2500";
+    modal.onclick = () => goCloseResultDetail();
+    document.body.appendChild(modal);
+  }
+
+  let bodyHtml = "";
+
+  if (entry.kind === "char") {
+    const ch = typeof getCharProfile === "function" ? getCharProfile(it.id) : it;
+    const lv = Number(state?.charLevels?.[ch.id] || 1);
+    const dupe = window.MF_LIMIT_BREAK?.getDupeCount ? window.MF_LIMIT_BREAK.getDupeCount(ch.id) : 0;
+    const mem = Number(state?.charMemories?.[ch.id] || 0);
+    const pwr = typeof calcCharPower === "function" ? calcCharPower(ch.id) : 0;
+    const wpLabel = GO_WEAPON_LABELS[ch.weapon] || "⚔️ 戦術武装";
+    const sk = ch.skills || {};
+    const limPassive = ch.limited && GO_LIMITED_PASSIVES[ch.id] ? GO_LIMITED_PASSIVES[ch.id] : "";
+    const charCards = window.MF_CARDS?.getCharCards ? window.MF_CARDS.getCharCards(ch.id) : [];
+    const voice = (Array.isArray(ch.voiceLines) && ch.voiceLines[0]) ? `「${ch.voiceLines[0]}」` : "";
+    const portrait = window.MF_SPRITES?.portraitHTML
+      ? window.MF_SPRITES.portraitHTML(ch, "contain")
+      : `<div style="font-size:52px;">${ch.emoji || "👤"}</div>`;
+
+    bodyHtml = `
+      <div class="go-det-char-head">
+        <div class="go-det-portrait">${portrait}</div>
+        <div style="flex:1; min-width:0; text-align:left;">
+          <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;">
+            <span class="rank-pill" style="background:${ch.rarity === "SSR" ? "#f3cf00" : "#18e0a8"}; color:#111;">${ch.limited ? "👑限定" : ""}${ch.rarity}</span>
+            <span class="tag">${el.icon}${el.name}</span>
+            <span class="tag">${wpLabel}</span>
+          </div>
+          <strong style="font-size:16px; display:block;">${goEsc(ch.name)}</strong>
+          ${ch.role ? `<div style="font-size:10.5px; color:var(--muted); margin-top:2px;">${goEsc(ch.role)}</div>` : ""}
+          <div style="margin-top:5px;">
+            <span class="go-res-tag kind-${entry.statusKind}" style="display:inline-block;">${goEsc(entry.statusTag)}</span>
+          </div>
+          <div style="font-size:10.5px; font-weight:900; margin-top:5px;">
+            Lv.${lv} ｜ 戦力 ${pwr.toLocaleString()} ｜ 凸＋${dupe}/5（記憶:${mem}）
+          </div>
+        </div>
+      </div>
+
+      ${voice ? `<div class="go-det-voice">${goEsc(voice)}</div>` : ""}
+
+      ${limPassive ? `
+        <div class="go-det-sec" style="border-color:#f3cf00; background:rgba(243,207,0,0.12);">
+          <strong style="color:#f3cf00;">👑 限定固有パッシブ</strong>
+          <div>${goEsc(limPassive)}</div>
+        </div>
+      ` : ""}
+
+      <div class="go-det-sec">
+        <strong>⚡ 固有スキル</strong>
+        ${sk.normal ? `<div>・通常：${goEsc(sk.normal)}</div>` : ""}
+        ${sk.active ? `<div>・戦技：${goEsc(sk.active)}</div>` : ""}
+        ${sk.ult    ? `<div>・必殺：${goEsc(sk.ult)}</div>` : ""}
+      </div>
+
+      ${charCards.length ? `
+        <div class="go-det-sec">
+          <strong>🃏 バトル専用カード（3種）</strong>
+          ${charCards.map(c => `
+            <div class="go-det-mini-card">
+              <span>${c.icon} <strong>${goEsc(c.name)}</strong>（AP${c.cost}）</span>
+              <span style="color:var(--accent); font-weight:800;">${goEsc(c.summary)}</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
+    `;
+  } else {
+    const lv = window.MF_CARDS?.getCardLevel ? window.MF_CARDS.getCardLevel(it.id) : 1;
+    const leveled = (window.MF_CARDS?.getLeveledTacticCard ? window.MF_CARDS.getLeveledTacticCard(it.id) : null) || it;
+    const typeLabel = { attack: "⚔️ 攻撃", break: "💥 崩し", guard: "🛡️ 防御・反撃", buff: "✨ 戦術・支援", heal: "💚 回復", ult: "🌟 EX必殺" }[it.type] || "";
+    const tipMap = {
+      break: "💡 敵の『装甲硬化』や『必殺チャージ』に合わせると特効＆行動中断！",
+      guard: "💡 敵の強襲や大技に合わせて展開すると被ダメージ激減・反撃できます！",
+      attack: `💡 他の属性カードの直後に出すと『元素反応』が炸裂します！（${el.icon}${el.name}属性）`,
+      buff: "💡 3連チェインの『1枚目』に置くと後続カードの威力を大きく伸ばせます！",
+      heal: "💡 長期戦のボス攻略や高難度討伐での立て直しに活躍します！"
+    };
+
+    bodyHtml = `
+      <div class="go-det-card-hero el-pat-${it.element}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="rank-pill" style="background:#f3cf00; color:#111;">${it.rarity} Lv.${lv}</span>
+          <span class="tcg-cost">${it.cost ?? 1}</span>
+        </div>
+        <div style="font-size:48px; margin:6px 0 4px;">${it.icon || "🃏"}</div>
+        <strong style="font-size:16px; display:block; color:#fff;">${goEsc(it.name)}</strong>
+        <div style="font-size:11px; color:#dfe8ff; margin-top:3px;">${el.icon}${el.name}属性 ／ ${typeLabel}</div>
+        <div style="margin-top:6px;">
+          <span class="go-res-tag kind-${entry.statusKind}" style="display:inline-block;">${goEsc(entry.statusTag)}</span>
+        </div>
+      </div>
+
+      <div class="go-det-sec">
+        <strong>✨ 効果サマリー</strong>
+        <div style="font-weight:900; color:var(--accent); font-size:12.5px;">${goEsc(leveled.summary || it.summary || "")}</div>
+      </div>
+
+      <div class="go-det-sec">
+        <strong>📖 カード詳細</strong>
+        <div>${goEsc(it.desc || "")}</div>
+      </div>
+
+      ${tipMap[it.type] ? `<div class="go-det-sec" style="border-color:#18e0a8;"><div>${tipMap[it.type]}</div></div>` : ""}
+    `;
+  }
+
+  modal.innerHTML = `
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-height:84dvh; overflow-y:auto;">
+      <div class="top-row" style="margin-bottom:8px;">
+        <strong style="font-size:13.5px;">🔍 ${entry.kind === "char" ? "隊員詳細データ" : "戦術カード詳細"}</strong>
+        <button class="btn-xs" onclick="goCloseResultDetail()">閉じる ✕</button>
+      </div>
+      ${bodyHtml}
+      <button class="btn-primary" style="width:100%; margin-top:10px; padding:10px;" onclick="goCloseResultDetail()">結果一覧へ戻る</button>
+    </div>
+  `;
+  modal.classList.add("active");
+  if (typeof playSfx === "function") playSfx("tap");
+}
+
 function goCloseDropOverlay() {
   goClearDropTimers();
+  goCloseResultDetail();
   goIsPulling = false;
   goActiveSeq = null;
   const ov = document.getElementById("go-drop-overlay");
@@ -683,7 +924,7 @@ function goOpenRatesModal() {
   if (typeof playSfx === "function") playSfx("tap");
 }
 
-// ---------- 🛰️ スカウト画面（インダストリアル端末UI） ----------
+// ---------- 🛰️ スカウト画面（中旬復刻は11〜20日のみ表示） ----------
 function goSelectTab(tabId) {
   goCurrentTab = tabId;
   try {
@@ -697,7 +938,6 @@ function renderGachaView() {
   if (typeof renderTopBar === "function") renderTopBar();
   goEnsureState();
 
-  // cards.js 等からの外部遷移（activeBannerId='card_pack'）を自動反映
   try {
     if (typeof activeBannerId !== "undefined" && activeBannerId === "card_pack") {
       goCurrentTab = "card_pack";
@@ -708,7 +948,7 @@ function renderGachaView() {
   const sec = document.getElementById("view-gacha");
   if (!sec) return;
 
-   const sched = goGetScheduleInfo();
+  const sched = goGetScheduleInfo();
   if (goCurrentTab === "rerun" && !sched.rerunActive) goCurrentTab = "pickup";
   const chars = window.MF_DATA?.CHARACTERS || {};
   const puChar = chars[sched.puId] || Object.values(chars).find(c => c.rarity === "SSR" && !c.isProtagonist) || { id: "lunaria", name: "ルナリア", rarity: "SSR", element: "fire", emoji: "🔥" };
@@ -780,9 +1020,8 @@ function renderGachaView() {
     const subNote = isPickup
       ? `${elInfo.icon}${elInfo.name}属性・限定SSRピックアップ（専用札3種＋固有パッシブ）`
       : (isRerun
-          ? (sched.rerunActive ? "毎月11日〜20日限定開催！過去限定SSRを招集可能" : "🔒 毎月11日〜20日に開放される中旬復刻スカウトです")
+          ? "毎月11日〜20日限定開催！過去限定SSRを招集可能"
           : "恒常SSR・SR・R・N隊員を招集（※限定SSRは含まれません）");
-    const lockRerun = isRerun && !sched.rerunActive;
 
     bodyHtml = `
       <div class="go-banner-hero">
@@ -809,10 +1048,10 @@ function renderGachaView() {
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1.25fr; gap:8px;">
-        <button class="btn-primary" style="padding:11px 6px;" ${lockRerun ? "disabled" : ""} onclick="goExecCharScout('${goCurrentTab}', 1)">
+        <button class="btn-primary" style="padding:11px 6px;" onclick="goExecCharScout('${goCurrentTab}', 1)">
           🛰️ 1回招集<br><span style="font-size:10px; opacity:0.9;">💎 160</span>
         </button>
-        <button class="btn-accent2" style="padding:11px 6px;" ${lockRerun ? "disabled" : ""} onclick="goExecCharScout('${goCurrentTab}', 10)">
+        <button class="btn-accent2" style="padding:11px 6px;" onclick="goExecCharScout('${goCurrentTab}', 10)">
           🔥 10連軌道投下<br><span style="font-size:10px; opacity:0.9;">💎 1,600（SR以上1枠確定）</span>
         </button>
       </div>
@@ -847,7 +1086,6 @@ function renderGachaView() {
   `;
 }
 
-// グローバル公開＆既存 renderGachaView の安全な置き換え
 window.renderGachaView = renderGachaView;
 window.goSelectTab = goSelectTab;
 window.goExecCharScout = goExecCharScout;
@@ -857,3 +1095,5 @@ window.goOpenRatesModal = goOpenRatesModal;
 window.goShowSsrSpotlight = goShowSsrSpotlight;
 window.goSkipToResults = goSkipToResults;
 window.goCloseDropOverlay = goCloseDropOverlay;
+window.goOpenResultDetail = goOpenResultDetail;
+window.goCloseResultDetail = goCloseResultDetail;
