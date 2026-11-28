@@ -1,11 +1,12 @@
 // =========================================================
-// 🎖️ 指揮官拡張モジュール
-//   1. 元素共鳴（属性シナジー）＆ 小隊プリセット（5枠）
-//   2. ホーム秘書官（所持限定）＆ 時間帯・絆ボイス
-//   3. 指揮官IDカード（スクショモード・URL共有・掲示板自動展開・名刺帳）
+// 🎖️ 指揮官拡張モジュール（v2）
+//   1. ホーム中央「秘書官メインステージ」（左立ち絵＋右機能ドック／主人公対応）
+//   2. 自由移動・ピンチズーム対応 立ち絵拡大ビューア
+//   3. 元素共鳴（属性シナジー）＆ 小隊プリセット（5枠）
+//   4. 指揮官IDカード（スクショモード・URL共有・掲示板自動展開・名刺帳）
 // =========================================================
 let cfVoiceCursor = 0;
-let cfActiveIdCardTab = "mine"; // "mine" | "book" | "lookup"
+let cfActiveIdCardTab = "mine";
 let cfViewingForeignCard = null;
 let cfPresetEditIdx = -1;
 let cfDeckKeyCache = null;
@@ -21,8 +22,14 @@ const CF_RESONANCE_META = {
   rainbow: { icon: "🌈", name: "四極調和",   color: "#c77dff", desc: "4属性編成：全ステ+10% ＆ 堅牢防御" }
 };
 
-// キャラ別の時間帯ボイス（未定義キャラも性格・属性から自動生成）
 const CF_SECRETARY_VOICES = {
+  protagonist: {
+    morning: "よし、今日も第7クリアラー小隊の作戦開始だ。装備とデッキの点検をしておこう。",
+    day:     "霧の晴れたエリアが少しずつ広がってきたな。この調子で前線を押し上げよう！",
+    evening: "夕焼けの向こうにもまだ未踏の瘴霧がある……だが、今の仲間となら必ず突破できる。",
+    night:   "夜間の警戒態勢よし。明日の強敵に備えて、今夜は作戦を練りつつしっかり休もう。",
+    late:    "静かな夜だな……仲間の顔を思い浮かべると、どんな絶望にも負ける気がしない。"
+  },
   aoi: {
     morning: "おはようございます、隊長！本日の作戦計画書と温かいコーヒーを用意しておきました。",
     day:     "戦線データ更新完了です。午後も無理しすぎず、補給を挟みながら進みましょうね。",
@@ -114,6 +121,23 @@ function cfDetectDeckIdxKey() {
   return cfDeckKeyCache;
 }
 
+function cfGetOwnedAllies() {
+  const owned = new Set(state?.ownedChars || []);
+  const chars = window.MF_DATA?.CHARACTERS || {};
+  const rarRank = { SSR: 4, SR: 3, R: 2, N: 1 };
+  return Object.values(chars)
+    .filter(c => c && !c.isProtagonist && c.id !== "protagonist" && owned.has(c.id))
+    .sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0) || (state?.charLevels?.[b.id] || 1) - (state?.charLevels?.[a.id] || 1));
+}
+
+// 主人公＋所持済み隊員（秘書官＆プリセット両対応）
+function cfGetOwnedPartyCandidates() {
+  const protag = typeof getCharProfile === "function"
+    ? getCharProfile("protagonist")
+    : { id: "protagonist", name: state?.playerName || "隊長", rarity: "SR", element: "fire", isProtagonist: true, styleId: state?.styleId || "m_cool", emoji: "🧑‍✈️" };
+  return [protag, ...cfGetOwnedAllies()];
+}
+
 function cfEnsureState() {
   if (typeof state === "undefined" || !state) return;
   if (!state.commanderCode) {
@@ -125,14 +149,14 @@ function cfEnsureState() {
   }
   if (!Array.isArray(state.friendIdCards)) state.friendIdCards = [];
 
-  // 所持済み隊員から秘書官を検証・自動補完（未所持は絶対に設定させない）
-  const ownedAllies = cfGetOwnedAllies();
-  if (!state.secretaryCharId || !ownedAllies.some(c => c.id === state.secretaryCharId)) {
-    const fromParty = (state.party || []).find(id => ownedAllies.some(c => c.id === id));
-    state.secretaryCharId = fromParty || (ownedAllies[0]?.id || "protagonist");
+  // 主人公＋所持済み隊員のみ秘書官として許可
+  const ownedSet = new Set(["protagonist", ...(state.ownedChars || [])]);
+  if (!state.secretaryCharId || !ownedSet.has(state.secretaryCharId)) {
+    const allies = cfGetOwnedAllies();
+    const fromParty = (state.party || []).find(id => id !== "protagonist" && ownedSet.has(id));
+    state.secretaryCharId = fromParty || allies[0]?.id || "protagonist";
   }
 
-  // 小隊プリセット（最大5枠）
   if (!Array.isArray(state.squadPresets) || state.squadPresets.length < 5) {
     const dkKey = cfDetectDeckIdxKey();
     const curDeck = Number(state[dkKey] || 0);
@@ -148,18 +172,193 @@ function cfEnsureState() {
   }
 }
 
-function cfGetOwnedAllies() {
-  const owned = new Set(state?.ownedChars || []);
-  const chars = window.MF_DATA?.CHARACTERS || {};
-  const rarRank = { SSR: 4, SR: 3, R: 2, N: 1 };
-  return Object.values(chars)
-    .filter(c => c && !c.isProtagonist && c.id !== "protagonist" && owned.has(c.id))
-    .sort((a, b) => (rarRank[b.rarity] || 0) - (rarRank[a.rarity] || 0) || (state?.charLevels?.[b.id] || 1) - (state?.charLevels?.[a.id] || 1));
+// =========================================================
+// 🔍 自由移動（ドラッグ）＆ ピンチズーム対応 立ち絵拡大ビューア
+// =========================================================
+let cfZoomState = {
+  charId: "protagonist",
+  scale: 1,
+  tx: 0,
+  ty: 0,
+  dragging: false,
+  pinching: false,
+  startX: 0,
+  startY: 0,
+  baseTx: 0,
+  baseTy: 0,
+  pinchDist: 0,
+  pinchScale: 1,
+  lastTap: 0
+};
+
+function cfApplyZoomTransform() {
+  const el = document.getElementById("cf-zoom-target");
+  const readout = document.getElementById("cf-zoom-pct");
+  if (el) {
+    el.style.transform = `translate3d(${cfZoomState.tx}px, ${cfZoomState.ty}px, 0) scale(${cfZoomState.scale})`;
+  }
+  if (readout) {
+    readout.textContent = `${Math.round(cfZoomState.scale * 100)}%`;
+  }
 }
 
-function cfGetOwnedPartyCandidates() {
-  const protag = typeof getCharProfile === "function" ? getCharProfile("protagonist") : { id: "protagonist", name: state?.playerName || "隊長", rarity: "SR", element: "fire", isProtagonist: true };
-  return [protag, ...cfGetOwnedAllies()];
+function cfAdjustZoom(delta) {
+  cfZoomState.scale = Math.max(0.85, Math.min(4.5, +(cfZoomState.scale + delta).toFixed(2)));
+  cfApplyZoomTransform();
+  if (typeof playSfx === "function") playSfx("tap");
+}
+
+function cfResetZoom() {
+  cfZoomState.scale = 1;
+  cfZoomState.tx = 0;
+  cfZoomState.ty = 0;
+  cfApplyZoomTransform();
+  if (typeof playSfx === "function") playSfx("tap");
+}
+
+function cfCloseFreeZoom() {
+  const ov = document.getElementById("cf-free-zoom-overlay");
+  if (ov) ov.classList.remove("active");
+}
+
+function cfOpenFreeZoom(charId) {
+  cfEnsureState();
+  const id = charId || state?.secretaryCharId || "protagonist";
+  const ch = typeof getCharProfile === "function"
+    ? getCharProfile(id)
+    : (window.MF_DATA?.CHARACTERS?.[id] || { id, name: id, rarity: "SR", emoji: "👤" });
+
+  cfZoomState = {
+    charId: id, scale: 1, tx: 0, ty: 0,
+    dragging: false, pinching: false,
+    startX: 0, startY: 0, baseTx: 0, baseTy: 0,
+    pinchDist: 0, pinchScale: 1, lastTap: 0
+  };
+
+  let ov = document.getElementById("cf-free-zoom-overlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "cf-free-zoom-overlay";
+    ov.className = "cf-free-zoom-overlay";
+    document.body.appendChild(ov);
+  }
+
+  const el = window.MF_DATA?.ELEMENTS?.[ch.element] || { icon: "✨", name: "煌" };
+  const art = window.MF_SPRITES?.portraitHTML
+    ? window.MF_SPRITES.portraitHTML(ch, "contain")
+    : `<div style="font-size:84px;">${ch.emoji || "👤"}</div>`;
+
+  ov.innerHTML = `
+    <div class="cf-zoom-topbar">
+      <div style="text-align:left;">
+        <strong style="font-size:13.5px; color:#fff;">${el.icon} ${cfEsc(ch.name)} <small style="color:#f3cf00;">(${ch.rarity || "SR"})</small></strong>
+        <div style="font-size:9.5px; color:#b6c6e6;">ドラッグで自由移動 ／ 2本指ピンチ＆ボタンで拡大縮小</div>
+      </div>
+      <button class="btn-xs btn-accent2" onclick="cfCloseFreeZoom()">閉じる ✕</button>
+    </div>
+
+    <div id="cf-zoom-canvas" class="cf-zoom-canvas">
+      <div id="cf-zoom-target" class="cf-zoom-target">
+        ${art}
+      </div>
+    </div>
+
+    <div class="cf-zoom-controls">
+      <button class="btn-xs" style="padding:7px 12px; font-size:14px;" onclick="cfAdjustZoom(-0.35)">－</button>
+      <span id="cf-zoom-pct" class="cf-zoom-pct">100%</span>
+      <button class="btn-xs" style="padding:7px 12px; font-size:14px;" onclick="cfAdjustZoom(0.35)">＋</button>
+      <button class="btn-xs btn-primary" style="padding:7px 11px;" onclick="cfResetZoom()">↺ リセット</button>
+    </div>
+  `;
+
+  ov.classList.add("active");
+  cfBindZoomGestures();
+  cfApplyZoomTransform();
+  if (typeof playSfx === "function") playSfx("tap");
+}
+
+function cfBindZoomGestures() {
+  const canvas = document.getElementById("cf-zoom-canvas");
+  if (!canvas || canvas._cfBound) return;
+  canvas._cfBound = true;
+
+  const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+  // タッチ（1本指パン・2本指ピンチ・ダブルタップ拡大）
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - cfZoomState.lastTap < 280) {
+        if (cfZoomState.scale > 1.3) cfResetZoom();
+        else { cfZoomState.scale = 2.2; cfApplyZoomTransform(); }
+        cfZoomState.lastTap = 0;
+        return;
+      }
+      cfZoomState.lastTap = now;
+      cfZoomState.dragging = true;
+      cfZoomState.pinching = false;
+      cfZoomState.startX = e.touches[0].clientX;
+      cfZoomState.startY = e.touches[0].clientY;
+      cfZoomState.baseTx = cfZoomState.tx;
+      cfZoomState.baseTy = cfZoomState.ty;
+    } else if (e.touches.length >= 2) {
+      cfZoomState.dragging = false;
+      cfZoomState.pinching = true;
+      cfZoomState.pinchDist = getDist(e.touches[0], e.touches[1]);
+      cfZoomState.pinchScale = cfZoomState.scale;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && cfZoomState.dragging) {
+      const dx = e.touches[0].clientX - cfZoomState.startX;
+      const dy = e.touches[0].clientY - cfZoomState.startY;
+      cfZoomState.tx = cfZoomState.baseTx + dx;
+      cfZoomState.ty = cfZoomState.baseTy + dy;
+      cfApplyZoomTransform();
+    } else if (e.touches.length >= 2 && cfZoomState.pinching && cfZoomState.pinchDist > 10) {
+      const dist = getDist(e.touches[0], e.touches[1]);
+      const ratio = dist / cfZoomState.pinchDist;
+      cfZoomState.scale = Math.max(0.85, Math.min(4.5, cfZoomState.pinchScale * ratio));
+      cfApplyZoomTransform();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener("touchend", (e) => {
+    if (e.touches.length === 0) {
+      cfZoomState.dragging = false;
+      cfZoomState.pinching = false;
+    } else if (e.touches.length === 1) {
+      cfZoomState.pinching = false;
+      cfZoomState.dragging = true;
+      cfZoomState.startX = e.touches[0].clientX;
+      cfZoomState.startY = e.touches[0].clientY;
+      cfZoomState.baseTx = cfZoomState.tx;
+      cfZoomState.baseTy = cfZoomState.ty;
+    }
+  }, { passive: true });
+
+  // PCマウス（ドラッグ＆ホイール）
+  canvas.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    cfZoomState.dragging = true;
+    cfZoomState.startX = e.clientX;
+    cfZoomState.startY = e.clientY;
+    cfZoomState.baseTx = cfZoomState.tx;
+    cfZoomState.baseTy = cfZoomState.ty;
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!cfZoomState.dragging) return;
+    cfZoomState.tx = cfZoomState.baseTx + (e.clientX - cfZoomState.startX);
+    cfZoomState.ty = cfZoomState.baseTy + (e.clientY - cfZoomState.startY);
+    cfApplyZoomTransform();
+  });
+  window.addEventListener("mouseup", () => { cfZoomState.dragging = false; });
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    cfAdjustZoom(e.deltaY < 0 ? 0.25 : -0.25);
+  }, { passive: false });
 }
 
 // =========================================================
@@ -238,16 +437,12 @@ function cfApplyBattleResonance() {
   if (!res.active.length) return;
 
   const m = res.mods;
-  if (m.atkPct > 0) {
-    btl.members.forEach(mem => { mem.atk = Math.round(mem.atk * (1 + m.atkPct / 100)); });
-  }
+  if (m.atkPct > 0) btl.members.forEach(mem => { mem.atk = Math.round(mem.atk * (1 + m.atkPct / 100)); });
   if (m.hpPct > 0) {
     btl.teamMaxHp = Math.round(btl.teamMaxHp * (1 + m.hpPct / 100));
     btl.teamHp = btl.teamMaxHp;
   }
-  if (m.defPct > 0) {
-    btl.teamDef = Math.round((btl.teamDef || 0) * (1 + m.defPct / 100));
-  }
+  if (m.defPct > 0) btl.teamDef = Math.round((btl.teamDef || 0) * (1 + m.defPct / 100));
   if (m.startEx > 0) btl.exGauge = Math.min(95, (btl.exGauge || 0) + m.startEx);
   if (m.startShieldPct > 0) btl.shield = (btl.shield || 0) + Math.round(btl.teamMaxHp * (m.startShieldPct / 100));
   if (m.startAp > 0) btl.ap = Math.min(8, (btl.ap || 4) + m.startAp);
@@ -464,7 +659,7 @@ function cfRenderPresetModal() {
 }
 
 // =========================================================
-// 2. 🎙️ ホーム秘書官（所持限定）＆ 時間帯・絆ボイス
+// 2. 🎙️ ホーム秘書官メインステージ（主人公対応・左立ち絵・右サイドボタン）
 // =========================================================
 function cfGetTimeSlot() {
   const h = new Date().getHours();
@@ -476,6 +671,7 @@ function cfGetTimeSlot() {
 }
 
 function cfGetBondLvSafe(charId) {
+  if (charId === "protagonist") return 5;
   const map = state?.bonds || state?.bondPoints || state?.charBonds || {};
   const pt = Number(map[charId] || 0);
   if (pt >= 100) return 5;
@@ -487,7 +683,8 @@ function cfGetBondLvSafe(charId) {
 
 function cfGetSecretaryVoicePool(ch) {
   const slot = cfGetTimeSlot();
-  const preset = CF_SECRETARY_VOICES[ch.id];
+  const key = (ch.isProtagonist || ch.id === "protagonist") ? "protagonist" : ch.id;
+  const preset = CF_SECRETARY_VOICES[key];
   const pName = state?.playerName || "隊長";
   const elName = window.MF_DATA?.ELEMENTS?.[ch.element]?.name || "煌";
   const timeText = preset?.[slot.key] || ({
@@ -504,20 +701,22 @@ function cfGetSecretaryVoicePool(ch) {
     ch.voiceLines.forEach(v => pool.push({ tag: "💬 隊員ボイス", text: v }));
   }
 
-  const bLv = cfGetBondLvSafe(ch.id);
-  if (bLv >= 3) {
-    const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
-    pool.push({
-      tag: "💞 絆Lv.3特別ボイス",
-      text: lore?.l3 || `${pName}の指揮のもとで戦えるのが、今の私にとって一番の誇りです。`
-    });
-  }
-  if (bLv >= 5) {
-    const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
-    pool.push({
-      tag: "👑 絆Lv.5極ボイス",
-      text: lore?.l5 || `どんな未来が待っていようと、ずっと${pName}の隣で戦い抜くと誓います。`
-    });
+  if (key !== "protagonist") {
+    const bLv = cfGetBondLvSafe(ch.id);
+    if (bLv >= 3) {
+      const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
+      pool.push({
+        tag: "💞 絆Lv.3特別ボイス",
+        text: lore?.l3 || `${pName}の指揮のもとで戦えるのが、今の私にとって一番の誇りです。`
+      });
+    }
+    if (bLv >= 5) {
+      const lore = typeof BO_CHAR_LORE !== "undefined" ? BO_CHAR_LORE[ch.id] : null;
+      pool.push({
+        tag: "👑 絆Lv.5極ボイス",
+        text: lore?.l5 || `どんな未来が待っていようと、ずっと${pName}の隣で戦い抜くと誓います。`
+      });
+    }
   }
   return pool;
 }
@@ -545,7 +744,7 @@ function cfTapSecretary() {
 
 function cfOpenSecretaryPicker() {
   cfEnsureState();
-  const allies = cfGetOwnedAllies();
+  const candidates = cfGetOwnedPartyCandidates(); // 主人公＋所持隊員
   let modal = document.getElementById("modal-cf-secretary");
   if (!modal) {
     modal = document.createElement("div");
@@ -559,14 +758,15 @@ function cfOpenSecretaryPicker() {
   modal.innerHTML = `
     <div class="modal-box" onclick="event.stopPropagation()" style="max-height:84dvh; overflow-y:auto;">
       <div class="top-row" style="margin-bottom:7px;">
-        <strong style="font-size:14px;">🎙️ ホーム秘書官を選択（所持隊員のみ）</strong>
+        <strong style="font-size:14px;">🎙️ ホーム秘書官を選択（主人公＋所持隊員）</strong>
         <button class="btn-xs" onclick="document.getElementById('modal-cf-secretary').classList.remove('active')">閉じる ✕</button>
       </div>
       <div style="font-size:10.5px; color:var(--muted); margin-bottom:8px; text-align:left;">
-        選んだ隊員はホーム画面の秘書官＆あなたの『指揮官IDカード』の看板隊員になります（絆Lv.3/5で特別ボイス追加）。
+        選んだキャラがホーム画面の主役＆あなたの『指揮官IDカード』の看板キャラになります。
       </div>
       <div class="cf-sec-picker-grid">
-        ${allies.map(ch => {
+        ${candidates.map(ch => {
+          const isProtag = ch.id === "protagonist" || ch.isProtagonist;
           const isCur = state.secretaryCharId === ch.id;
           const el = window.MF_DATA?.ELEMENTS?.[ch.element] || { icon: "✨" };
           const bLv = cfGetBondLvSafe(ch.id);
@@ -576,8 +776,8 @@ function cfOpenSecretaryPicker() {
             <div class="cf-sec-pick-card ${isCur ? "active" : ""}" onclick="cfSetSecretary('${ch.id}')">
               ${img}
               <div style="font-size:11px; font-weight:900; margin-top:3px;">${el.icon} ${cfEsc(ch.name)}</div>
-              <div style="font-size:9px; color:var(--muted);">Lv.${lv} ｜ 💞Lv.${bLv}</div>
-              ${isCur ? `<span class="tag" style="background:#f3cf00; color:#111; font-size:8.5px; margin-top:2px;">任命済</span>` : ""}
+              <div style="font-size:9px; color:var(--muted);">Lv.${lv} ${isProtag ? "｜ 👑隊長" : `｜ 💞Lv.${bLv}`}</div>
+              ${isCur ? `<span class="tag" style="background:#f3cf00; color:#111; font-size:8.5px; margin-top:2px;">配置中</span>` : ""}
             </div>
           `;
         }).join("")}
@@ -590,7 +790,7 @@ function cfOpenSecretaryPicker() {
 
 function cfSetSecretary(charId) {
   cfEnsureState();
-  const owned = new Set(state.ownedChars || []);
+  const owned = new Set(["protagonist", ...(state.ownedChars || [])]);
   if (!owned.has(charId)) {
     showToast("未所持の隊員は秘書官に設定できません");
     return;
@@ -602,8 +802,123 @@ function cfSetSecretary(charId) {
   const m = document.getElementById("modal-cf-secretary");
   if (m) m.classList.remove("active");
   cfRenderHomeWidgets();
-  const ch = window.MF_DATA?.CHARACTERS?.[charId];
-  showToast(`🎙️ ${ch?.name || charId} をホーム秘書官に任命しました！`);
+  const ch = typeof getCharProfile === "function" ? getCharProfile(charId) : { name: charId };
+  showToast(`🎙️ ${ch.name} をホーム画面へ配置しました！`);
+}
+
+function cfGetRewardHubBadgesSafe() {
+  if (typeof rhCountBadges === "function") {
+    try { return rhCountBadges(); } catch (_) {}
+  }
+  return { ach: 0, disp: 0, weekly: 0, total: 0 };
+}
+
+// ホーム画面：旧切替ステージ＆旧上部バーを廃止し、ド真ん中の秘書官メインステージへ統合
+function cfHideLegacyHomeStages(homeEl) {
+  Array.from(homeEl.children).forEach(child => {
+    if (!child || child.id === "cf-home-main-stage") return;
+    // 物語・討伐ボタン行と下部メインドック（またはそれらを包む要素）だけは必ず維持
+    const keepPlay = child.matches(".home-play-row") || !!child.querySelector(".home-play-row");
+    const keepDock = child.matches(".home-main-dock") || !!child.querySelector(".home-main-dock");
+    if (keepPlay || keepDock) {
+      // もし内側に旧切替エリアが混ざっていればその部分だけ隠す
+      Array.from(child.children).forEach(sub => {
+        if (sub.id === "cf-home-main-stage") return;
+        const sPlay = sub.matches(".home-play-row") || !!sub.querySelector(".home-play-row");
+        const sDock = sub.matches(".home-main-dock") || !!sub.querySelector(".home-main-dock");
+        if (!sPlay && !sDock) sub.style.display = "none";
+      });
+      return;
+    }
+    // 旧切替画面・旧秘書官カード・旧上部3連バーを廃止（非表示）
+    child.style.display = "none";
+  });
+}
+
+function cfRenderHomeWidgets() {
+  if (typeof state === "undefined" || !state) return;
+  cfEnsureState();
+  const home = document.getElementById("view-home");
+  if (!home) return;
+
+  const ch = typeof getCharProfile === "function"
+    ? getCharProfile(state.secretaryCharId)
+    : (window.MF_DATA?.CHARACTERS?.[state.secretaryCharId] || { id: "protagonist", name: state.playerName || "隊長", element: "fire", isProtagonist: true });
+  if (!ch) return;
+
+  const isProtag = ch.id === "protagonist" || ch.isProtagonist;
+  const pool = cfGetSecretaryVoicePool(ch);
+  const voice = pool[cfVoiceCursor % pool.length] || pool[0];
+  const res = cfCalcResonance(state.party);
+  const el = window.MF_DATA?.ELEMENTS?.[ch.element] || { icon: "✨", name: "煌" };
+  const bLv = cfGetBondLvSafe(ch.id);
+  const badges = cfGetRewardHubBadgesSafe();
+  const portrait = window.MF_SPRITES?.portraitHTML
+    ? window.MF_SPRITES.portraitHTML(ch, "contain")
+    : `<div style="font-size:64px;">${ch.emoji || "👤"}</div>`;
+
+  cfDomLock = true;
+  try {
+    let stage = document.getElementById("cf-home-main-stage");
+    if (!stage) {
+      stage = document.createElement("div");
+      stage.id = "cf-home-main-stage";
+      stage.className = "cf-home-stage";
+      home.prepend(stage);
+    }
+
+    cfHideLegacyHomeStages(home);
+
+    stage.innerHTML = `
+      <div class="cf-stage-grid"></div>
+      <div class="cf-stage-glow"></div>
+
+      <div class="cf-stage-top">
+        <div class="cf-stage-char-chip">
+          <span>${el.icon} <strong>${cfEsc(ch.name)}</strong></span>
+          <small>${isProtag ? "👑 指揮官" : `💞 絆Lv.${bLv}`}</small>
+        </div>
+        <button class="cf-stage-zoom-btn" onclick="cfOpenFreeZoom('${ch.id}')">🔍 拡大・移動</button>
+      </div>
+
+      <div class="cf-stage-body">
+        <div id="cf-sec-art-box" class="cf-stage-left-art" onclick="cfTapSecretary()">
+          ${portrait}
+        </div>
+
+        <div class="cf-stage-right-dock">
+          <button class="cf-side-btn ${badges.ach ? "hot" : ""}" onclick="typeof rhOpenHubModal==='function' && rhOpenHubModal('ach')">
+            <span>🏆 実績</span>
+            ${badges.ach ? `<b class="rh-dot">${badges.ach}</b>` : ""}
+          </button>
+          <button class="cf-side-btn ${badges.disp ? "hot" : ""}" onclick="typeof rhOpenHubModal==='function' && rhOpenHubModal('dispatch')">
+            <span>🚁 派遣</span>
+            ${badges.disp ? `<b class="rh-dot">${badges.disp}</b>` : ""}
+          </button>
+          <button class="cf-side-btn ${badges.weekly ? "hot" : ""}" onclick="typeof rhOpenHubModal==='function' && rhOpenHubModal('weekly')">
+            <span>🎯 週次挑戦</span>
+            ${badges.weekly ? `<b class="rh-dot">${badges.weekly}</b>` : ""}
+          </button>
+          <button class="cf-side-btn accent-cyan" onclick="cfOpenPresetModal()">
+            <span>⚡ ${res.active.length ? res.active.map(r => r.icon).join("") + "共鳴中" : "共鳴/小隊"}</span>
+          </button>
+          <button class="cf-side-btn accent-gold" onclick="cfOpenIdCardModal('mine')">
+            <span>🪪 IDカード</span>
+          </button>
+          <button class="cf-side-btn" onclick="cfOpenSecretaryPicker()">
+            <span>🔄 秘書官変更</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cf-stage-voice-bar" onclick="cfTapSecretary()">
+        <span id="cf-sec-voice-tag" class="cf-sec-vtag">${cfEsc(voice.tag)}</span>
+        <div id="cf-sec-voice-text" class="cf-sec-vtxt">「${cfEsc(voice.text)}」</div>
+      </div>
+    `;
+  } finally {
+    setTimeout(() => { cfDomLock = false; }, 0);
+  }
 }
 
 // =========================================================
@@ -611,7 +926,7 @@ function cfSetSecretary(charId) {
 // =========================================================
 function cfBuildMyCardPayload() {
   cfEnsureState();
-  const secId = state.secretaryCharId || "aoi";
+  const secId = state.secretaryCharId || "protagonist";
   const secLv = Number(state.charLevels?.[secId] || 1);
   const secDupe = window.MF_LIMIT_BREAK?.getDupeCount ? window.MF_LIMIT_BREAK.getDupeCount(secId) : 0;
   const secBond = cfGetBondLvSafe(secId);
@@ -672,13 +987,15 @@ function cfDecodeCard(rawText) {
 
 function cfRenderIdCardPlateHtml(card, isForeign = false) {
   const chars = window.MF_DATA?.CHARACTERS || {};
-  const secChar = chars[card.s] || { id: card.s || "aoi", name: "アオイ", rarity: "SR", element: "water", emoji: "🛡️" };
+  const isProtagSec = card.s === "protagonist";
+  const secChar = isProtagSec
+    ? { id: "protagonist", name: card.n, rarity: "SR", element: card.pe || "fire", isProtagonist: true, styleId: card.st || "m_cool", emoji: "🧑‍✈️" }
+    : (chars[card.s] || { id: card.s || "aoi", name: "アオイ", rarity: "SR", element: "water", emoji: "🛡️" });
   const el = window.MF_DATA?.ELEMENTS?.[secChar.element] || { icon: "✨", name: "煌", color: "#f3cf00" };
   const portrait = window.MF_SPRITES?.portraitHTML
     ? window.MF_SPRITES.portraitHTML(secChar, "contain")
     : `<div style="font-size:64px;">${secChar.emoji || "👤"}</div>`;
 
-  // 小隊4人の属性共鳴をカード情報から再計算
   const sqIds = Array.isArray(card.sq) ? card.sq.slice(0, 4) : ["protagonist"];
   const elCounts = {};
   sqIds.forEach(id => {
@@ -706,7 +1023,7 @@ function cfRenderIdCardPlateHtml(card, isForeign = false) {
           ${portrait}
           <div class="cf-id-sec-cap">
             <span>${el.icon} ${cfEsc(secChar.name)}</span>
-            <small>Lv.${card.sl || 1} ${stars} 💞${card.sb || 1}</small>
+            <small>Lv.${card.sl || 1} ${stars} ${isProtagSec ? "👑隊長" : `💞${card.sb || 1}`}</small>
           </div>
         </div>
 
@@ -875,7 +1192,7 @@ function cfRenderIdCardModal() {
         <button class="btn-xs" style="padding:7px;" onclick="cfEditCommanderBio()">✏️ ひとこと編集</button>
       </div>
       <div style="font-size:10px; color:var(--muted); margin-top:7px; text-align:left; line-height:1.45;">
-        ※共有リンクを送ると友達があなたのIDカードを見られます。また『掲示板用コード』をゲーム内掲示板へ貼ると、他の全員がワンタップであなたの名刺を見られるようになります！
+        ※共有リンクを送ると友達があなたのIDカードを見られます。『掲示板用コード』をゲーム内掲示板へ貼ると、他の全員がワンタップであなたの名刺を見られます！
       </div>
     `;
   } else if (cfActiveIdCardTab === "book") {
@@ -939,65 +1256,6 @@ function cfRenderIdCardModal() {
   `;
 }
 
-// ---------- 🏠 ホーム画面ウィジェット ＆ 討伐/掲示板ショートカット ----------
-function cfRenderHomeWidgets() {
-  if (typeof state === "undefined" || !state) return;
-  cfEnsureState();
-  const home = document.getElementById("view-home");
-  if (!home) return;
-
-  const ch = typeof getCharProfile === "function" ? getCharProfile(state.secretaryCharId) : window.MF_DATA?.CHARACTERS?.[state.secretaryCharId];
-  if (!ch) return;
-  const pool = cfGetSecretaryVoicePool(ch);
-  const voice = pool[cfVoiceCursor % pool.length] || pool[0];
-  const res = cfCalcResonance(state.party);
-  const el = window.MF_DATA?.ELEMENTS?.[ch.element] || { icon: "✨" };
-  const bLv = cfGetBondLvSafe(ch.id);
-  const portrait = window.MF_SPRITES?.portraitHTML ? window.MF_SPRITES.portraitHTML(ch, "contain") : `<div style="font-size:48px;">${ch.emoji || "👤"}</div>`;
-
-  cfDomLock = true;
-  try {
-    let box = document.getElementById("cf-home-secretary-card");
-    if (!box) {
-      box = document.createElement("div");
-      box.id = "cf-home-secretary-card";
-      box.className = "cf-sec-widget";
-      const rhBar = document.getElementById("rh-entry-home");
-      if (rhBar && rhBar.parentNode === home) home.insertBefore(box, rhBar.nextSibling);
-      else home.prepend(box);
-    }
-
-    box.innerHTML = `
-      <div class="cf-sec-main">
-        <div id="cf-sec-art-box" class="cf-sec-art" onclick="cfTapSecretary()">
-          ${portrait}
-          <span class="cf-sec-tap-pill">TAP 💬</span>
-        </div>
-        <div class="cf-sec-body">
-          <div class="top-row" style="margin-bottom:3px;">
-            <strong style="font-size:12.5px; color:#fff;">${el.icon} ${cfEsc(ch.name)} <small style="color:#f3cf00;">💞Lv.${bLv}</small></strong>
-            <button class="btn-xs" style="font-size:9px; padding:2px 6px;" onclick="cfOpenSecretaryPicker()">🔄 秘書官変更</button>
-          </div>
-          <div class="cf-sec-bubble" onclick="cfTapSecretary()">
-            <span id="cf-sec-voice-tag" class="cf-sec-vtag">${cfEsc(voice.tag)}</span>
-            <div id="cf-sec-voice-text" class="cf-sec-vtxt">「${cfEsc(voice.text)}」</div>
-          </div>
-          <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:5px; margin-top:6px;">
-            <button class="btn-xs btn-primary" style="padding:6px 3px; font-size:10px;" onclick="cfOpenPresetModal()">
-              ⚡ ${res.active.length ? res.active.map(r => r.icon).join("") + "共鳴中" : "共鳴/プリセット"}
-            </button>
-            <button class="btn-xs btn-accent2" style="padding:6px 3px; font-size:10px;" onclick="cfOpenIdCardModal('mine')">
-              🪪 指揮官IDカード
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  } finally {
-    setTimeout(() => { cfDomLock = false; }, 0);
-  }
-}
-
 function cfRenderAllBars() {
   cfRenderHomeWidgets();
   if (typeof state === "undefined" || !state) return;
@@ -1006,7 +1264,6 @@ function cfRenderAllBars() {
 
   cfDomLock = true;
   try {
-    // 討伐画面に現在の元素共鳴＆プリセット切替バーを配置
     const selPanel = document.getElementById("btl-select-panel");
     if (selPanel) {
       let bar = document.getElementById("cf-battle-res-bar");
@@ -1027,7 +1284,6 @@ function cfRenderAllBars() {
       `;
     }
 
-    // 掲示板＆フレンド画面に「自分の名刺を貼る／名刺帳」ショートカットを配置
     ["view-board", "view-friends"].forEach(vid => {
       const sec = document.getElementById(vid);
       if (!sec) return;
@@ -1054,7 +1310,6 @@ function cfRenderAllBars() {
   }
 }
 
-// 掲示板投稿内の MFCARD:... 文字列を検出し、全員がタップできるIDカードボタンへ自動変換
 function cfEnhanceBoardCardLinks() {
   const board = document.getElementById("view-board");
   if (!board) return;
@@ -1081,9 +1336,13 @@ function cfEnhanceBoardCardLinks() {
   }
 }
 
-// ---------- 🔗 安全フック（バトル共鳴・画面切替・URL名刺読込） ----------
+// ---------- 🔗 安全フック ----------
 (function installCommanderHooks() {
-  // 1. startBattle フック（元素共鳴を全バトルに自動適用）
+  // 既存の画像拡大呼び出しもすべて「自由移動＆ピンチズーム版」へ統一
+  window.openPortraitZoom = function(charId) {
+    cfOpenFreeZoom(charId);
+  };
+
   if (typeof window.startBattle === "function" && !window.startBattle._cfHooked) {
     const origStart = window.startBattle;
     window.startBattle = function() {
@@ -1094,7 +1353,6 @@ function cfEnhanceBoardCardLinks() {
     window.startBattle._cfHooked = true;
   }
 
-  // 2. resolveSingleCard フック（氷共鳴の体勢削り+22% ＆ 雷共鳴のEX+25%）
   if (typeof window.resolveSingleCard === "function" && !window.resolveSingleCard._cfHooked) {
     const origResolve = window.resolveSingleCard;
     window.resolveSingleCard = function(card, isThirdChain) {
@@ -1117,7 +1375,6 @@ function cfEnhanceBoardCardLinks() {
     window.resolveSingleCard._cfHooked = true;
   }
 
-  // 3. renderBattleHUD フック（水共鳴の毎ターンHP5%自然回復）
   if (typeof window.renderBattleHUD === "function" && !window.renderBattleHUD._cfHooked) {
     const origHud = window.renderBattleHUD;
     window.renderBattleHUD = function() {
@@ -1134,7 +1391,17 @@ function cfEnhanceBoardCardLinks() {
     window.renderBattleHUD._cfHooked = true;
   }
 
-  // 4. switchView フック
+  // reward_hub のバッジ更新時にもホーム右側のボタンバッジを自動同期
+  if (window.MF_REWARD_HUB?.renderEntryBanners && !window.MF_REWARD_HUB._cfHooked) {
+    const origRh = window.MF_REWARD_HUB.renderEntryBanners;
+    window.MF_REWARD_HUB.renderEntryBanners = function() {
+      const r = origRh.apply(this, arguments);
+      cfRenderHomeWidgets();
+      return r;
+    };
+    window.MF_REWARD_HUB._cfHooked = true;
+  }
+
   if (typeof window.switchView === "function" && !window.switchView._cfHooked) {
     const origSwitch = window.switchView;
     window.switchView = function() {
@@ -1148,12 +1415,15 @@ function cfEnhanceBoardCardLinks() {
     window.switchView._cfHooked = true;
   }
 
-  // 5. 掲示板の非同期読み込み監視（他人のMFCARD投稿を自動でボタン化）
   let obsTimer = null;
   const obs = new MutationObserver(() => {
     if (cfDomLock) return;
     clearTimeout(obsTimer);
-    obsTimer = setTimeout(() => cfEnhanceBoardCardLinks(), 120);
+    obsTimer = setTimeout(() => {
+      cfEnhanceBoardCardLinks();
+      const home = document.getElementById("view-home");
+      if (home && home.classList.contains("active")) cfHideLegacyHomeStages(home);
+    }, 120);
   });
 
   const boot = () => {
@@ -1161,7 +1431,6 @@ function cfEnhanceBoardCardLinks() {
       cfRenderAllBars();
       if (document.body) obs.observe(document.body, { childList: true, subtree: true });
 
-      // 共有URL (?idcard=...) で開かれた場合、自動で友達のIDカードを表示
       try {
         const params = new URLSearchParams(window.location.search);
         const raw = params.get("idcard");
@@ -1182,11 +1451,16 @@ window.MF_COMMANDER = {
   openPresetModal: cfOpenPresetModal,
   openIdCardModal: cfOpenIdCardModal,
   openSecretaryPicker: cfOpenSecretaryPicker,
+  openFreeZoom: cfOpenFreeZoom,
   renderAllBars: cfRenderAllBars
 };
 window.cfTapSecretary = cfTapSecretary;
 window.cfOpenSecretaryPicker = cfOpenSecretaryPicker;
 window.cfSetSecretary = cfSetSecretary;
+window.cfOpenFreeZoom = cfOpenFreeZoom;
+window.cfCloseFreeZoom = cfCloseFreeZoom;
+window.cfAdjustZoom = cfAdjustZoom;
+window.cfResetZoom = cfResetZoom;
 window.cfOpenPresetModal = cfOpenPresetModal;
 window.cfRenderPresetModal = cfRenderPresetModal;
 window.cfSaveCurrentToPreset = cfSaveCurrentToPreset;
