@@ -1794,3 +1794,11 @@ body.theme-tactical .cf-extra-btn {
   color: #eef3ff;
   border-color: rgba(255, 255, 255, 0.16);
 }
+/* ===== 縦長スマホ向け QUICK ACCESS ボタン自動拡大 ===== */
+.cf-extra-dock-grid { gap: 6px; }
+.cf-extra-btn { height: 100%; }
+.cf-extra-dock.is-tall { padding: 8px 8px 9px; }
+.cf-extra-dock.is-tall .cf-extra-dock-label { font-size: 9px; margin-bottom: 6px; }
+.cf-extra-dock.is-tall .cf-extra-btn { gap: 3px; border-radius: 10px; }
+.cf-extra-dock.is-tall .cf-extra-ico { font-size: 22px; }
+.cf-extra-dock.is-tall .cf-extra-lbl { font-size: 10.5px; }
