@@ -976,3 +976,64 @@ body.theme-tactical .battle-stage::before {
 .go-res-tag.kind-crest { background: #f3cf00; color: #111; }
 .go-res-tag.kind-memory { background: #38a3ff; color: #111; }
 .go-result-footer { padding-top: 8px; }
+/* =========================================================
+   🏆 ステップ5：オンライン対人アリーナUI
+   ========================================================= */
+.ao-lobby-hero {
+  background: linear-gradient(135deg, #0e1320, #192236);
+  border: 2px solid #f3cf00; border-radius: 10px;
+  padding: 9px 10px; margin-bottom: 8px; text-align: left; color: #fff;
+}
+.ao-waiting-panel {
+  background: linear-gradient(135deg, #101624, #1b2234);
+  border: 2px solid #18e0a8; border-radius: 12px;
+  padding: 12px; color: #fff; text-align: center;
+}
+.ao-room-code-big {
+  font-family: ui-monospace, monospace;
+  font-size: 38px; font-weight: 900; letter-spacing: 0.24em;
+  color: #f3cf00; text-shadow: 0 0 18px rgba(243, 207, 0, 0.55);
+  margin: 6px 0 4px;
+}
+.ao-arena-shell {
+  background: linear-gradient(180deg, #0d111a, #141a28) !important;
+  border-color: #f3cf00 !important; color: #fff;
+}
+.ao-fighter {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px; padding: 7px 8px; margin-bottom: 7px;
+}
+.ao-fighter.opp { border-left: 4px solid #ff4d5a; }
+.ao-fighter.me  { border-left: 4px solid #18e0a8; }
+.ao-clash-strip {
+  background: rgba(243, 207, 0, 0.12); border: 1.5px solid #f3cf00;
+  border-radius: 9px; padding: 6px 8px; margin-bottom: 7px; text-align: center;
+}
+.ao-hand-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.ao-card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 7px 6px; border-radius: 10px; color: #fff; text-align: center;
+}
+.ao-card.ao-ult { grid-column: 1 / -1; box-shadow: 0 0 16px rgba(243, 207, 0, 0.7); border-color: #f3cf00 !important; }
+.ao-card-top { width: 100%; display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 900; }
+.ao-card-name { font-size: 11px; font-weight: 900; margin-bottom: 2px; }
+.ao-card-sum { font-size: 9px; background: rgba(0, 0, 0, 0.52); border-radius: 6px; padding: 2px 5px; width: 100%; }
+.ao-wait-box {
+  background: rgba(255, 255, 255, 0.07); border: 1.5px dashed #f3cf00;
+  border-radius: 10px; padding: 12px; text-align: center;
+}
+.ao-result-card {
+  background: rgba(8, 11, 18, 0.92); border: 2px solid #18e0a8;
+  border-radius: 12px; padding: 14px 10px; text-align: center;
+}
+.ao-stamp-toast {
+  background: rgba(24, 224, 168, 0.16); border: 1px solid #18e0a8;
+  border-radius: 8px; padding: 4px 8px; font-size: 10.5px; font-weight: 900;
+  margin-bottom: 6px; text-align: center;
+}
+.ao-log-box {
+  background: rgba(0, 0, 0, 0.45); border-radius: 8px;
+  padding: 6px 8px; margin-top: 8px; font-size: 10px; line-height: 1.45; color: #cfd9f0;
+  text-align: left;
+}
