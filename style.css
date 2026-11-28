@@ -1599,3 +1599,124 @@ body.theme-tactical .battle-stage::before {
   font-family: ui-monospace, monospace; font-size: 12px; font-weight: 900;
   color: #f3cf00; min-width: 48px; text-align: center;
 }
+/* ===== 🏕️ 拠点表示（明るいエメラルド） ⇔ ⚔️ 作戦表示（重厚ダーク）連動 ===== */
+.cf-home-stage {
+  min-height: 315px;
+  height: 44dvh;
+  max-height: 415px;
+  background: linear-gradient(155deg, #f5fcf8 0%, #e4f5ec 55%, #f6f9f4 100%);
+  border-color: #18b88a;
+  box-shadow: 0 8px 20px rgba(24, 184, 138, 0.16);
+  transition: background 0.25s, border-color 0.25s;
+}
+.cf-home-stage::before {
+  background: repeating-linear-gradient(-45deg, #18b88a 0 9px, #d9f3e7 9px 18px);
+}
+.cf-stage-grid {
+  opacity: 0.26;
+  background-image:
+    linear-gradient(rgba(24, 184, 138, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 184, 138, 0.14) 1px, transparent 1px);
+}
+.cf-stage-glow {
+  background: radial-gradient(circle, rgba(24, 184, 138, 0.14) 0%, transparent 68%);
+}
+.cf-stage-char-chip {
+  background: rgba(255, 255, 255, 0.94);
+  color: #17232c;
+  border-left-color: #18b88a;
+  box-shadow: 0 2px 8px rgba(16, 40, 32, 0.08);
+}
+.cf-stage-char-chip small { color: #0e9f6e; }
+.cf-stage-zoom-btn {
+  background: rgba(255, 255, 255, 0.94);
+  color: #17232c;
+  border-color: #18b88a;
+}
+.cf-stage-left-art { min-height: 190px; }
+.cf-stage-left-art img {
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 6px 14px rgba(15, 50, 38, 0.2));
+}
+.cf-side-btn {
+  background: rgba(255, 255, 255, 0.94);
+  color: #17232c;
+  border-color: #cde3d8;
+  border-left-color: #18b88a;
+  box-shadow: 0 2px 8px rgba(16, 40, 32, 0.09);
+}
+.cf-side-btn.hot {
+  background: #fff8e8;
+  border-color: #ff9f1c;
+  border-left-color: #ff2e4c;
+}
+.cf-side-btn.accent-cyan { border-left-color: #0ea5e9; }
+.cf-side-btn.accent-gold { border-left-color: #e6a800; }
+
+.cf-stage-voice-bar {
+  background: rgba(255, 255, 255, 0.95);
+  border-left-color: #18b88a;
+  border-top-color: #d3e9de;
+  box-shadow: 0 2px 10px rgba(16, 40, 32, 0.08);
+}
+.cf-stage-voice-bar .cf-sec-vtag { color: #0e9f6e; }
+.cf-stage-voice-bar .cf-sec-vtxt { color: #1c2833; }
+
+/* ----- ⚔️ 作戦表示（theme-tactical） ----- */
+body.theme-tactical .cf-home-stage {
+  background: radial-gradient(circle at 30% 42%, #1d2842 0%, #0e1320 62%, #080b12 100%);
+  border-color: #f3cf00;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+}
+body.theme-tactical .cf-home-stage::before {
+  background: repeating-linear-gradient(-45deg, #f3cf00 0 9px, #0b0d12 9px 18px);
+}
+body.theme-tactical .cf-stage-grid {
+  opacity: 0.18;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+}
+body.theme-tactical .cf-stage-glow {
+  background: radial-gradient(circle, rgba(243, 207, 0, 0.18) 0%, transparent 68%);
+}
+body.theme-tactical .cf-stage-char-chip {
+  background: rgba(8, 11, 18, 0.86);
+  color: #fff;
+  border-left-color: #f3cf00;
+  box-shadow: none;
+}
+body.theme-tactical .cf-stage-char-chip small { color: #f3cf00; }
+body.theme-tactical .cf-stage-zoom-btn {
+  background: rgba(8, 11, 18, 0.86);
+  color: #eef3ff;
+  border-color: rgba(243, 207, 0, 0.55);
+}
+body.theme-tactical .cf-stage-left-art img {
+  mix-blend-mode: normal;
+  border-radius: 10px;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.8));
+}
+body.theme-tactical .cf-side-btn {
+  background: rgba(11, 15, 25, 0.88);
+  color: #eef3ff;
+  border-color: rgba(255, 255, 255, 0.22);
+  border-left-color: #90a4cc;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+body.theme-tactical .cf-side-btn.hot {
+  background: rgba(28, 22, 16, 0.92);
+  border-color: #f3cf00;
+  border-left-color: #ff2e4c;
+}
+body.theme-tactical .cf-side-btn.accent-cyan { border-left-color: #18e0a8; }
+body.theme-tactical .cf-side-btn.accent-gold { border-left-color: #f3cf00; }
+
+body.theme-tactical .cf-stage-voice-bar {
+  background: rgba(8, 11, 18, 0.88);
+  border-left-color: #18e0a8;
+  border-top-color: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+body.theme-tactical .cf-stage-voice-bar .cf-sec-vtag { color: #18e0a8; }
+body.theme-tactical .cf-stage-voice-bar .cf-sec-vtxt { color: #eef3ff; }
